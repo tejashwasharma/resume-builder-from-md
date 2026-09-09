@@ -1,0 +1,472 @@
+/* ==========================================================================
+   tejashwasharma_resume.css
+   Print-first stylesheet for the Markdown -> HTML -> PDF resume pipeline.
+
+   Layout: the "CustCopy" template - a Letter page that runs one full-width
+   column throughout, under a masthead whose contact block sits right of the
+   name. Work Experience onward starts its own page.
+
+   The routing is not spelled out in the Markdown. `generate_resume.py` sends
+   each `## Section` to a block by the class written beside its heading
+   (`{: .full }` = its own page, default = the page-1 column) and gives every
+   heading a `sec-<slug>` class that the icon rules below hook onto. So the
+   Markdown stays readable prose and every presentational decision lives here.
+
+   The pipeline still supports a right-hand `{: .aside }` sidebar; this
+   template uses none, so `.column-side` is emitted empty and hidden below.
+
+   Several choices serve ATS text extraction rather than looks; those are
+   commented where they sit.
+
+   Font: Calibri to match the template, then Carlito (metric-compatible) and
+   a system-safe humanist stack, so the PDF reproduces on Windows/macOS/Linux
+   without bundled font binaries. See README.md "Font handling".
+   ========================================================================== */
+
+:root {
+  --ink: #1f497d;           /* name, section headings, company names */
+  --text: #0d0d0d;          /* body text */
+  --muted: #595959;         /* secondary text */
+  --rule: #595959;          /* rule under a section heading */
+  --link: #0d0d0d;          /* links read as plain text in this template */
+  --tab-dark: #404040;      /* left-margin marker, dark variant */
+  --tab-blue: #38618f;      /* left-margin marker, blue variant */
+  --band: #dbe5f0;          /* company header band, personal-details footer */
+
+  /* Section and contact icons. Inline SVG data URIs rather than an icon font:
+     ATS - a glyph from a symbol font lands in the text layer as mojibake
+     (the template's own bullets extract as U+F0B7), while a background image
+     carries no text at all. */
+  --icon-user: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5c0-3-4-5.5-9-5.5z'/%3E%3C/svg%3E");
+  --icon-gear: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M19.4 13a7.8 7.8 0 000-2l2.1-1.6a.5.5 0 00.1-.6l-2-3.5a.5.5 0 00-.6-.2l-2.5 1a7.6 7.6 0 00-1.7-1l-.4-2.6a.5.5 0 00-.5-.4h-4a.5.5 0 00-.5.4l-.4 2.6a7.6 7.6 0 00-1.7 1l-2.5-1a.5.5 0 00-.6.2l-2 3.5a.5.5 0 00.1.6L4.6 11a7.8 7.8 0 000 2l-2.1 1.6a.5.5 0 00-.1.6l2 3.5a.5.5 0 00.6.2l2.5-1a7.6 7.6 0 001.7 1l.4 2.6a.5.5 0 00.5.4h4a.5.5 0 00.5-.4l.4-2.6a7.6 7.6 0 001.7-1l2.5 1a.5.5 0 00.6-.2l2-3.5a.5.5 0 00-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z'/%3E%3C/svg%3E");
+  --icon-briefcase: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M9 4h6a2 2 0 012 2v1h4a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1h4V6a2 2 0 012-2zm0 3h6V6H9v1z'/%3E%3C/svg%3E");
+  --icon-list: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M2 5h4v3H2V5zm6 0h14v3H8V5zM2 10.5h4v3H2v-3zm6 0h14v3H8v-3zM2 16h4v3H2v-3zm6 0h14v3H8v-3z'/%3E%3C/svg%3E");
+  --icon-cap: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 3L1 8l11 5 9-4.1V15h2V8L12 3zM5 12.6V16c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.4l-7 3.2-7-3.2z'/%3E%3C/svg%3E");
+  --icon-idcard: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M2 5h20a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V6a1 1 0 011-1zm4 4a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm-3.5 8h7v-.6c0-1.4-1.6-2.4-3.5-2.4s-3.5 1-3.5 2.4v.6zM13 8h8v2h-8V8zm0 4h8v2h-8v-2z'/%3E%3C/svg%3E");
+  --icon-phone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.2c1.1.4 2.3.6 3.6.6a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.3.2 2.5.6 3.6a1 1 0 01-.2 1l-2.3 2.2z'/%3E%3C/svg%3E");
+  --icon-mail: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M2 4h20a1 1 0 011 1v14a1 1 0 01-1 1H2a1 1 0 01-1-1V5a1 1 0 011-1zm10 8.2L21 6H3l9 6.2z'/%3E%3C/svg%3E");
+  --icon-linkedin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3V9zm6 0h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 22 10.9 22 14.2V21h-4v-6c0-1.5-.03-3.4-2.1-3.4-2.1 0-2.4 1.6-2.4 3.3V21H9V9z'/%3E%3C/svg%3E");
+  --icon-github: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 1.5A10.5 10.5 0 001.5 12c0 4.64 3 8.57 7.18 9.96.52.1.71-.23.71-.5v-1.8c-2.92.63-3.54-1.4-3.54-1.4-.48-1.22-1.17-1.55-1.17-1.55-.96-.65.07-.64.07-.64 1.06.08 1.62 1.09 1.62 1.09.94 1.6 2.47 1.14 3.07.87.1-.68.37-1.14.67-1.4-2.33-.27-4.78-1.17-4.78-5.19 0-1.15.41-2.09 1.08-2.82-.11-.27-.47-1.34.1-2.79 0 0 .88-.28 2.88 1.08a10 10 0 015.24 0c2-1.36 2.88-1.08 2.88-1.08.57 1.45.21 2.52.1 2.79.67.73 1.08 1.67 1.08 2.82 0 4.03-2.46 4.92-4.8 5.18.38.33.72.97.72 1.96v2.9c0 .28.19.61.72.5A10.5 10.5 0 0022.5 12 10.5 10.5 0 0012 1.5z'/%3E%3C/svg%3E");
+  --icon-badge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 1.5l2.6 1.9 3.2-.2.9 3.1 2.6 1.8-1.2 3 1.2 3-2.6 1.8-.9 3.1-3.2-.2L12 21l-2.6-1.9-3.2.2-.9-3.1L2.7 14l1.2-3-1.2-3 2.6-1.8.9-3.1 3.2.2L12 1.5zm-1 12.7l5-5-1.4-1.4-3.6 3.6-1.6-1.6L8 11.2l3 3z'/%3E%3C/svg%3E");
+  --icon-home: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 3l10 9h-3v9h-5v-6H10v6H5v-9H2l10-9z'/%3E%3C/svg%3E");
+  --icon-globe: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23404040'%3E%3Cpath d='M12 2a10 10 0 100 20 10 10 0 000-20zm6.93 6h-2.95a15.7 15.7 0 00-1.38-3.56A8.03 8.03 0 0118.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.09 8.09 0 010-4h3.38a16.5 16.5 0 000 4H4.26zm.81 2h2.95c.32 1.25.78 2.45 1.38 3.56A8.03 8.03 0 015.07 16zm2.95-8H5.07a8.03 8.03 0 014.33-3.56A15.7 15.7 0 008.02 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 010-4h4.68a14.7 14.7 0 010 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 01-4.33 3.56zM16.36 14a16.5 16.5 0 000-4h3.38a8.09 8.09 0 010 4h-3.38z'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------------- */
+/* Page setup                                                             */
+/* --------------------------------------------------------------------- */
+
+@page {
+  /* The template is US Letter (612x792pt); its content box sits at
+     x 32.8-582.5, y 18-... - these margins reproduce it. */
+  size: Letter;
+  /* Left/right insets live on the body, not here: Chromium clips anything
+     painted into the @page margin area, and the left-margin marker bars
+     deliberately bleed out to the sheet edge. */
+  /* The bottom margin is shallow on purpose: the template runs its last page
+     close to the sheet edge, and anything deeper pushes the personal-details
+     band onto a page of its own. */
+  margin: 18pt 0 6pt 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  padding: 0 30pt 0 33pt;
+  font-family: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Helvetica, Arial,
+    "Liberation Sans", sans-serif;
+  font-size: 8.2pt;
+  line-height: 1.21;
+  color: var(--text);
+  text-align: justify;
+  orphans: 2;
+  widows: 2;
+
+  /* ATS: Chromium otherwise emits fi/fl/ff as single U+FB0x glyphs, so the
+     text layer carries "unified"/"workflows" as ligature codepoints and a
+     keyword match on "unified"/"workflow" misses. */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0, "dlig" 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Masthead: name, title, contact block, objective                        */
+/* --------------------------------------------------------------------- */
+
+.masthead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12pt;
+  align-items: start;
+  margin: 0 0 10pt 0;
+}
+
+h1 {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 16.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink);
+  /* ATS: keep at 0. Chromium places every glyph by coordinate and extractors
+     rebuild words from gap geometry; tracked-out capitals come back as
+     "T E J A S H W A". */
+  letter-spacing: 0;
+  margin: 0 0 6pt 0;
+  line-height: 1.1;
+  text-align: left;
+}
+
+h1 + p {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  font-size: 11pt;
+  line-height: 1.2;
+  text-align: left;
+}
+
+h1 + p strong {
+  font-weight: 700;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* The contact block sits beside the name, one channel per line, left-aligned
+   with a leading icon. Left-aligned (not right) so every line shares one left
+   edge - a right-aligned block trips the ATS multi-column heuristic. */
+ul.contact {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin: 3pt 0 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+ul.contact li {
+  color: #000;
+  font-size: 8.2pt;
+  margin: 0 0 2.4pt 0;
+  padding: 0 0 0 16pt;
+  position: relative;
+  text-indent: 0;
+  text-align: left;
+  break-inside: avoid;
+}
+
+ul.contact li::before {
+  content: none;
+}
+
+ul.contact li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4pt;
+  width: 11pt;
+  height: 10pt;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Order-based: the contact list is a fixed six-line block (phone, email,
+   LinkedIn, GitHub, website, location) and the Markdown keeps it in that order. */
+ul.contact li:nth-child(1)::after { background-image: var(--icon-phone); }
+ul.contact li:nth-child(2)::after { background-image: var(--icon-mail); }
+ul.contact li:nth-child(3)::after { background-image: var(--icon-linkedin); }
+ul.contact li:nth-child(4)::after { background-image: var(--icon-github); }
+ul.contact li:nth-child(5)::after { background-image: var(--icon-globe); }
+ul.contact li:nth-child(6)::after { background-image: var(--icon-home); }
+
+p.objective {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 11pt 0 0 0;
+  font-size: 8.2pt;
+  line-height: 1.28;
+}
+
+/* The Markdown's `---` separator is not part of this template. */
+hr {
+  display: none;
+}
+
+/* --------------------------------------------------------------------- */
+/* Page-1 column                                                          */
+/* --------------------------------------------------------------------- */
+
+/* One column across the full content width - this template has no sidebar.
+   `apply_layout()` still emits the `.column-side` aside; with no `{: .aside }`
+   section it comes through empty, and an empty grid track would otherwise
+   reserve its width. */
+.layout {
+  display: block;
+}
+
+.column-side {
+  display: none;
+}
+
+.column {
+  min-width: 0;
+}
+
+/* The page-1 grid fills the page almost exactly. A trailing margin on the last
+   block is enough to spill an empty fragment onto the next page, and the
+   `break-before` below then pushes Work Experience to page 3. */
+.column > :last-child {
+  margin-bottom: 0;
+}
+
+/* Work Experience onward runs full width, starting on its own page - the same
+   break the template makes. */
+.fullwidth {
+  break-before: page;
+}
+
+/* --------------------------------------------------------------------- */
+/* Section headings                                                       */
+/* --------------------------------------------------------------------- */
+
+h2 {
+  position: relative;
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0; /* see the note on h1 */
+  color: var(--ink);
+  /* Six section blocks share page 1: the top margin is what decides whether
+     Certifications makes it onto the sheet. */
+  margin: 12pt 0 5pt 0;
+  padding: 0 0 3pt 16pt;
+  border-bottom: 0.75pt solid var(--rule);
+  text-align: left;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+.column > h2:first-child,
+.fullwidth > h2:first-child {
+  margin-top: 0;
+}
+
+/* The heading icon, chosen per section by the `sec-<slug>` class that
+   `add_section_slugs()` derives from the heading's own text. */
+h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5pt;
+  width: 13pt;
+  height: 12pt;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+}
+
+h2.sec-profile-summary::before { background-image: var(--icon-user); }
+h2.sec-technical-skills::before { background-image: var(--icon-gear); }
+h2.sec-major-clients::before { background-image: var(--icon-briefcase); }
+h2.sec-core-competencies::before { background-image: var(--icon-list); }
+h2.sec-education::before { background-image: var(--icon-cap); }
+h2.sec-certifications::before { background-image: var(--icon-badge); }
+h2.sec-work-experience::before { background-image: var(--icon-briefcase); }
+h2.sec-personal-details::before { background-image: var(--icon-idcard); }
+
+/* The marker bars in the left page margin - one per section, colours
+   alternating down the page as in the template. */
+.masthead::before,
+.column-main > h2::after,
+.fullwidth > h2::after {
+  content: "";
+  position: absolute;
+  left: -33pt;      /* reach back across the page margin to the sheet edge */
+  width: 22pt;
+  height: 36pt;
+  background: var(--tab-dark);
+}
+
+.masthead {
+  position: relative;
+}
+
+.masthead::before {
+  top: 3pt;
+}
+
+.column-main > h2::after {
+  top: -6pt;
+}
+
+/* The full-width sections start a page, so their marker must not reach above
+   the heading - an absolutely positioned box that pokes past the top of a page
+   is fragmented onto the previous one and costs a blank page. */
+.fullwidth > h2::after {
+  top: 0;
+}
+
+.column-main > h2:nth-of-type(odd)::after,
+.fullwidth > h2:nth-of-type(odd)::after {
+  background: var(--tab-blue);
+}
+
+/* --------------------------------------------------------------------- */
+/* Body text and lists                                                    */
+/* --------------------------------------------------------------------- */
+
+p {
+  margin: 0 0 5pt 0;
+}
+
+strong {
+  font-weight: 700;
+  color: inherit;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+em {
+  font-style: italic;
+}
+
+/* ATS: bullets come from ::before, not list-style. Chromium rasterizes
+   ::marker glyphs as graphics, so they never reach the text layer. */
+ul {
+  margin: 0 0 1.5pt 0;
+  padding-left: 26pt;
+  list-style: none;
+}
+
+li {
+  margin: 0;
+  text-indent: -8pt; /* pulls the bullet back into the gutter */
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* The bullet must stay on the text baseline: nudging it with position/top
+   makes extractors stop grouping it with the line, stranding every bullet on
+   a line of its own. */
+li::before {
+  content: "\2022";
+  display: inline-block;
+  width: 8pt;
+  text-indent: 0;
+  font-size: 1em;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------------- */
+/* Personal details: the banded footer closing the last page              */
+/* --------------------------------------------------------------------- */
+
+/* The template closes on a filled band carrying both the heading and its one
+   line. There is no per-section wrapper to paint, so the heading and the list
+   below each take the fill and butt together into a single band.
+
+   Every measurement here is tight on purpose. The band is held together (the
+   list below avoids breaking) and it lands in the last ~30pt of the page, so
+   an extra point of margin or leading is enough to bounce the whole block
+   onto a third sheet. */
+h2.sec-personal-details {
+  background: var(--band);
+  color: var(--text);
+  margin: 0;
+  padding: 2pt 4pt 2pt 20pt;
+  line-height: 1.05;
+}
+
+h2.sec-personal-details::before {
+  left: 4pt;
+  top: 3.5pt;
+}
+
+/* This section closes the document, so its marker bar must not run past the
+   last line: a 36pt box hanging below the content box is fragmented onto a
+   page of its own and costs a whole extra sheet. */
+h2.sec-personal-details::after {
+  height: 13pt;
+}
+
+h2.sec-personal-details + ul {
+  background: var(--band);
+  margin: 0;
+  padding: 2pt 4pt 2.5pt 26pt;
+  break-inside: avoid;
+}
+
+/* --------------------------------------------------------------------- */
+/* Work experience                                                        */
+/* --------------------------------------------------------------------- */
+
+/* Company line: the light band that runs the full content width. */
+h3 {
+  font-size: 8.2pt;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--band);
+  margin: 3pt 0 1.5pt 0;
+  padding: 1.5pt 4pt;
+  text-align: left;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+h2 + h3 {
+  margin-top: 0;
+}
+
+h3 em {
+  font-style: italic;
+}
+
+/* ATS: one role per line, so a parser can pair each title with its own date
+   range instead of reading one packed line with several. The role lines and
+   the bold group lead-ins ("Session Governance & Security:") are all
+   all-bold paragraphs, and they share this treatment. */
+h3 + p,
+h3 + p + p,
+p:has(> strong:first-child) {
+  margin: 0 0 0.5pt 0;
+  text-align: left;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+p:has(> strong:first-child) {
+  margin-top: 2pt;
+}
+
+/* --------------------------------------------------------------------- */
+/* Print behaviour                                                        */
+/* --------------------------------------------------------------------- */
+
+@media print {
+  body {
+    width: auto;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Items stay whole; the list may split across a page boundary. */
+  li {
+    page-break-inside: avoid;
+  }
+}

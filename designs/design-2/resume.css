@@ -1,0 +1,296 @@
+/* ==========================================================================
+   tejashwasharma_resume.css
+   Print-first stylesheet for the Markdown -> HTML -> PDF resume pipeline.
+
+   Several choices here serve ATS text extraction rather than looks; those
+   are commented where they sit. Everything else is plain styling.
+
+   Font: a "system-safe" humanist stack (Segoe UI / Helvetica Neue / Arial),
+   so the PDF reproduces on Windows/macOS/Linux without bundled font
+   binaries. See README.md "Font handling".
+   ========================================================================== */
+
+:root {
+  --ink: #1f3350;           /* name, section headings, company names */
+  --text: #2f3742;          /* body text */
+  --muted: #5b6472;         /* secondary text (dates, italics, contact) */
+  --rule: #d8dee7;          /* section separators */
+  --rule-strong: #24365a;   /* rule under a section heading */
+  --link: #2f5bcf;          /* links */
+}
+
+/* --------------------------------------------------------------------- */
+/* Page setup                                                             */
+/* --------------------------------------------------------------------- */
+
+@page {
+  size: A4;
+  margin: 14mm 16mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  /* Font stack matches tejashwasharma_resume.css: Calibri first, then the
+     system-safe humanist fallbacks so the PDF reproduces without bundled
+     font binaries. */
+  font-family: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+  font-size: 8.6pt;
+  line-height: 1.28;
+  color: var(--text);
+  orphans: 3;
+  widows: 3;
+
+  /* ATS: Chromium otherwise emits fi/fl/ff as single U+FB0x glyphs, so the
+     text layer carries "uniﬁed"/"workﬂows" and a keyword match on
+     "unified"/"workflow" misses. */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0, "dlig" 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Header: name, title line, contact line                                */
+/* --------------------------------------------------------------------- */
+
+h1 {
+  font-size: 18pt;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4pt 0;
+  letter-spacing: -0.1px;
+  line-height: 1.15;
+}
+
+h1 + p {
+  margin: 0 0 4pt 0;
+  font-size: 11.5pt;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.28;
+}
+
+h1 + p strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Sized to keep location + phone + email + both profile links on one line */
+h1 + p + p {
+  margin: 0 0 4pt 0;
+  font-size: 8.6pt;
+  color: var(--muted);
+}
+
+h1 ~ p a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+h1 ~ p a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  border: 0;
+  border-top: 0.75pt solid var(--rule);
+  margin: 6pt 0 6pt 0;
+  height: 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Section headings                                                       */
+/* --------------------------------------------------------------------- */
+
+h2 {
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  /* ATS: keep at 0 - do not restore the template's 1.7px. Chromium places
+     every glyph by coordinate, so extractors rebuild words from gap
+     geometry; at 1.7px the headings extracted as "E X P E R I E N C E" and
+     a parser matching section names found none of them. */
+  letter-spacing: 0;
+  color: var(--ink);
+  margin: 11pt 0 6pt 0;
+  padding: 0 0 4pt 0;
+  border-bottom: 0.9pt solid var(--rule-strong);
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+/* Directly after the header rule, no extra gap */
+hr + h2 {
+  margin-top: 4pt;
+}
+
+/* `## Experience {: .pagebreak }` — force the section onto its own page so
+   page 1 carries the profile/skills/clients/education block and page 2 is
+   the work history. */
+h2.pagebreak {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 0;
+}
+
+h3 {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 4pt 0 0 0;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+h2 + h3 {
+  margin-top: 0pt;
+}
+
+/* ATS: one role per line, so a parser can pair each title with its own
+   date range instead of reading one packed line with several. */
+h3 + p,
+h3 + p + p {
+  margin: 0 0 1pt 0;
+  font-size: 8pt;
+  color: var(--muted);
+}
+
+/* Whichever role line is last before the bullets carries the gap. */
+h3 + p:has(+ ul),
+h3 + p + p:has(+ ul) {
+  margin-bottom: 3.5pt;
+}
+
+h3 + p strong,
+h3 + p + p strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+h3 + p em,
+h3 + p + p em {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------- */
+/* Body text                                                              */
+/* --------------------------------------------------------------------- */
+
+p {
+  margin: 0 0 6pt 0;
+}
+
+strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+em {
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------- */
+/* Lists / bullet points                                                  */
+/* --------------------------------------------------------------------- */
+
+/* ATS: bullets come from ::before, not list-style. Chromium rasterizes
+   ::marker glyphs as graphics, so they never reach the text layer. */
+ul {
+  margin: 0 0 5pt 0;
+  padding-left: 16pt;
+  list-style: none;
+}
+
+li {
+  margin: 0 0 0.6pt 0;
+  text-indent: -10pt; /* pulls the bullet back into the gutter */
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* The bullet must stay on the text baseline: nudging it with position/top
+   makes extractors stop grouping it with the line, stranding every bullet
+   on a line of its own. */
+li::before {
+  content: "•";
+  display: inline-block;
+  width: 10pt;
+  text-indent: 0;
+  font-size: 1em;
+  line-height: 1;
+  color: var(--text);
+}
+
+li:last-child {
+  margin-bottom: 0;
+}
+
+li > strong:first-child {
+  color: var(--ink);
+}
+
+/* A bold lead-in paragraph that introduces a list ("Awards received:").
+   :where() keeps this at zero specificity so the role-line rules above
+   still win where both apply. */
+p:where(:has(> strong:first-child)) {
+  margin: 4pt 0 1.5pt 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Core Skills lines                                                      */
+/* --------------------------------------------------------------------- */
+
+/* Each skill row is a paragraph carrying `{: .skill }` from the Markdown.
+   ATS: the label must stay inline with its values - splitting them (table
+   cells, or a fixed-width label column) makes extractors emit two lines,
+   so the labels read as orphan skills ("Backend", "Frontend").
+   Typography is left to inherit the body (size + leading) so this section
+   reads at the same density as everything else; the explicit margin only
+   exists to beat the zero-specificity lead-in rule above. */
+p.skill {
+  margin: 0 0 3.5pt 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+p.skill > strong:first-child {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------- */
+/* Print behaviour                                                        */
+/* --------------------------------------------------------------------- */
+
+@media print {
+  body {
+    width: auto;
+  }
+
+  h2, h3 {
+    page-break-after: avoid;
+  }
+
+  /* Items stay whole; the list may split across a page boundary. */
+  li {
+    page-break-inside: avoid;
+  }
+}
