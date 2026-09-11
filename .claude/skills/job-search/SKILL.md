@@ -139,10 +139,25 @@ was skipped, in the step 8 report.
 For each selected country's block, **re-derive the query keywords from the
 resume read in step 1** rather than trusting `search_seeds` verbatim — the
 seeds are proven query shapes from the first run, and the skill set they
-were built from drifts (tailoring, a new cert, a dropped claim). Construct 3-4
-searches spanning the IAM/identity specialty, the core backend stack
-(Node.js/NestJS), and the Architect/Manager/Lead track the objective line
-names — shaped per `job_site`:
+were built from drifts (tailoring, a new cert, a dropped claim).
+
+**Target title level is Senior Software Engineer only.** Ignore the
+objective line's Architect/Lead/Manager track when building searches or
+judging role fit in step 6 — those tiers are out of scope for this skill
+regardless of what the resume's objective line says.
+
+Construct 3-4 searches per country, **IAM/identity first and weighted
+highest**:
+
+1. **IAM/identity specialty** (RBAC, OAuth, SAML, OIDC, SCIM, SSO) — the
+   priority theme; run this one first and see step 6 for how it's scored
+   above everything else.
+2-4. **General Node.js/backend Senior Software Engineer roles** — broader
+   now, not restricted to IAM-tagged postings; any Senior Software Engineer
+   (or direct equivalent) opening built on Node.js/NestJS/TypeScript/
+   backend stack is in scope even with no identity angle at all.
+
+Shaped per `job_site`:
 
 - **`naukri`** (India): `https://www.naukri.com/<hyphenated-keywords>-jobs`
   (or `-jobs-in-india`). Plus **3b, the company-directory sweep** below —
@@ -305,16 +320,26 @@ otherwise strong (≥70%) and say so in Notes.
 Same rubric everywhere, so scores stay comparable across countries and
 days:
 
-- **Stack overlap** (heaviest weight) — literal token overlap between the
-  posting's tags/description and the resume's Technical Skills. Node.js/
-  NestJS/TypeScript and the IAM protocols (OAuth/SAML/OIDC/SCIM/SSO/RBAC)
-  count double; generic tags ("Backend", "Automation", "Coding") count once.
-- **Role fit** — does the title match what the objective line targets
-  (Architect, Lead, Senior/Staff Engineer, Manager)? A plain "Developer"
-  title with no seniority marker docks a little; a pure "Administrator" /
-  "Support Engineer" / "Ops" title docks more, even with strong
-  protocol-keyword overlap.
-- **Domain fit bonus** — IAM/RBAC/OAuth/SSO/SCIM specifically.
+- **IAM/identity priority** (highest weight, checked first) — RBAC, OAuth
+  2.0, SAML, OIDC, SCIM, SSO tokens in the posting's tags/description score
+  above everything else in this rubric. A Senior Software Engineer role
+  built on IAM/identity is the single best outcome this skill can surface;
+  score it accordingly even when its general backend-stack overlap is thin.
+- **Stack overlap** — literal token overlap between the posting's
+  tags/description and the resume's Technical Skills. Node.js/NestJS/
+  TypeScript count double; generic tags ("Backend", "Automation", "Coding")
+  count once. A posting with strong Node.js/backend overlap and no IAM
+  angle at all is still a valid, scoreable match now — general Node.js
+  roles are in scope, not just identity-tagged ones.
+- **Role fit** — the target title level is **Senior Software Engineer**
+  (or a direct equivalent: Senior Developer, Senior Backend Engineer,
+  Software Engineer II/III, SDE II/III, Senior Node.js Developer).
+  Architect/Lead/Manager/Principal/Staff titles are **no longer targeted**
+  and get no seniority bonus beyond what a plain Senior title would — score
+  them on stack/domain overlap alone, same as any other title. A plain
+  "Developer" title with no seniority marker docks a little; a pure
+  "Administrator" / "Support Engineer" / "Ops" title docks more, even with
+  strong protocol-keyword overlap.
 - **Seniority fit** — see step 5's per-site normalization; a figure or
   title centered near 7-8 scores higher than one that only brushes the
   band from either edge.
