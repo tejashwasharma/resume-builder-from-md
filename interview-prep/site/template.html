@@ -1,0 +1,61 @@
+<meta charset="utf-8">
+<title>The Interview Book</title>
+<style>
+/*{{CSS}}*/
+</style>
+
+<div class="progress-bar"><div id="bar"></div></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" id="go-contents">
+      <span class="brand-mark">📕</span>
+      <span>
+        The Interview Book
+        <small id="brand-sub">Contents</small>
+      </span>
+    </a>
+    <div class="search">
+      <input id="search" type="search" placeholder="Search the book…" autocomplete="off">
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <button class="menu-btn ghost" id="menu">☰</button>
+      <button id="tab-book" class="primary">Book</button>
+      <button id="tab-drill">Drill</button>
+      <button id="tab-mock">Mock</button>
+      <button id="tab-progress">Progress</button>
+      <span class="spacer"></span>
+      <span class="read-pct" id="read-pct"></span>
+      <button class="ghost" id="theme" title="Toggle theme">◐</button>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<button class="ask-fab" id="ask-fab" hidden title="Ask about the book">✦</button>
+
+<div class="ask-panel" id="ask-panel" hidden>
+  <div class="ask-head">
+    <div>
+      <div class="t">Ask the book</div>
+      <div class="s" id="ask-ctx">Answers come from these chapters</div>
+    </div>
+    <button id="ask-close" title="Close">×</button>
+  </div>
+  <div class="ask-log" id="ask-log"></div>
+  <div class="ask-foot">
+    <textarea id="ask-input" rows="1" placeholder="Ask anything — about a topic, or your own experience…"></textarea>
+    <button class="primary" id="ask-send">Ask</button>
+  </div>
+</div>
+
+<script>
+window.__DATA__ = /*{{DATA}}*/;
+</script>
+<script>
+/*{{JS}}*/
+</script>
