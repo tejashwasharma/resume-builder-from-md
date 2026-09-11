@@ -479,6 +479,34 @@ having thought about identity.
 
 ---
 
+## Worked example: role mapping at login, and how far to trust the IdP
+
+Once SSO is live, the recurring design question is: **when a user signs in
+via SAML, where do their in-app roles come from?** Three positions, in order
+of how much you trust the IdP:
+
+- **IdP as source of truth for group membership only.** The assertion
+  carries group names; your app maps groups → roles at every login (JIT —
+  just-in-time provisioning), so a group change on the IdP side takes effect
+  on the user's next sign-in with no sync job needed.
+- **Strict SSO.** Once an org enables it, in-app role edits are disabled for
+  SSO users entirely — the IdP is the only place roles change, closing the
+  "admin edited a role that got silently overwritten by the next SAML login"
+  class of bug, at the cost of losing per-app role nuance.
+- **Provisioning gap for orgs without group support.** Not every IdP
+  configuration sends usable groups; the honest fallback is a default role
+  on first login plus a manual assignment step, and saying so explicitly is
+  better than implying every SSO integration gets full JIT role mapping.
+
+The follow-up worth having an answer for: **what happens to a user's
+sessions when their SSO role changes or they're deprovisioned?** If
+sessions are stateless (a signed cookie or JWT), the answer is "nothing,
+until it expires" — which is usually not acceptable for immediate access
+revocation, and is the strongest argument for opaque, centrally-checked
+sessions over stateless ones on an enterprise product.
+
+---
+
 ## What a weak answer sounds like
 
 - **"SAML is the old one, OIDC is the new one, so use OIDC."** True and

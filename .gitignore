@@ -5,3 +5,7 @@ __pycache__/
 venv/
 tailor/output/
 .claude/*/*/*.local.json
+
+# Local-only study notes with real employer/internal-architecture detail.
+# Never commit, push, or publish anything under here.
+private-notes/
