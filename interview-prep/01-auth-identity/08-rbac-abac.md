@@ -412,6 +412,50 @@ product concept.
 
 ---
 
+## Worked example: redesigning fixed roles into RBAC
+
+A pattern that comes up often enough to have a name: a multi-tenant SaaS
+product starts with two or three hard-coded roles (`admin`, `member`, maybe
+an implicit `owner`), and outgrows it — enterprise customers want custom
+roles, granular permissions, and per-resource scoping. The redesign has a
+recognisable shape:
+
+```mermaid
+flowchart TD
+  U["principal (user)"] --> B["binding — per (tenant, principal)<br/>role[] · is_owner · status"]
+  B --> R["role — tenant-scoped or platform-default<br/>permissions[] · custom or seeded"]
+  R --> P["permission catalogue<br/>'resource:action' pairs"]
+```
+*Permissions live on roles, roles bind to a principal per tenant — the model itself is simple; the migration into it is the hard part.*
+
+**The migration is the hard part, not the model.** You cannot cut over
+existing tenants atomically without either breaking their access or shipping
+a big-bang release nobody can safely roll back. The technique that actually
+works, in roughly this order:
+
+1. **Schema-additive first.** New fields sit beside the old ones (a
+   `roles[]` array beside a single legacy `role` string) so nothing that
+   reads the old shape breaks.
+2. **Define the new defaults as exactly the old semantics.** The legacy
+   `admin`/`member` become two seeded roles whose permission sets are defined
+   to match what they already implied — nobody's effective access changes on
+   day one.
+3. **Gate the new path per tenant**, evaluated as data (a feature flag or a
+   policy rule), not as a deploy — so a single tenant can be rolled back in
+   seconds without a redeploy.
+4. **Run both authorization paths and compare**, ideally in production on
+   real traffic before the new path enforces anything (shadow-mode /
+   dark-launch). Any divergence is a bug caught before a customer sees it.
+5. **Roll out progressively** — internal tenants, then friendly customers,
+   then everyone — and only remove the legacy path once divergence has been
+   zero for a sustained window.
+
+Naming this sequence — schema-additive, backfill-to-equivalent, per-tenant
+gate, shadow comparison, progressive rollout — is a strong signal on its own;
+most candidates only get as far as "we added a roles table."
+
+---
+
 ## What a weak answer sounds like
 
 - **"RBAC means checking `user.role === 'admin'`."** That's exactly the

@@ -325,6 +325,58 @@ you're deriving per request; then cache decisions.
 
 ---
 
+## Worked example: a policy sidecar on the request hot path
+
+A common architecture for authorization-as-a-service, once RBAC/OPA is on
+the request path for every service: a lightweight sidecar next to each
+workload, embedding OPA as a library rather than calling a shared cluster
+service over the network.
+
+```mermaid
+sequenceDiagram
+  participant Edge
+  participant App as App container
+  participant Sidecar as OPA sidecar (same pod)
+  participant Store as Read-model store
+  Edge->>App: request + identity
+  App->>Sidecar: "can this principal do X on Y?"
+  Sidecar->>Store: fetch principal's roles/permissions (pre-joined)
+  Store-->>Sidecar: read-model row
+  Sidecar->>Sidecar: evaluate Rego policy
+  Sidecar-->>App: allow / deny
+```
+*The sidecar evaluates fresh on every request instead of caching decisions — the read model, not a decision cache, is what makes that fast enough.*
+
+**Why same-pod, not a shared service:** authorization is the one place a
+network hop and a stale cache both turn into either added latency on every
+request or a security bug, so the sidecar avoids caching decisions at all —
+it evaluates fresh, and it's fast because the store it reads is a pre-joined
+read model (roles → permissions already expanded), not a chain of joins done
+at read time.
+
+**The dual-body pattern for zero-downtime policy migration:** when a policy
+needs to change behaviour for some tenants but not others, write the rule
+with two bodies — one for the old behaviour, one for the new — gated by a
+piece of data (a tenant flag), not by which version of the policy bundle is
+deployed:
+
+```rego
+allow {
+  tenant_flag[input.tenant] == "new_model"
+  new_permission_check
+}
+allow {
+  tenant_flag[input.tenant] != "new_model"
+  legacy_owner_or_admin_check
+}
+```
+
+That makes the migration reversible per tenant in seconds — flip the flag —
+instead of requiring a redeploy, which is exactly the property you want
+during a gradual RBAC rollout.
+
+---
+
 ## What a weak answer sounds like
 
 - **"OPA is a library for authorization."** It's a general policy engine; you

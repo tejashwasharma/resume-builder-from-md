@@ -382,6 +382,36 @@ how you designed revocation.
 
 ---
 
+## Worked example: mapping SCIM Groups onto in-app teams
+
+SCIM's `/Groups` resource and a product's own notion of "team" rarely line
+up one-to-one, and the mapping decision is where the interesting design
+questions live:
+
+- **One SCIM Group ↔ one in-app team**, membership synced on every
+  `PATCH /Groups/{id}`. Simple, but a customer's IdP group structure now
+  dictates their in-app team structure exactly, which surprises admins who
+  expect the two to be independent.
+- **A SCIM Group maps to a role binding, not a team.** Group membership
+  grants a role rather than team placement; teams stay a purely in-app
+  concept. More flexible, but means "add this group" and "give this access"
+  are two different admin actions on the IdP side that people expect to be
+  one.
+- **Deprovisioning is the path that has to be airtight either way.** A
+  `DELETE` on a `/Users/{id}` resource (or a `PATCH` setting `active: false`)
+  must revoke access immediately, not on the next scheduled sync — treat it
+  the same way as an SSO session revocation: kill active sessions, not just
+  the account record, or a deprovisioned employee keeps working until their
+  token happens to expire.
+
+The failure mode worth naming unprompted: a SCIM sync job that's eventually
+consistent (runs every N minutes) is fine for provisioning a new hire a few
+minutes late, and is not fine for deprovisioning — "the group sync hadn't
+run yet" is not an acceptable answer to "why did a terminated employee still
+have access."
+
+---
+
 ## What a weak answer sounds like
 
 - **"SCIM is for creating users."** Creation is the easy half. Deprovisioning is

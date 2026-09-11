@@ -562,6 +562,31 @@ substance is already best practice and most mature providers implement it.
 
 ---
 
+## Worked example: per-tenant token isolation, and opaque vs. JWT
+
+**Isolation.** In a multi-tenant OAuth server, every client registration
+belongs to exactly one tenant, and every issued token carries the tenant it
+was issued for — either in the `aud` claim or a dedicated `tenant_id` claim.
+The resource server's job on every request is to check that the token's
+tenant matches the tenant of the resource being accessed; a token minted for
+tenant A presented against tenant B's resource must fail, and that check
+belongs in shared middleware, not duplicated per endpoint — a per-endpoint
+check is the kind of thing that gets forgotten on the twentieth new route.
+
+**Opaque tokens over JWTs, when revocation matters more than validation
+cost.** The textbook trade-off is stateless JWTs (fast to validate, no
+server round-trip, but revocation before expiry needs a denylist anyway) vs.
+opaque tokens looked up centrally (one round-trip per request, but
+revocation is instant and total). For an enterprise product where "kick this
+user out right now" is a hard requirement — a departing employee, a
+compromised session — opaque tokens backed by a fast key-value store are
+often the better call despite the extra hop: the lookup is one in-memory
+read, cheaper in practice than the machinery (short-lived JWTs, refresh
+rotation, a denylist checked on every validation) needed to approximate the
+same guarantee with stateless tokens.
+
+---
+
 ## What a weak answer sounds like
 
 - **"OAuth is how you log in with Google."** Conflates OAuth with OIDC. This
