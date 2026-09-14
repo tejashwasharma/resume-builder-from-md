@@ -137,7 +137,7 @@ together, most of which already have their own chapter here:
 | --- | --- | --- |
 | Short-lived tokens, no implicit trust from location | `jose`, as in JWT | [jwt](06-jwt.md) |
 | Per-request authorization | `casbin` / OPA, as in RBAC/ABAC | [rbac-abac](08-rbac-abac.md), [opa-rego](09-opa-rego.md) |
-| Workload-to-workload identity (mTLS) | usually a service mesh sidecar (Istio, Linkerd), not app code | [microservices](../04-backend/05-microservices.md) |
+| Workload-to-workload identity (mTLS) | usually a service mesh sidecar (Istio, Linkerd), not app code | [microservices](../03-backend/05-microservices.md) |
 | Continuous device/context checks | the IdP's own engine (Okta Verify, Entra Conditional Access) — not something you build | this chapter, above |
 
 The interview signal here is naming the composition correctly, not shipping a

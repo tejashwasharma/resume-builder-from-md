@@ -9,7 +9,7 @@ cross-device progress; the Markdown here is the source of truth for both.
 
 Two halves that work together:
 
-- **Guides** (`00-` … `10-`) — the knowledge, written basic → hero. Readable
+- **Guides** (`00-` … `08-`) — the knowledge, written basic → hero. Readable
   anywhere: on GitHub, on a phone, offline. Each mechanism opens with a flow
   chart, then walks the same steps as real requests. Answers sit inside
   collapsible blocks so you can attempt before revealing.
@@ -54,15 +54,13 @@ python3 check_coverage.py  # does the prep still cover the resume?
 | --- | --- | --- |
 | `00-experience/` | Every resume bullet as a STAR story + the follow-ups that probe it | Needed in every loop; entirely specific to you |
 | `01-auth-identity/` | OAuth2, OIDC, SAML, SCIM, JWT, MFA, RBAC, OPA, Zero Trust | Your specialty — expect the deepest questioning here |
-| `02-distributed-systems/` | Starts from zero, then consistency, replication, sharding, consensus, caching, resilience | Underpins every claim you make about scale |
-| `03-system-design/` | Starts from zero, then the method, estimation, and worked designs from your own domain | Usually one or two dedicated rounds; the ones people fail |
-| `04-backend/` | Node internals, NestJS, Go, API styles, microservices | Core implementation round |
-| `05-data-cache/` | MongoDB, PostgreSQL, Redis, ODMs, Firebase | Data-modelling and trade-off questions |
-| `06-testing/` | Jest, TDD, and defending "85%+ coverage" | Comes up whenever you cite the number |
-| `07-cloud-devops/` | AWS, Docker, Nginx, CI/CD, Datadog | Usually breadth, not depth |
-| `08-ai-tooling/` | Agent docs, prompt libraries, caching and model routing | Your differentiator — expect curiosity and skepticism |
-| `09-dsa-coding-rounds/` | Patterns, how to pick one, a drill plan, then a chapter per structure (arrays → graphs) | Senior loops still screen on this |
-| `10-frontend/` | React, Redux, TypeScript, styling | Lightest, for a backend-leaning loop |
+| `02-google-loop/` | The whole Google Senior SWE loop, zero to onsite: the stages and what each grades, both Singapore security roles decoded, coding from Big-O to 60+ solved problems, distributed-systems foundations, system design with security-domain worked designs, the security knowledge round, Googleyness & Leadership, and a schedule | The loop you are in. Self-contained; start at `01-the-loop.md` |
+| `03-backend/` | Node internals, NestJS, Go, API styles, microservices | Core implementation round |
+| `04-data-cache/` | MongoDB, PostgreSQL, Redis, ODMs, Firebase | Data-modelling and trade-off questions |
+| `05-testing/` | Jest, TDD, and defending "85%+ coverage" | Comes up whenever you cite the number |
+| `06-cloud-devops/` | AWS, Docker, Nginx, CI/CD, Datadog | Usually breadth, not depth |
+| `07-ai-tooling/` | Agent docs, prompt libraries, caching and model routing | Your differentiator — expect curiosity and skepticism |
+| `08-frontend/` | React, Redux, TypeScript, styling | Lightest, for a backend-leaning loop |
 
 ## Read these first
 
@@ -73,16 +71,27 @@ python3 check_coverage.py  # does the prep still cover the resume?
 - **[INDEX](INDEX.md)** — topic → file map. The skills use it to find material; you
   can use it to jump straight to a concept.
 
+## Preparing for the Google loop
+
+`02-google-loop/` is the whole loop in one part, in the order you should read
+it: [the loop](02-google-loop/01-the-loop.md) → [the two roles](02-google-loop/02-the-two-roles.md)
+→ coding (`03`–`19`) → distributed-systems foundations (`20`–`30`) → system
+design (`31`–`40`) → [the security round](02-google-loop/41-security-domain-knowledge.md)
+→ [Googleyness & Leadership](02-google-loop/42-googleyness-and-leadership.md)
+→ [the schedule](02-google-loop/43-the-schedule.md). Every coding problem in
+it is fully solved in JavaScript; every design prompt has a rubric and a
+worked solution.
+
 ## New to distributed systems or system design?
 
-Both parts open with a chapter that assumes no prior knowledge, defines every
+Both blocks open with a chapter that assumes no prior knowledge, defines every
 term before using it, and names the technologies worth learning and in what
-order. Start there rather than at chapter 01:
+order. Start there rather than at the method:
 
-- [What a distributed system is, and why anyone bothers](02-distributed-systems/00-start-here-what-and-why.md)
-- [The technology landscape](02-distributed-systems/00b-the-technology-landscape.md) — what to learn, and why
-- [What system design actually is](03-system-design/00-start-here-thinking-in-systems.md) — one server to ten million users
-- [The technology toolbox](03-system-design/00b-the-technology-toolbox.md) — Postgres vs Mongo, Kafka vs SQS, and how to defend a choice
+- [What a distributed system is, and why anyone bothers](02-google-loop/20-distributed-start-here.md)
+- [The technology landscape](02-google-loop/21-the-technology-landscape.md) — what to learn, and why
+- [What system design actually is](02-google-loop/31-design-round-start-here.md) — one server to ten million users
+- [The technology toolbox](02-google-loop/34-the-technology-toolbox.md) — Postgres vs Mongo, Kafka vs SQS, and how to defend a choice
 
 ## How the pieces fit
 

@@ -77,6 +77,9 @@ ALIASES = {
     "AI-assisted Code Review": ["pre-review"],
     "AI Test Generation": ["test generation"],
     "AI Security Analysis": ["security analysis"],
+    "85%+ Test Coverage": ["coverage"],
+    "AI-Assisted Debugging": ["debugging"],
+    "AGENT.md / SKILLS.md Agent-Navigation Documentation": ["AGENT.md"],
 }
 
 # Matched case-insensitively: the resume capitalises these labels differently
@@ -87,9 +90,7 @@ ALIASES_LOWER = {k.lower(): v for k, v in ALIASES.items()}
 
 # Not on the resume, but expected of a senior candidate.
 ROLE_LEVEL = {
-    "Distributed systems": "02-distributed-systems",
-    "System design": "03-system-design",
-    "DSA / coding rounds": "09-dsa-coding-rounds",
+    "Google loop (coding, distributed, design)": "02-google-loop",
 }
 
 

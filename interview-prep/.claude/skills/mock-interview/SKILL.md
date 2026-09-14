@@ -13,9 +13,12 @@ grade after each answer — a real interviewer doesn't. Feedback comes at the en
 | Invocation | Round |
 | --- | --- |
 | `/mock-interview auth` | Deep technical on identity — `01-auth-identity/` |
-| `/mock-interview design` | System design — `03-system-design/` |
-| `/mock-interview distributed` | Distributed systems — `02-distributed-systems/` |
-| `/mock-interview backend` | Implementation/backend — `04-backend/` |
+| `/mock-interview coding` | Google-style coding round — `02-google-loop/03`–`19` (one problem, 45 min, in a plain doc) |
+| `/mock-interview design` | System design — `02-google-loop/31`–`40` |
+| `/mock-interview distributed` | Distributed systems — `02-google-loop/20`–`30` |
+| `/mock-interview security` | Role-related security knowledge — `02-google-loop/41` |
+| `/mock-interview googleyness` | Googleyness & Leadership — `02-google-loop/42` + `00-experience/` |
+| `/mock-interview backend` | Implementation/backend — `03-backend/` |
 | `/mock-interview behavioral` | Experience and hard questions — `00-experience/` |
 | `/mock-interview` (bare) | Ask which, or run a mixed screen |
 
