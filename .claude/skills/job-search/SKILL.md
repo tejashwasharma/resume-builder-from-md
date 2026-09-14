@@ -1,6 +1,6 @@
 ---
 name: job-search
-description: Ask which of the 9 configured countries to cover today (India via Naukri plus a company-directory sweep, LinkedIn for every selected country, Australia/New Zealand via Seek, Singapore via MyCareersFuture, and UK/Canada/Germany/Netherlands/UAE via Indeed), then search each selected one for postings matching the current resume's skills and the 7-8 year experience band, score every result by match % against the resume, screen every overseas role for visa-sponsorship signal (dropping those that state no sponsorship, flagging the rest), and append new (non-duplicate) postings to the matching per-country tab of the tracking Google Sheet, grouped under a date-heading row for the day's run. Use when the user asks to find matching jobs, run the job search, or invokes this skill directly (they run it daily in the evening).
+description: Ask which of the 7 configured countries to cover today (India via Naukri plus a company-directory sweep, LinkedIn for every selected country, Australia/New Zealand via Seek, Singapore via MyCareersFuture, and Germany/Netherlands/UAE via Indeed), then search each selected one for postings matching the current resume's skills and the 7-8 year experience band, score every result by match % against the resume, screen every overseas role for visa-sponsorship signal (dropping those that state no sponsorship, flagging the rest), and append new (non-duplicate) postings to the matching per-country tab of the tracking Google Sheet, grouped under a date-heading row for the day's run. Use when the user asks to find matching jobs, run the job search, or invokes this skill directly (they run it daily in the evening).
 ---
 
 # Job search
@@ -68,8 +68,6 @@ add its block to `config.local.json`.
     "Australia": { "tab": "Australia", "job_site": "seek", "base_domain": "https://www.seek.com.au", "currency": "AUD", "salary_period": "annual", "search_seeds": [...], "sponsorship": {...} },
     "New Zealand": { "tab": "New Zealand", "job_site": "seek", "base_domain": "https://www.seek.co.nz", "currency": "NZD", "salary_period": "annual", "search_seeds": [...], "sponsorship": {...} },
     "Singapore": { "tab": "Singapore", "job_site": "mycareersfuture", "base_domain": "https://www.mycareersfuture.gov.sg", "currency": "SGD", "salary_period": "monthly", "search_seeds": [...], "sponsorship": {...} },
-    "United Kingdom": { "tab": "United Kingdom", "job_site": "indeed", "base_domain": "https://uk.indeed.com", "currency": "GBP", "salary_period": "annual", "search_seeds": [...], "sponsorship": {...} },
-    "Canada": { "tab": "Canada", "job_site": "indeed", "base_domain": "https://ca.indeed.com", "currency": "CAD", "salary_period": "annual", "search_seeds": [...], "sponsorship": {...} },
     "Germany": { "tab": "Germany", "job_site": "indeed", "base_domain": "https://de.indeed.com", "currency": "EUR", "salary_period": "annual", "search_seeds": [...], "language_note": "listings render in German", "sponsorship": {...} },
     "Netherlands": { "tab": "Netherlands", "job_site": "indeed", "base_domain": "https://nl.indeed.com", "currency": "EUR", "salary_period": "annual", "search_seeds": [...], "sponsorship": {...} },
     "United Arab Emirates": { "tab": "United Arab Emirates", "job_site": "indeed", "base_domain": "https://ae.indeed.com", "currency": "AED", "salary_period": "annual", "search_seeds": [...], "sponsorship": { "default": "Yes", "exclude_if_stated_none": false } }
@@ -91,19 +89,19 @@ name — appended to that country's searches).
 
 ### 0. Ask which countries to run today
 
-Before doing any work, ask in chat which of the 9 configured countries
+Before doing any work, ask in chat which of the 7 configured countries
 today's run should cover. Use `AskUserQuestion` — but its options are
-capped at 4 per question, and there are 9 countries, so ask by group
+capped at 4 per question, and there are 7 countries, so ask by group
 rather than listing every country:
 
-- **All 9 countries (Recommended)** — the full daily sweep.
+- **All 7 countries (Recommended)** — the full daily sweep.
 - **India only** — the richest source (Naukri keyword search, the
   company-directory sweep, and LinkedIn) and the fastest to run alone.
-- **Overseas only** — Singapore, Australia, New Zealand, UK, Canada,
-  Germany, Netherlands, UAE; skip India for this run.
+- **Overseas only** — Singapore, Australia, New Zealand, Germany,
+  Netherlands, UAE; skip India for this run.
 - **Let me specify** — the user names the countries in their next message;
   match their answer against `config.local.json`'s `countries` keys
-  (case-insensitively, and accept "UK"/"UAE" as the obvious short forms)
+  (case-insensitively, and accept "UAE" as the obvious short form)
   and run only those. If a name they give doesn't match any configured
   country, say so and ask whether to add it (see **Setup**) rather than
   silently skipping it.
@@ -182,7 +180,7 @@ names — shaped per `job_site`:
   `<base_domain>/search?search=<space-separated-keywords, URL-encoded>&sortBy=relevancy&page=0`.
   Cards show a **`Monthly`** SGD salary and an explicit **`N Years Exp`**
   single figure — the cleanest experience signal of any of the sources.
-- **`indeed`** (UK, Canada, Germany, Netherlands, UAE — one platform, one
+- **`indeed`** (Germany, Netherlands, UAE — one platform, one
   URL shape, only the country subdomain and `l=` city differ):
   `<base_domain>/jobs?q=<plus-separated-keywords>&l=<city>`. Salary, when
   disclosed, shows directly on the card in the local currency, usually
@@ -330,8 +328,8 @@ days:
   - Listing explicitly offers it ("visa sponsorship available", "we sponsor",
     "relocation package", names the local route) → `Sponsorship = Yes`.
   - Listing is silent but the employer's legal name is on the country's
-    `sponsorship.register_url` list (UK licensed sponsors, NL IND recognised
-    sponsors) → `Sponsorship = Likely`; put "on <registry>" in Notes.
+    `sponsorship.register_url` list (NL IND recognised sponsors) →
+    `Sponsorship = Likely`; put "on <registry>" in Notes.
   - Listing is silent, no registry hit → `Sponsorship =` the country's
     `sponsorship.default` (`Unknown` everywhere except UAE's `Yes`). Still
     added — the user vets it.
@@ -409,8 +407,8 @@ step 8 report rather than writing L/M into the wrong place.
 
 `Salary/Pay` carries whatever period and currency that country's site uses
 natively — India annual INR ("LPA"), Australia/NZ usually annual AUD/NZD,
-Singapore **monthly** SGD, and UK/Canada/Germany/Netherlands/UAE annual
-GBP/CAD/EUR/EUR/AED via Indeed — don't convert or annualize across tabs,
+Singapore **monthly** SGD, and Germany/Netherlands/UAE annual
+EUR/EUR/AED via Indeed — don't convert or annualize across tabs,
 and don't compare a number in one tab to a number in another without
 converting first if the user asks for that.
 
