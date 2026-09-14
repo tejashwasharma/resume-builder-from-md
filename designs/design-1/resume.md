@@ -28,7 +28,7 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 ## Technical Skills
 
 - **Identity & Access Management:** RBAC | OAuth 2.0 | SAML 2.0 | OIDC | SSO | SCIM | JWT | MFA/TOTP | Zero Trust Architecture | Passport.js | OPA | Rego | Okta | Microsoft Entra ID | Ping Identity
-- **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices
+- **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ
 - **Frontend Engineering:** React.js | TypeScript | JavaScript | Redux | Redux Thunk/Saga | AngularJS | SCSS | Styled Components | Micro-Frontends
 - **Databases & Caching:** MongoDB | PostgreSQL | SQL | Redis | ioredis | Mongoose | Sequelize | Firebase (Authentication, Firestore, Storage, Hosting)
 - **Cloud & Infrastructure:** AWS EC2 | S3 | Lambda | CloudFront | CloudWatch | Route 53 | IAM | Nginx | Docker

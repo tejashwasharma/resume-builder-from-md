@@ -271,6 +271,19 @@ either way, the same fields are what's needed, and the detail view is
 worth opening when the card alone doesn't state years of experience (see
 step 5).
 
+**India location filter.** `countries.India.allowed_locations` in
+`config.local.json` restricts India rows to a fixed city list (Delhi,
+Gurugram/Gurgaon, Noida, Pune, Bangalore, Hyderabad, Mumbai, Ahmedabad) —
+apply it here, before scoring, on both Naukri and India's LinkedIn pass. A
+posting whose location doesn't match any allowed city (and isn't Remote) is
+dropped silently, the same way an overseas "no sponsorship" row is dropped
+in step 6 — not scored, not added, not mentioned individually in the step 8
+report beyond the aggregate count. Match case-insensitively and by
+substring so "Bengaluru" clears "Bangalore" and "Gurgaon"/"NCR" clears
+"Gurugram"; a multi-city posting passes if any listed city is allowed; a
+Remote posting with no city passes regardless of the filter. No other
+configured country has this restriction unless the user asks for one.
+
 ### 5. Filter to the experience band
 
 Every site gives experience in a different shape — normalize before
