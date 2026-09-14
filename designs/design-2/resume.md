@@ -22,7 +22,7 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 **Identity & Access Management:** RBAC, OAuth 2.0, SAML 2.0, OIDC, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
 {: .skill }
 
-**Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices
+**Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ
 {: .skill }
 
 **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
