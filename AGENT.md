@@ -96,3 +96,10 @@ forward.
 rebuild and republish its artifact first. If a design changed, rebuild its PDF
 first. A commit whose generated output doesn't match what changed is worse
 than one that lags behind by a build.
+
+**Never work inside `.claude/worktrees/`.** Those are ephemeral git worktree
+checkouts a session creates for itself and deletes when done — scratch space
+belonging to whichever session made it, not part of this project's tree.
+Don't read, edit, or fix files there, and don't reference paths under it once
+that session has ended. Work from the repo root instead (or, if this session
+is itself isolated in a worktree, from that worktree's own path).
