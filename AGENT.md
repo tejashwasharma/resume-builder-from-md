@@ -81,11 +81,7 @@ cd interview-prep && python3 build_site.py
 
 ## Version control
 
-Public GitHub repo (`resume-builder-from-md`). `origin` is
-`ssh://git@ssh.github.com:443/...` rather than the default port-22 URL,
-because port 22 is blocked on at least one network this has run on. Plain
-`git push` / `git pull` work as normal — don't "fix" the remote back to the
-`git@github.com:...` shorthand.
+Public GitHub repo (`resume-builder-from-md`)
 
 **Never commit or push without the user's explicit approval for that specific
 change.** Editing files and running builds/checks needs no sign-off; `git
