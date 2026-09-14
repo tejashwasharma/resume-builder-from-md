@@ -250,7 +250,7 @@ with another team? If no, the boundary is wrong.
    same local transaction, then relay it to the broker separately. That gives
    at-least-once delivery, so consumers must be idempotent.
 
-   See `02-distributed-systems/07-transactions-sagas.md`.
+   See `02-google-loop/26-idempotency-transactions.md`.
 
    </details>
 

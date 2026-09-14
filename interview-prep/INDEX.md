@@ -35,99 +35,129 @@ jump straight to a concept.
 | RBAC, ABAC, ReBAC, role explosion, multi-tenancy | ✅ [rbac abac](01-auth-identity/08-rbac-abac.md) |
 | OPA, Rego, policy evaluation, decision caching | ✅ [opa rego](01-auth-identity/09-opa-rego.md) |
 | Zero Trust, Okta, Entra ID, Ping Identity | ✅ [zero trust idps](01-auth-identity/10-zero-trust-idps.md) |
-| PassportJS, strategies, `session: false` | ✅ [frameworks](04-backend/02-frameworks.md) §Passport.js |
+| PassportJS, strategies, `session: false` | ✅ [frameworks](03-backend/02-frameworks.md) §Passport.js |
 
-## 02 — Distributed Systems *(all written)*
+## 02 — Google Loop *(the whole Senior SWE loop, zero to onsite)*
 
-| Topic / keyword | File |
-| --- | --- |
-| what is a distributed system, scale up vs out, stateless, beginner start | ✅ [start here](02-distributed-systems/00-start-here-what-and-why.md) |
-| which technology for which problem, Nginx, Envoy, Kubernetes, etcd, Prometheus, what to learn first | ✅ [the technology landscape](02-distributed-systems/00b-the-technology-landscape.md) |
-| failure modes, fallacies of distributed computing | ✅ [foundations and failure modes](02-distributed-systems/01-foundations-failure-modes.md) |
-| CAP, PACELC, consistency models, read-your-writes | ✅ [cap pacelc consistency](02-distributed-systems/02-cap-pacelc-consistency.md) |
-| replication, leader-follower, quorum, partitioning, sharding, hot keys | ✅ [replication and partitioning](02-distributed-systems/03-replication-partitioning.md) |
-| consensus, Raft, leader election, distributed locks, Redlock | ✅ [consensus and coordination](02-distributed-systems/04-consensus-coordination.md) |
-| clocks, ordering, idempotency, exactly-once, 2PC, sagas, outbox | ✅ [idempotency and transactions](02-distributed-systems/05-idempotency-transactions.md) |
-| queues, logs, Kafka, delivery semantics, backpressure, DLQ | ✅ [messaging and streams](02-distributed-systems/06-messaging-streams.md) |
-| caching, invalidation, stampede, thundering herd | ✅ [caching at scale](02-distributed-systems/07-caching-at-scale.md) |
-| timeouts, retries, circuit breakers, bulkheads, rate limiting, noisy neighbour | ✅ [resilience and rate limiting](02-distributed-systems/08-resilience-rate-limiting.md) |
+One self-contained part, numbered `01`–`43` in reading order: `01`–`02` the process and the roles,
+`03`–`19` coding, `20`–`30` distributed-systems foundations, `31`–`40` system
+design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 
-## 03 — System Design *(all written)*
+### A. The loop and the roles
 
 | Topic / keyword | File |
 | --- | --- |
-| what a design round is, one server → 10M users, beginner start | ✅ [start here](03-system-design/00-start-here-thinking-in-systems.md) |
-| Postgres vs Mongo vs Dynamo, Kafka vs SQS, REST vs gRPC, SSE vs WebSockets, monolith vs microservices | ✅ [the technology toolbox](03-system-design/00b-the-technology-toolbox.md) |
-| the method, how to run 45 minutes | ✅ [the method](03-system-design/01-the-method.md) |
-| estimation, capacity, back-of-envelope, RPS | ✅ [estimation](03-system-design/02-estimation.md) |
-| building blocks, reference architectures to draw | ✅ [building blocks](03-system-design/03-building-blocks.md) |
-| design auth service, 2–3B req/day | ✅ [design auth service](03-system-design/04-design-auth-service.md) |
-| design multi-tenant RBAC, SSO/SCIM, session revocation | ✅ [design rbac sso sessions](03-system-design/05-design-rbac-sso-sessions.md) |
-| URL shortener, notifications, feed, rate limiter | ✅ [classics](03-system-design/06-classics.md) |
+| stages, phone screen, onsite, hiring committee, team match, the four attributes (GCA, RRK, Leadership, Googleyness), L4 vs L5, what to ask the recruiter | ✅ [the loop](02-google-loop/01-the-loop.md) |
+| Safe Coding, Cloud & Third-Party Platform Security, the two JDs line by line, Singapore hub, questions to ask, team match | ✅ [the two roles](02-google-loop/02-the-two-roles.md) |
 
-## 04 — Backend *(all written)*
+### B. Coding — Big-O to 60+ solved problems
 
 | Topic / keyword | File |
 | --- | --- |
-| Node.js, event loop, async, memory, clustering | ✅ [nodejs internals](04-backend/01-nodejs-internals.md) |
-| Express, NestJS, Fastify, DI, middleware, guards, PassportJS | ✅ [frameworks](04-backend/02-frameworks.md) |
-| Golang, goroutines, channels ⚠️ RISK AREA | ✅ [golang](04-backend/03-golang.md) |
-| REST, GraphQL, gRPC, Protobuf, WebSockets, Socket.io | ✅ [api styles](04-backend/04-api-styles.md) |
-| microservices, boundaries, service mesh | ✅ [microservices](04-backend/05-microservices.md) |
+| the 45-minute shape, speaking script, what gets written down, L5 downgrades, JS in a plain doc, mock transcript | ✅ [the coding round](02-google-loop/03-coding-round-how-google-runs-it.md) |
+| patterns, complexity, auth-flavoured problems | ✅ [patterns and complexity](02-google-loop/04-patterns-and-complexity.md) |
+| how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](02-google-loop/05-choosing-the-approach.md) |
+| arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals | ✅ [arrays and two pointers](02-google-loop/06-arrays-and-two-pointers.md) |
+| strings, hashing, frequency counts, longest substring without repeats, minimum window, group anagrams, palindromes | ✅ [strings and hashing](02-google-loop/07-strings-and-hashing.md) |
+| linked lists, dummy head, fast/slow pointers, reverse in k-groups, merge k lists, random pointer copy, cycle start | ✅ [linked lists](02-google-loop/08-linked-lists.md) |
+| stacks, queues, monotonic stack/deque, largest rectangle, sliding window maximum, min stack, calculator | ✅ [stacks, queues, monotonic](02-google-loop/09-stacks-queues-monotonic.md) |
+| trees, BST, traversals, LCA, serialize/deserialize, validate BST, max path sum | ✅ [trees and BST](02-google-loop/10-trees-and-bst.md) |
+| heaps, priority queues, MinHeap from scratch, kth largest in stream, top-k frequent, median from stream, meeting rooms II | ✅ [heaps and top-k](02-google-loop/11-heaps-and-top-k.md) |
+| graphs, BFS vs DFS, topological sort, course schedule, union-find, word ladder, Dijkstra, network delay | ✅ [graphs](02-google-loop/12-graphs.md) |
+| matrices, grids, multi-source BFS, rotten oranges, rotate image, search 2-D matrix, grid DP | ✅ [matrices and grids](02-google-loop/13-matrices-and-grids.md) |
+| recursion, backtracking, subsets, permutations, combination sum, N-Queens, generate parentheses | ✅ [recursion and backtracking](02-google-loop/14-recursion-and-backtracking.md) |
+| dynamic programming, memoisation vs tabulation, house robber, coin change, LIS, LCS, edit distance, knapsack, word break | ✅ [dynamic programming](02-google-loop/15-dynamic-programming.md) |
+| binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR | ✅ [binary search and bits](02-google-loop/16-binary-search-and-bits.md) |
+| trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-google-loop/17-tries-intervals-and-design-structures.md) |
+| IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-google-loop/18-security-flavoured-problems.md) |
+| what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-google-loop/19-the-drill-plan.md) |
 
-## 05 — Data & Cache *(all written)*
-
-| Topic / keyword | File |
-| --- | --- |
-| MongoDB, PostgreSQL, SQL, indexes, transactions | ✅ [databases](05-data-cache/01-databases.md) |
-| Redis, ioredis, Mongoose, Sequelize, Firebase | ✅ [redis and orms](05-data-cache/02-redis-and-orms.md) |
-
-## 06 — Testing *(all written)*
-
-| Topic / keyword | File |
-| --- | --- |
-| Jest, TDD, coverage strategy, testing auth | ✅ [testing and coverage](06-testing/01-testing-and-coverage.md) |
-| test automation, CI stages, flaky tests, coverage gate | ✅ [testing and coverage](06-testing/01-testing-and-coverage.md) §Test automation |
-
-## 07 — Cloud & DevOps *(all written)*
+### C. Distributed-systems foundations
 
 | Topic / keyword | File |
 | --- | --- |
-| AWS EC2, S3, Lambda, CloudFront, IAM, Docker, Nginx, Jenkins, GoCD | ✅ [aws and containers](07-cloud-devops/01-aws-and-containers.md) |
-| CloudWatch, metrics, alarms, log retention, cardinality | ✅ [aws and containers](07-cloud-devops/01-aws-and-containers.md) §CloudWatch |
-| Route 53, DNS, alias records, TTL, failover routing | ✅ [aws and containers](07-cloud-devops/01-aws-and-containers.md) §Route 53 |
-| CI/CD, deployment strategies, migrations, observability, SLO | ✅ [cicd and observability](07-cloud-devops/02-cicd-and-observability.md) |
-| PM2, Postman, Newman, Jira, story points, velocity | ✅ [cicd and observability](07-cloud-devops/02-cicd-and-observability.md) §The day-to-day tooling |
+| what is a distributed system, scale up vs out, stateless, beginner start | ✅ [start here](02-google-loop/20-distributed-start-here.md) |
+| which technology for which problem, Nginx, Envoy, Kubernetes, etcd, Prometheus, what to learn first | ✅ [the technology landscape](02-google-loop/21-the-technology-landscape.md) |
+| failure modes, fallacies of distributed computing | ✅ [failure modes and fallacies](02-google-loop/22-failure-modes-and-fallacies.md) |
+| CAP, PACELC, consistency models, read-your-writes, Spanner, TrueTime | ✅ [consistency, CAP, PACELC](02-google-loop/23-consistency-cap-pacelc.md) |
+| replication, leader-follower, quorum, partitioning, sharding, hot keys, Bigtable | ✅ [replication and partitioning](02-google-loop/24-replication-partitioning.md) |
+| consensus, Raft, Paxos, Chubby, leader election, distributed locks, Redlock | ✅ [consensus and coordination](02-google-loop/25-consensus-coordination.md) |
+| clocks, ordering, idempotency, exactly-once, 2PC, sagas, outbox | ✅ [idempotency and transactions](02-google-loop/26-idempotency-transactions.md) |
+| queues, logs, Kafka, Pub/Sub, delivery semantics, backpressure, DLQ | ✅ [messaging and streams](02-google-loop/27-messaging-streams.md) |
+| caching, invalidation, stampede, thundering herd | ✅ [caching at scale](02-google-loop/28-caching-at-scale.md) |
+| timeouts, retries, circuit breakers, bulkheads, rate limiting, noisy neighbour | ✅ [resilience and rate limiting](02-google-loop/29-resilience-rate-limiting.md) |
+| SLI, SLO, error budget, golden signals, alerting, canary, rollback, incidents, postmortems, load shedding | ✅ [observability, SLOs, operations](02-google-loop/30-observability-slos-and-operations.md) |
 
-## 08 — AI Tooling *(all written)*
-
-| Topic / keyword | File |
-| --- | --- |
-| Claude Code, Copilot, AGENT.md/SKILLS.md, navigation index, playbooks | ✅ [ai engineering](08-ai-tooling/01-ai-engineering.md) |
-| context engineering, prompt caching, model routing | ✅ [ai engineering](08-ai-tooling/01-ai-engineering.md) |
-| AI code review, test generation, debugging, RCA, security analysis, GPT | ✅ [ai across the sdlc](08-ai-tooling/02-ai-across-the-sdlc.md) |
-
-## 09 — DSA & Coding Rounds *(all written)*
+### D. System design
 
 | Topic / keyword | File |
 | --- | --- |
-| patterns, complexity, auth-flavoured problems | ✅ [patterns and complexity](09-dsa-coding-rounds/01-patterns-and-complexity.md) |
-| how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](09-dsa-coding-rounds/02-choosing-the-approach.md) |
-| what to practise, ~60 problems by block, time-boxing, mistake log, exit tests, heap from scratch, the 25-problem mock pool | ✅ [the drill plan](09-dsa-coding-rounds/03-the-drill-plan.md) |
-| arrays, subarray vs subsequence, in-place read/write pointers, Kadane's, sort() comparator trap | ✅ [arrays](09-dsa-coding-rounds/04-arrays.md) |
-| strings, immutability, frequency counts, expand around centre, trie, Unicode traps | ✅ [strings](09-dsa-coding-rounds/05-strings.md) |
-| linked lists, dummy head, fast/slow pointers, reversal, Floyd's, LRU cache | ✅ [linked lists](09-dsa-coding-rounds/06-linked-lists.md) |
-| 2-D arrays, matrices, grids, spiral, rotate, flood fill, multi-source BFS, grid DP | ✅ [matrices](09-dsa-coding-rounds/07-matrices.md) |
-| stacks, queues, monotonic stack, monotonic deque, largest rectangle, amortised O(1) | ✅ [stacks and queues](09-dsa-coding-rounds/08-stacks-and-queues.md) |
-| trees, BST, traversals, return vs record, diameter, LCA, B+ tree indexes | ✅ [trees](09-dsa-coding-rounds/09-trees.md) |
-| heaps, priority queues, top-k, two-heap median, heapify, quickselect | ✅ [heaps](09-dsa-coding-rounds/10-heaps.md) |
-| graphs, BFS vs DFS, cycle detection, topological sort, union-find, Dijkstra, implicit graphs | ✅ [graphs](09-dsa-coding-rounds/11-graphs.md) |
+| what a design round is, one server → 10M users, beginner start | ✅ [start here](02-google-loop/31-design-round-start-here.md) |
+| the method, how to run 45 minutes, how Google runs the design round, the L5 bar | ✅ [the method](02-google-loop/32-the-method.md) |
+| estimation, capacity, back-of-envelope, RPS | ✅ [estimation](02-google-loop/33-estimation.md) |
+| Postgres vs Mongo vs Dynamo, Kafka vs SQS, REST vs gRPC, SSE vs WebSockets, monolith vs microservices | ✅ [the technology toolbox](02-google-loop/34-the-technology-toolbox.md) |
+| building blocks, reference architectures to draw | ✅ [building blocks](02-google-loop/35-building-blocks.md) |
+| Zanzibar, BeyondCorp, Borg, Spanner, Bigtable, Colossus, Pub/Sub, SLSA, Sigstore, in-toto, SBOM — what to cite and how | ✅ [Google-scale vocabulary](02-google-loop/36-google-scale-vocabulary.md) |
+| design auth service, 2–3B req/day, multi-region, revocation, key rotation | ✅ [design auth service](02-google-loop/37-design-auth-service.md) |
+| design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design rbac sso sessions](02-google-loop/38-design-rbac-sso-sessions.md) |
+| URL shortener, notifications, feed, rate limiter, key-value store, log pipeline, job scheduler | ✅ [classics](02-google-loop/39-design-classics.md) |
+| cloud security posture, third-party access inventory, supply-chain integrity, authorization service, secrets detection, package registry proxy, agentic-AI guardrails | ✅ [design security systems](02-google-loop/40-design-security-systems.md) |
 
-## 10 — Frontend *(all written)*
+### E. The security round, Googleyness & Leadership, the schedule
 
 | Topic / keyword | File |
 | --- | --- |
-| React, Hooks, Redux, TypeScript, SCSS, Styled-Components, micro-frontends | ✅ [react and typescript](10-frontend/01-react-and-typescript.md) |
+| threat modelling, STRIDE, CWE classes, secure by design, Safe Coding, memory safety, SLSA, Sigstore, SBOM, xz, cloud IAM misconfig, CSPM, third-party risk, prompt injection, OWASP LLM Top 10 | ✅ [security domain knowledge](02-google-loop/41-security-domain-knowledge.md) |
+| Googleyness, emergent leadership, ambiguity, new hub 0→1, mentoring, pushed back, failure, conflict, why Google | ✅ [Googleyness and leadership](02-google-loop/42-googleyness-and-leadership.md) |
+| week-by-week schedule, mock pool, day-before checklist, hiring committee wait, team match, offer basics | ✅ [the schedule](02-google-loop/43-the-schedule.md) |
+
+## 03 — Backend *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| Node.js, event loop, async, memory, clustering | ✅ [nodejs internals](03-backend/01-nodejs-internals.md) |
+| Express, NestJS, Fastify, DI, middleware, guards, PassportJS | ✅ [frameworks](03-backend/02-frameworks.md) |
+| Golang, goroutines, channels ⚠️ RISK AREA | ✅ [golang](03-backend/03-golang.md) |
+| REST, GraphQL, gRPC, Protobuf, WebSockets, Socket.io | ✅ [api styles](03-backend/04-api-styles.md) |
+| microservices, boundaries, service mesh | ✅ [microservices](03-backend/05-microservices.md) |
+
+## 04 — Data & Cache *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| MongoDB, PostgreSQL, SQL, indexes, transactions | ✅ [databases](04-data-cache/01-databases.md) |
+| Redis, ioredis, Mongoose, Sequelize, Firebase | ✅ [redis and orms](04-data-cache/02-redis-and-orms.md) |
+
+## 05 — Testing *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| Jest, TDD, coverage strategy, testing auth | ✅ [testing and coverage](05-testing/01-testing-and-coverage.md) |
+| test automation, CI stages, flaky tests, coverage gate | ✅ [testing and coverage](05-testing/01-testing-and-coverage.md) §Test automation |
+
+## 06 — Cloud & DevOps *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| AWS EC2, S3, Lambda, CloudFront, IAM, Docker, Nginx, Jenkins, GoCD | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) |
+| CloudWatch, metrics, alarms, log retention, cardinality | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §CloudWatch |
+| Route 53, DNS, alias records, TTL, failover routing | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §Route 53 |
+| CI/CD, deployment strategies, migrations, observability, SLO | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) |
+| PM2, Postman, Newman, Jira, story points, velocity | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) §The day-to-day tooling |
+
+## 07 — AI Tooling *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| Claude Code, Copilot, AGENT.md/SKILLS.md, navigation index, playbooks | ✅ [ai engineering](07-ai-tooling/01-ai-engineering.md) |
+| context engineering, prompt caching, model routing | ✅ [ai engineering](07-ai-tooling/01-ai-engineering.md) |
+| AI code review, test generation, debugging, RCA, security analysis, GPT | ✅ [ai across the sdlc](07-ai-tooling/02-ai-across-the-sdlc.md) |
+
+## 08 — Frontend *(all written)*
+
+| Topic / keyword | File |
+| --- | --- |
+| React, Hooks, Redux, TypeScript, SCSS, Styled-Components, micro-frontends | ✅ [react and typescript](08-frontend/01-react-and-typescript.md) |
 
 ## Cross-cutting
 

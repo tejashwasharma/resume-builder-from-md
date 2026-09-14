@@ -49,15 +49,13 @@ except ImportError:
 MODULES = [
     ("00-experience", "Experience"),
     ("01-auth-identity", "Auth & Identity"),
-    ("02-distributed-systems", "Distributed Systems"),
-    ("03-system-design", "System Design"),
-    ("04-backend", "Backend"),
-    ("05-data-cache", "Data & Cache"),
-    ("06-testing", "Testing"),
-    ("07-cloud-devops", "Cloud & DevOps"),
-    ("08-ai-tooling", "AI Tooling"),
-    ("09-dsa-coding-rounds", "DSA & Coding Rounds"),
-    ("10-frontend", "Frontend"),
+    ("02-google-loop", "Google Loop"),
+    ("03-backend", "Backend"),
+    ("04-data-cache", "Data & Cache"),
+    ("05-testing", "Testing"),
+    ("06-cloud-devops", "Cloud & DevOps"),
+    ("07-ai-tooling", "AI Tooling"),
+    ("08-frontend", "Frontend"),
 ]
 
 # Root-level pages, in sidebar order
@@ -246,11 +244,36 @@ def check_diagrams(path: Path, text: str) -> tuple[list[str], int]:
 # Markdown -> HTML
 # --------------------------------------------------------------------------
 
+MD_EXTENSIONS = ["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html", "toc"]
+
+# Answers live inside <details>. python-markdown leaves raw HTML blocks alone
+# unless told otherwise, so without markdown="1" every model answer rendered
+# as one unformatted run of text. Nested follow-up answers sit inside list
+# items, where md_in_html gives up; those get a second, dedented pass.
+NESTED_DETAILS = re.compile(
+    r'<details markdown="block">\s*(?P<summary><summary>.*?</summary>)(?P<body>.*?)</details>',
+    re.S,
+)
+
+
+def render_nested_details(html: str) -> str:
+    def render(m: re.Match) -> str:
+        body = m.group("body")
+        lines = body.splitlines()
+        indent = min(
+            (len(l) - len(l.lstrip()) for l in lines if l.strip()), default=0
+        )
+        body = "\n".join(l[indent:] for l in lines)
+        inner = md_lib.markdown(unescape(body), extensions=MD_EXTENSIONS)
+        return f"<details>{m.group('summary')}{inner}</details>"
+
+    return NESTED_DETAILS.sub(render, html)
+
+
 def render_html(text: str, path: Path, known: dict[str, str]) -> str:
-    html = md_lib.markdown(
-        text,
-        extensions=["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html", "toc"],
-    )
+    text = text.replace("<details>", '<details markdown="1">')
+    html = md_lib.markdown(text, extensions=MD_EXTENSIONS)
+    html = render_nested_details(html)
 
     # Rewrite links to other .md files into in-page anchors. A link whose
     # target isn't in the site (not written yet) loses its href but keeps its

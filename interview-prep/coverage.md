@@ -5,71 +5,88 @@ Skills line, and whether this repo teaches it.
 
 | Skill line | Technology | Covered |
 | --- | --- | --- |
-| Auth & Identity | Identity and Access Management | ✅ |
-| Auth & Identity | Authentication & Authorization | ✅ |
-| Auth & Identity | OAuth 2.0 | ✅ |
-| Auth & Identity | SAML 2.0 | ✅ |
-| Auth & Identity | OpenID Connect | ✅ |
-| Auth & Identity | Single Sign-On | ✅ |
-| Auth & Identity | SCIM | ✅ |
-| Auth & Identity | JWT | ✅ |
-| Auth & Identity | Multi-Factor Authentication | ✅ |
-| Auth & Identity | Role-Based Access Control | ✅ |
-| Auth & Identity | Rego/OPA | ✅ |
-| Auth & Identity | Zero Trust Architecture | ✅ |
-| Auth & Identity | Okta | ✅ |
-| Auth & Identity | Microsoft Entra ID | ✅ |
-| Auth & Identity | Ping Identity | ✅ |
-| Backend | Node.js | ✅ |
-| Backend | NestJS | ✅ |
-| Backend | Express | ✅ |
-| Backend | Fastify | ✅ |
-| Backend | Golang | ✅ |
-| Backend | REST APIs | ✅ |
-| Backend | GraphQL | ✅ |
-| Backend | gRPC | ✅ |
-| Backend | Protobuf | ✅ |
-| Backend | Socket.io | ✅ |
-| Backend | Microservices | ✅ |
-| Data & Cache | MongoDB | ✅ |
-| Data & Cache | PostgreSQL | ✅ |
-| Data & Cache | SQL | ✅ |
-| Data & Cache | Redis | ✅ |
-| Data & Cache | ioredis | ✅ |
-| Data & Cache | Mongoose | ✅ |
-| Data & Cache | Sequelize | ✅ |
-| Data & Cache | Firebase | ✅ |
-| Data & Cache | Firestore | ✅ |
-| Data & Cache | Storage | ✅ |
-| Data & Cache | Hosting | ✅ |
-| Frontend | React | ✅ |
-| Frontend | Redux | ✅ |
-| Frontend | TypeScript | ✅ |
-| Frontend | JavaScript | ✅ |
-| Frontend | SCSS | ✅ |
-| Frontend | Styled-Components | ✅ |
-| Cloud / DevOps | AWS | ✅ |
-| Cloud / DevOps | S3 | ✅ |
-| Cloud / DevOps | Lambda | ✅ |
-| Cloud / DevOps | CloudFront | ✅ |
-| Cloud / DevOps | IAM | ✅ |
-| Cloud / DevOps | Docker | ✅ |
-| Cloud / DevOps | Nginx | ✅ |
-| Cloud / DevOps | Jenkins | ✅ |
-| Cloud / DevOps | GoCD | ✅ |
-| Cloud / DevOps | Datadog | ✅ |
-| Cloud / DevOps | CI/CD | ✅ |
-| AI Tooling | Claude Code | ✅ |
-| AI Tooling | GitHub Copilot | ✅ |
-| AI Tooling | AGENT.md/SKILLS.md & agent-navigation docs | ✅ |
-| AI Tooling | prompt/playbook libraries | ✅ |
-| AI Tooling | prompt caching & model routing | ✅ |
-| Testing | Jest | ✅ |
-| Testing | TDD | ✅ |
-| Testing | sustained 85%+ coverage | ✅ |
+| Identity & Access Management | RBAC | ✅ |
+| Identity & Access Management | OAuth 2.0 | ✅ |
+| Identity & Access Management | SAML 2.0 | ✅ |
+| Identity & Access Management | OIDC | ✅ |
+| Identity & Access Management | SSO | ✅ |
+| Identity & Access Management | SCIM | ✅ |
+| Identity & Access Management | JWT | ✅ |
+| Identity & Access Management | MFA/TOTP | ✅ |
+| Identity & Access Management | Zero Trust Architecture | ✅ |
+| Identity & Access Management | Passport.js | ✅ |
+| Identity & Access Management | OPA | ✅ |
+| Identity & Access Management | Rego | ✅ |
+| Identity & Access Management | Okta | ✅ |
+| Identity & Access Management | Microsoft Entra ID | ✅ |
+| Identity & Access Management | Ping Identity | ✅ |
+| Backend Engineering | Node.js | ✅ |
+| Backend Engineering | NestJS | ✅ |
+| Backend Engineering | Express.js | ✅ |
+| Backend Engineering | Fastify | ✅ |
+| Backend Engineering | Golang | ✅ |
+| Backend Engineering | REST APIs | ✅ |
+| Backend Engineering | GraphQL | ✅ |
+| Backend Engineering | gRPC | ✅ |
+| Backend Engineering | Protobuf | ✅ |
+| Backend Engineering | Socket.IO | ✅ |
+| Backend Engineering | Microservices | ✅ |
+| Frontend Engineering | React.js | ✅ |
+| Frontend Engineering | TypeScript | ✅ |
+| Frontend Engineering | JavaScript | ✅ |
+| Frontend Engineering | Redux | ✅ |
+| Frontend Engineering | Redux Thunk/Saga | ✅ |
+| Frontend Engineering | AngularJS | ✅ |
+| Frontend Engineering | SCSS | ✅ |
+| Frontend Engineering | Styled Components | ✅ |
+| Frontend Engineering | Micro-Frontends | ✅ |
+| Databases & Caching | MongoDB | ✅ |
+| Databases & Caching | PostgreSQL | ✅ |
+| Databases & Caching | SQL | ✅ |
+| Databases & Caching | Redis | ✅ |
+| Databases & Caching | ioredis | ✅ |
+| Databases & Caching | Mongoose | ✅ |
+| Databases & Caching | Sequelize | ✅ |
+| Databases & Caching | Firebase | ✅ |
+| Databases & Caching | Firestore | ✅ |
+| Databases & Caching | Storage | ✅ |
+| Databases & Caching | Hosting | ✅ |
+| Cloud & Infrastructure | AWS EC2 | ✅ |
+| Cloud & Infrastructure | S3 | ✅ |
+| Cloud & Infrastructure | Lambda | ✅ |
+| Cloud & Infrastructure | CloudFront | ✅ |
+| Cloud & Infrastructure | CloudWatch | ✅ |
+| Cloud & Infrastructure | Route 53 | ✅ |
+| Cloud & Infrastructure | IAM | ✅ |
+| Cloud & Infrastructure | Nginx | ✅ |
+| Cloud & Infrastructure | Docker | ✅ |
+| Testing & Quality | Jest | ✅ |
+| Testing & Quality | Unit Testing | ✅ |
+| Testing & Quality | Integration Testing | ✅ |
+| Testing & Quality | E2E Testing | ✅ |
+| Testing & Quality | TDD | ✅ |
+| Testing & Quality | Test Automation | ✅ |
+| Testing & Quality | 85%+ Test Coverage | ✅ |
+| DevOps & Observability | Jenkins | ✅ |
+| DevOps & Observability | GoCD | ✅ |
+| DevOps & Observability | PM2 | ✅ |
+| DevOps & Observability | Datadog | ✅ |
+| DevOps & Observability | Observe | ✅ |
+| DevOps & Observability | CI/CD | ✅ |
+| DevOps & Observability | Postman | ✅ |
+| DevOps & Observability | Jira | ✅ |
+| AI-Augmented Engineering | Claude Code | ✅ |
+| AI-Augmented Engineering | GPT | ✅ |
+| AI-Augmented Engineering | GitHub Copilot | ✅ |
+| AI-Augmented Engineering | AI-Assisted Code Review | ✅ |
+| AI-Augmented Engineering | AI Test Generation | ✅ |
+| AI-Augmented Engineering | AI-Assisted Debugging | ✅ |
+| AI-Augmented Engineering | AI-Driven RCA | ✅ |
+| AI-Augmented Engineering | AI Security Analysis | ✅ |
+| AI-Augmented Engineering | AGENT.md / SKILLS.md Agent-Navigation Documentation | ✅ |
+| AI-Augmented Engineering | Prompt & Playbook Libraries | ✅ |
+| AI-Augmented Engineering | Prompt Caching & Model Routing | ✅ |
 
 ## Expected at senior level, not on the resume
 
-- ✅ **Distributed systems** — `02-distributed-systems/` (8 files)
-- ✅ **System design** — `03-system-design/` (6 files)
-- ✅ **DSA / coding rounds** — `09-dsa-coding-rounds/` (1 files)
+- ✅ **Google loop (coding, distributed, design)** — `02-google-loop/` (43 files)
