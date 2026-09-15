@@ -262,14 +262,18 @@ returns what's rendered near the current scroll position. To get real
 card wanted. Scrolling too far in one jump skips the cards in between —
 that cost several good candidates on the first (India-only) run.
 
-Seek renders job details in a side panel on click rather than a separate
-page — the listing card itself already carries title, company, location,
-and (when disclosed) salary, which is enough; no need to click into each
-one just to extract the same fields again. Indeed does the same for most
-results but sometimes opens a full page instead depending on the posting —
-either way, the same fields are what's needed, and the detail view is
-worth opening when the card alone doesn't state years of experience (see
-step 5).
+Seek renders job details in a side panel on click; Indeed does the same
+for most results but sometimes opens a full page instead depending on the
+posting. **Open that detail view for every candidate that clears an
+initial title/tag relevance check, before scoring it** — not only when the
+card looks borderline. The card is a teaser; the full body is where the
+real skill list and the real years-of-experience requirement live, and
+both feed steps 5 and 6. Treat the card-only fields as a fallback of last
+resort, not the default path. LinkedIn needs the same treatment: click
+into the job (or read the `currentJobId` detail pane already loaded by the
+search) and pull its full body with `get_page_text` — a candidate scored
+from the search-results card alone, with a "title-only, full JD not
+rendered" note, is the exception to flag, not a normal outcome of a run.
 
 **India location filter.** `countries.India.allowed_locations` in
 `config.local.json` restricts India rows to a fixed city list (Delhi,
@@ -286,32 +290,46 @@ configured country has this restriction unless the user asks for one.
 
 ### 5. Filter to the experience band
 
-Every site gives experience in a different shape — normalize before
-comparing to `experience_band_years` (default `[7, 8]`):
+Every site gives experience in a different shape. Compare the **resume's
+own stated experience figure** (read fresh in step 1 — e.g. "over 7 years"
+→ 7; use `target_experience_years` only if the resume itself is silent)
+against whatever the *posting's full text* says, not just the card:
 
-- **Naukri**: an explicit range ("7-12 Yrs"). Keep if it overlaps the band:
-  `posting_min <= 8 AND posting_max >= 7`.
-- **MyCareersFuture**: an explicit single figure ("7 Years Exp"). Keep if
-  it falls within the band, or within one year of either edge.
-- **Seek and Indeed**: usually **no explicit figure** on the card — check
-  the full posting text (Indeed's detail pane sometimes states "5+ years"
-  in the body even when the card doesn't) before falling back to the
-  seniority word in the title as a proxy: "Senior", "Lead", "Principal",
-  "Staff", "Architect" line up with 7-8 years; a bare, unqualified title or
-  "Junior"/"Graduate" does not. Note in that row's Notes whenever the
-  experience match is title-inferred rather than stated, so the user knows
-  to verify it against the actual posting before applying.
-- **LinkedIn**: the `f_E=4` search filter already restricts results to
-  "Mid-Senior level" before extraction, so there's no separate pass-band
-  check the way there is for the other sites — every result cleared it by
-  construction. It's a coarser signal than Naukri's or MyCareersFuture's
-  explicit ranges though (the tier covers more than just 7-8 years), so
-  still check the title for an explicit "(N+ years)" and the job
-  description body for a stated figure where the score is borderline.
+- **Naukri**: the card's explicit range ("7-12 Yrs") is reliable on its
+  own — no need to open the posting just for this. Keep when the resume's
+  figure falls inside it: `posting_min <= resume_years <= posting_max`
+  (equivalent to the `experience_band_years` `[7, 8]` overlap check when
+  the resume figure is itself a small range).
+- **MyCareersFuture**: the card's explicit single figure ("7 Years Exp")
+  is reliable on its own. Keep when it equals the resume's figure, or is
+  within one year either side.
+- **Seek and Indeed**: the card usually shows no figure at all — this is
+  exactly why step 4 requires opening the full posting body first. Search
+  that text for an explicit phrase ("5+ years", "7-10 years' experience",
+  "minimum 8 years in backend development", "3-5 yrs") and use it as the
+  range to check against the resume's figure. Only when the body itself
+  states no figure does the title's seniority word become the fallback
+  signal: "Senior", "Lead", "Principal", "Staff", "Architect" line up with
+  7-8 years; a bare, unqualified title or "Junior"/"Graduate" does not.
+  Record in that row's Notes which case applied — e.g. "JD states 7-10
+  yrs" vs. "title-inferred, JD stated no figure" — so the user can see how
+  firm the match is before applying.
+- **LinkedIn**: the `f_E=4` search filter restricts results to "Mid-Senior
+  level" at search time, but that tier is a coarse pre-filter, not a
+  substitute for reading the posting — it covers a wider span than just
+  7-8 years. Read the full description (see step 4) for a stated range or
+  figure and check it the same way as Seek/Indeed. Only when LinkedIn's
+  own posting states nothing does the tier + title stand in as a weaker
+  signal, and that should be flagged in Notes as tier-only so it reads
+  differently from a posting with a real stated range.
 
-A range or figure that misses the band by about a year (e.g. "9-14",
-"5 Years Exp") is a near-miss: include it only if the match score is
-otherwise strong (≥70%) and say so in Notes.
+A stated range that misses the resume's figure by about a year (e.g.
+"9-14" against 7, "5 Years Exp" against 7) is a near-miss: include it only
+if the match score is otherwise strong (≥70%) and say so in Notes. A
+posting whose full text states a range that doesn't reach the resume's
+figure at all (e.g. "2-4 years" against 7) is excluded regardless of stack
+overlap — a strong tech-stack match doesn't buy back a seniority gap that
+large.
 
 ### 6. Score match %
 
@@ -319,9 +337,12 @@ Same rubric everywhere, so scores stay comparable across countries and
 days:
 
 - **Stack overlap** (heaviest weight) — literal token overlap between the
-  posting's tags/description and the resume's Technical Skills. Node.js/
-  NestJS/TypeScript and the IAM protocols (OAuth/SAML/OIDC/SCIM/SSO/RBAC)
-  count double; generic tags ("Backend", "Automation", "Coding") count once.
+  resume's Technical Skills and what the posting actually names, drawn
+  from the **full description body read in step 4**, not just the card's
+  tag chips — a card's tags are often generic ("Backend", "Coding") even
+  when the body names the real stack. Node.js/NestJS/TypeScript and the
+  IAM protocols (OAuth/SAML/OIDC/SCIM/SSO/RBAC) count double; generic tags
+  count once.
 - **Role fit** — does the title match what the objective line targets
   (Architect, Lead, Senior/Staff Engineer, Manager)? A plain "Developer"
   title with no seniority marker docks a little; a pure "Administrator" /
@@ -456,10 +477,12 @@ false.
   contains characters that look like query-string noise. Extract only the
   specific fields needed rather than dumping the whole object, and strip
   `?...` off any URL before printing it.
-- **Seek and Indeed rarely state years of experience explicitly** — the
-  step 5 seniority-word proxy is the best available signal there, and it's
-  weaker than Naukri's or MyCareersFuture's explicit figures. Say so in
-  Notes on every such row so the user doesn't read it as a stated
+- **Seek and Indeed cards rarely state years of experience, but their full
+  posting bodies often do** — that's why step 4 requires opening the
+  detail view for every candidate rather than scoring off the card. The
+  step 5 seniority-word proxy is only the fallback for the postings whose
+  body is genuinely silent too, and it's weaker than a stated figure. Say
+  so in Notes on every such row so the user doesn't read it as a stated
   requirement.
 - **Indeed shows a cookie-consent banner and sometimes a Google sign-in
   overlay** the first time a country subdomain loads in a session —
