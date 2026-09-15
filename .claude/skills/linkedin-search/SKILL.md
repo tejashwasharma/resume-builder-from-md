@@ -124,14 +124,31 @@ Seed `window.__seen = new Set([...])` from the ledger before the sweep.
 - The card anchors carry no usable href. Build the canonical URL from the
   id: `https://www.linkedin.com/jobs/view/<id>/`.
 
-Then cut the pool down by title before spending fetches on the gate:
+Then cut the pool down by title before spending fetches on the gate. This
+title filter is a **hard gate**, same rule and same allowlist as the
+`job-search` skill's `title_keywords` (keep them in sync if either
+changes) — a title with none of the allowed role-noun phrases is dropped
+here regardless of stack overlap, seniority word, or applicant count:
 
 ```js
-const bad   = /intern|fresher|trainee|graduate|associate engineer|sde[ -]?1\b|recruit|sales|marketing|qa engineer|test engineer|support|manual/i;
-const good  = /senior|staff|principal|lead|architect|sr\.?\s|technical lead|member of technical staff/i;
+const bad   = /intern|fresher|trainee|graduate|associate engineer|sde[ -]?1\b|recruit|sales|marketing|qa engineer|test engineer|support|manual|architect|\blead\b|principal|director|\bmanager\b|head of|vice president|\bvp\b|consultant/i;
+const good  = /software engineer|backend engineer|back[ -]?end engineer|full ?stack engineer|software developer|backend developer|back[ -]?end developer|full ?stack developer|node\.?js developer|iam engineer|security engineer|platform engineer/i;
 const stack = /node|nest|backend|full ?stack|platform|micro ?service|api|typescript|javascript|identity|iam|auth|saas|distributed|cloud/i;
 const candidates = pool.filter(j => !bad.test(j.title) && good.test(j.title) && stack.test(j.title + ' ' + j.co));
 ```
+
+`good` is the allowlist itself — Engineer/Developer IC titles plus the
+IAM-specific engineer variants (IAM/Security/Platform Engineer) — so a
+seniority prefix like "Senior"/"Staff"/"Sr." still passes as long as the
+role noun after it is one of those phrases ("Senior Backend Engineer"
+matches on "backend engineer"), but "Principal Engineer" or "Staff
+Engineer" alone does not, since neither carries an allowed role-noun
+phrase. `bad` now also excludes Architect/Lead/Principal/Director/
+Manager/VP/Consultant titles outright, even when `good` would otherwise
+match on a stack keyword elsewhere in the string — this replaces the old
+`good` regex, which matched on seniority words alone (`senior|staff|
+principal|lead|architect|...`) and let the whole Architect/Lead/Manager
+track through; that's no longer the policy.
 
 The logged-in UI (`/jobs/search/?...&f_E=4,5&f_WT=2` plus a lazy-scroll
 scrape) still works and is the fallback if the guest endpoint starts
@@ -247,7 +264,9 @@ Applicants | Link. The requirement and applicant columns are
 mandatory — they are the evidence behind the gate and behind the Shortlist
 %, which is otherwise just an assertion. Follow with two or three lines per top pick on
 **why it fits** and the **one reservation**, then a short list of what the
-gate dropped and why (`Wingify — 6+ years`), and the queries used.
+gates dropped and why — both the step 3 experience gate (`Wingify — 6+
+years`) and the step 2 title filter (`Acme Corp — Solution Architect,
+title filter`) — and the queries used.
 
 **Then append every reported job id to `seen_jobs.local.json`** (merge into
 the existing `ids`, keep it sorted, bump `runs` and `last_run`). Do this
