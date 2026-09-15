@@ -11,7 +11,8 @@ today (step 0 asks in chat before anything else runs). Reads
 to match against) and this skill's local files every run — never from
 memory:
 
-- `config.local.json` — thresholds, the tracking sheet's URL, one top-level
+- `config.local.json` — thresholds, the tracking sheet's URL, a top-level
+  `title_keywords` allowlist (see step 4's title filter), one top-level
   `linkedin` block (the cross-country LinkedIn source), and one block per
   country (its sheet tab name, job site, starter search queries, and — for
   every country except India — a `sponsorship` block: registry URL, default
@@ -54,6 +55,7 @@ add its block to `config.local.json`.
   "experience_band_years": [7, 8],
   "min_match_percent": 50,
   "max_new_rows_per_run": 15,
+  "title_keywords": ["software engineer", "backend engineer", "fullstack engineer", "full stack engineer", "software developer", "backend developer", "full stack developer", "node.js developer", "node js developer", "iam engineer", "security engineer", "platform engineer"],
   "linkedin": {
     "url_pattern": "https://www.linkedin.com/jobs/search/?keywords=<url-encoded-keywords>&location=<location>&f_E=4",
     "remote_url_pattern": ".../search/?keywords=...&location=<location>&f_E=4&f_WT=2",
@@ -76,6 +78,20 @@ add its block to `config.local.json`.
   }
 }
 ```
+
+`title_keywords` is the global title allowlist enforced in step 4 — a
+case-insensitive substring match against the posting's title, applied
+across every country and source. It covers the Engineer/Developer IC
+track plus the IAM-specific engineer variants your resume specializes in
+(IAM/Security/Platform Engineer); it deliberately does **not** include
+"architect", "lead", "manager", "principal", "consultant", or "director"
+— a posting whose title carries none of the listed phrases is dropped in
+step 4 regardless of stack overlap or match score, even a strong IAM/
+Node.js match with an Architect or Lead-track title. Edit this list
+directly in `config.local.json` if the target titles change; don't infer
+it fresh from the resume's objective line the way `search_seeds` are
+re-derived, since the objective line still names Architect/Lead/Manager
+tracks this filter intentionally excludes.
 
 Each `sponsorship` block: `default` (starting status when the listing is
 silent — `Unknown` everywhere except UAE's `Yes`), `exclude_if_stated_none`
@@ -140,9 +156,12 @@ For each selected country's block, **re-derive the query keywords from the
 resume read in step 1** rather than trusting `search_seeds` verbatim — the
 seeds are proven query shapes from the first run, and the skill set they
 were built from drifts (tailoring, a new cert, a dropped claim). Construct 3-4
-searches spanning the IAM/identity specialty, the core backend stack
-(Node.js/NestJS), and the Architect/Manager/Lead track the objective line
-names — shaped per `job_site`:
+searches spanning the IAM/identity specialty and the core backend stack
+(Node.js/NestJS) — don't bother building a search leg around the
+Architect/Manager/Lead track the objective line names; step 4's
+`title_keywords` filter drops those titles regardless of how a search was
+built to find them, so a query aimed at that track alone will still get
+filtered out — shaped per `job_site`:
 
 - **`naukri`** (India): `https://www.naukri.com/<hyphenated-keywords>-jobs`
   (or `-jobs-in-india`). Plus **3b, the company-directory sweep** below —
@@ -262,18 +281,32 @@ returns what's rendered near the current scroll position. To get real
 card wanted. Scrolling too far in one jump skips the cards in between —
 that cost several good candidates on the first (India-only) run.
 
+**Title filter** (the "initial relevance check" every candidate must clear
+before anything else in this step) — keep only postings whose title
+contains one of `config.local.json`'s `title_keywords`, case-insensitive,
+anywhere in the string. This runs first, on the card title alone, across
+every country and source, and it's a hard gate: a title with none of the
+allowed phrases is dropped here and never reaches the detail-view read,
+step 5's experience check, or step 6's scoring — no stack overlap or
+sponsorship signal buys it back in. Watch for two things: a card title
+truncated in the DOM (read the full string via `read_page`, not a
+visually-clipped label) before deciding it doesn't match, and a title that
+front-loads a level or team name before the role ("Member of Technical
+Staff I - Architect", "IAM Principal Consultant") — match against the
+whole title, not just its first word or two.
+
 Seek renders job details in a side panel on click; Indeed does the same
 for most results but sometimes opens a full page instead depending on the
-posting. **Open that detail view for every candidate that clears an
-initial title/tag relevance check, before scoring it** — not only when the
-card looks borderline. The card is a teaser; the full body is where the
-real skill list and the real years-of-experience requirement live, and
-both feed steps 5 and 6. Treat the card-only fields as a fallback of last
-resort, not the default path. LinkedIn needs the same treatment: click
-into the job (or read the `currentJobId` detail pane already loaded by the
-search) and pull its full body with `get_page_text` — a candidate scored
-from the search-results card alone, with a "title-only, full JD not
-rendered" note, is the exception to flag, not a normal outcome of a run.
+posting. **Open that detail view for every candidate that clears the
+title filter, before scoring it** — not only when the card looks
+borderline. The card is a teaser; the full body is where the real skill
+list and the real years-of-experience requirement live, and both feed
+steps 5 and 6. Treat the card-only fields as a fallback of last resort,
+not the default path. LinkedIn needs the same treatment: click into the
+job (or read the `currentJobId` detail pane already loaded by the search)
+and pull its full body with `get_page_text` — a candidate scored from the
+search-results card alone, with a "title-only, full JD not rendered" note,
+is the exception to flag, not a normal outcome of a run.
 
 **India location filter.** `countries.India.allowed_locations` in
 `config.local.json` restricts India rows to a fixed city list (Delhi,
@@ -343,11 +376,15 @@ days:
   when the body names the real stack. Node.js/NestJS/TypeScript and the
   IAM protocols (OAuth/SAML/OIDC/SCIM/SSO/RBAC) count double; generic tags
   count once.
-- **Role fit** — does the title match what the objective line targets
-  (Architect, Lead, Senior/Staff Engineer, Manager)? A plain "Developer"
-  title with no seniority marker docks a little; a pure "Administrator" /
-  "Support Engineer" / "Ops" title docks more, even with strong
-  protocol-keyword overlap.
+- **Role fit** — every candidate scored here already cleared step 4's
+  `title_keywords` filter, so this is a finer distinction within that
+  allowed set, not a check against the objective line's Architect/Lead/
+  Manager track (those titles never reach scoring). A senior-marked title
+  ("Senior Software Engineer", "Sr. Backend Engineer") scores highest; a
+  plain "Developer"/"Engineer" title with no seniority marker docks a
+  little; a title that's really an operations/support role wearing an
+  Engineer label ("Support Engineer", "Ops Engineer") docks more, even
+  with strong protocol-keyword overlap.
 - **Domain fit bonus** — IAM/RBAC/OAuth/SSO/SCIM specifically.
 - **Seniority fit** — see step 5's per-site normalization; a figure or
   title centered near 7-8 scores higher than one that only brushes the
@@ -418,8 +455,9 @@ Which countries ran today (from step 0) and which were skipped — one line
 is enough for the skipped ones. Then, per country that ran: how many new
 postings were added (split by source where there is more than one, e.g.
 India's keyword search vs. company sweep vs. LinkedIn), how many were found
-but already in the ledger, below threshold, or (overseas) dropped for
-stating no sponsorship, and the top 1-2 new entries by match %. For
+but already in the ledger, below threshold, dropped by the step 4 title
+filter (Architect/Lead/Manager-track titles and similar), or (overseas)
+dropped for stating no sponsorship, and the top 1-2 new entries by match %. For
 overseas countries, a one-line sponsorship breakdown of what was added
 (`N Yes / N Likely / N Unknown`). Overall: which India company-directory
 page was swept (for continuity across runs), whether LinkedIn ran or was
