@@ -150,6 +150,24 @@ match on a stack keyword elsewhere in the string — this replaces the old
 principal|lead|architect|...`) and let the whole Architect/Lead/Manager
 track through; that's no longer the policy.
 
+**Backend-major check (manual, on top of the regex above):** the `stack`
+regex only confirms *some* backend/JS-adjacent keyword is present — it
+can't tell which language is actually primary. The resume's backend
+major is **Node.js / TypeScript / NestJS**, full stop, regardless of what
+else the resume lists (Golang included — see the Node.js→Golang service
+migration bullet in design-1/resume.md; that makes Golang a real
+secondary skill, never the primary one for job matching). After the
+regex gate, read each surviving candidate's title by hand: a posting
+whose backend major is Golang-only, Python-only, or Java-only — with no
+Node.js/TypeScript/NestJS named — gets dropped even though it cleared the
+regex (e.g. "Senior Software Engineer - Golang - API Gateway" at
+FactSet, or "...Java Backend With Kafka" at CGI). A posting naming
+Node/TS/NestJS *alongside* another language (e.g. "must-haves: NodeJS,
+Java, MySQL, MongoDB, Docker") is kept. See `config.local.json`'s
+`stack_policy` for the full rationale and drop examples — that file is
+gitignored and has been lost once already, so this paragraph is the
+durable copy of the rule.
+
 The logged-in UI (`/jobs/search/?...&f_E=4,5&f_WT=2` plus a lazy-scroll
 scrape) still works and is the fallback if the guest endpoint starts
 returning empty. Its filters — `f_TPR=r86400`, `f_E=4,5`, `f_WT=2` — are
@@ -183,22 +201,33 @@ why this beats opening tabs):
 window.__years = async (jobs) => {
   const res = [];
   for (const j of jobs) {
-    let mins = [], raw = 'none', wt = '';
+    let mins = [], raw = 'none', wt = '', closed = false;
     try {
       const t = await (await fetch('https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/' + j.id, { credentials: 'omit' })).text();
       const txt = t.replace(/<[^>]*>/g, ' ').replace(/&[a-z#0-9]+;/g, ' ').replace(/\s+/g, ' ');
+      closed = /no longer accepting applications/i.test(txt);
       const hits = [...txt.matchAll(/\b(\d{1,2})\s*(?:\+|-|–|to)?\s*(\d{0,2})\s*\+?\s*(?:years?|yrs?)\b(?![^.]{0,25}(?:ago|founded|old|history))/gi)];
       hits.forEach(m => { const n = parseInt(m[1]); if (n >= 1 && n <= 25) mins.push(n); });
       raw = hits.slice(0, 2).map(m => m[0].trim()).join(' / ') || 'none';
       wt = /remote/i.test(txt.slice(0, 3000)) ? 'Remote' : (/hybrid/i.test(txt.slice(0, 3000)) ? 'Hybrid' : '');
     } catch (e) { raw = 'ERR'; }
-    res.push({ ...j, min: mins.length ? Math.min(...mins) : null, raw, wt });
+    res.push({ ...j, min: mins.length ? Math.min(...mins) : null, raw, wt, closed });
   }
   return res;
 };
 const checked = await window.__years(candidates);
-checked.filter(j => j.min === null || (j.min >= 4 && j.min <= 9))
+checked.filter(j => !j.closed && (j.min === null || (j.min >= 4 && j.min <= 9)))
 ```
+
+**Closed postings:** `f_TPR=r86400` filters by post date, not by whether
+the role is still open — a job posted yesterday can already read "No
+longer accepting applications" (high-volume postings, or ones a company
+pulled early). The `closed` flag above is checked in the same fetch pass
+that reads years/applicants, so it costs nothing extra, and the final
+filter drops it alongside the experience-gate failures. Report closed
+postings in the "dropped and why" section same as any other gate, not
+silently — a job the user could have applied to yesterday but can't today
+is useful information, not noise.
 
 The negative lookahead matters — postings are full of "founded 15+ years
 ago" and "2+ years industry experience" boilerplate that otherwise poisons
@@ -217,8 +246,17 @@ decent-fit role posted three hours ago with 25.
 | 35 | Core stack overlap (Node.js/NestJS, Golang, GraphQL/gRPC, microservices, Mongo/Postgres/Redis, AWS) |
 | 25 | Domain overlap (IAM, authN/authZ, RBAC, OAuth/SAML/OIDC/SCIM, platform/infra, enterprise SaaS) |
 | 20 | Seniority fit — a stated minimum of 7–8 is the sweet spot against 7.4; 4–6 scores well but risks reading over-qualified; 9 is a stretch |
-| 10 | Workplace fit (remote > metro hybrid > on-site, since the user is in Agra) |
+| 10 | Workplace fit — see location priority below |
 | 10 | Company signal (product engineering org over services/staffing body-shop) |
+
+**Location priority** (added 2026-09-17, since the user is in Agra and has
+no single home-city constraint): remote scores the full 10 regardless of
+city. Onsite/hybrid scores by where the city falls in this ordered list —
+**Pune, Bangalore, Mumbai, Hyderabad** (top 4, score 8), then **Delhi,
+Noida, Gurugram/Gurgaon, Indore** (score 6) — Gurugram and Gurgaon are the
+same city, just old/new name. Anywhere else onsite scores 3. This also
+drives the `onsite_outside_priority_cities` friction factor below — it now
+checks the full 9-city list, not just Pune/Bengaluru.
 
 ### Shortlist % — realistic chance of clearing screening
 
@@ -249,7 +287,7 @@ not as a precise count.
 | Top-tier hiring bar (Okta, LinkedIn, Atlassian, GitLab, big tech) | 0.8 |
 | Primary language is not the resume's (Java-only, .NET, SAP) | 0.6 |
 | Staffing agency or aggregator listing | 0.95 |
-| On-site outside Pune/Bengaluru with no remote option | 0.9 |
+| On-site outside the 9-city location priority list, no remote option | 0.9 |
 | Posted under 12 hours ago | 1.1 (cap the result at 90) |
 
 Never print a Shortlist % above 90 or below 10 — neither is honest at this

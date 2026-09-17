@@ -49,6 +49,11 @@ body {
   color: var(--text);
   orphans: 3;
   widows: 3;
+  /* Justify wherever a block actually wraps to multiple lines (bullets,
+     summary, lead-ins). Short single-line elements — name, title, contact,
+     role/date lines — get text-align: left overrides below so justification
+     never stretches a line that isn't really being filled. */
+  text-align: justify;
 
   /* ATS: Chromium otherwise emits fi/fl/ff as single U+FB0x glyphs, so the
      text layer carries "uniﬁed"/"workﬂows" and a keyword match on
@@ -65,17 +70,19 @@ h1 {
   font-size: 18pt;
   font-weight: 700;
   color: var(--ink);
-  margin: 0 0 4pt 0;
+  margin: 0 0 1.5pt 0;
   letter-spacing: -0.1px;
   line-height: 1.15;
+  text-align: left;
 }
 
 h1 + p {
   margin: 0 0 4pt 0;
-  font-size: 11.5pt;
+  font-size: 10pt;
   font-weight: 400;
-  color: var(--text);
-  line-height: 1.28;
+  color: var(--muted);
+  line-height: 1.2;
+  text-align: left;
 }
 
 h1 + p strong {
@@ -83,11 +90,16 @@ h1 + p strong {
   font-weight: 700;
 }
 
-/* Sized to keep location + phone + email + both profile links on one line */
+/* The links line and the phone/email/location line are joined by a <br>
+   inside one <p>, not two separate paragraphs. line-height is tightened
+   below body's 1.28 so those two lines sit closer to each other than to
+   the title above or the rule below. */
 h1 + p + p {
   margin: 0 0 4pt 0;
   font-size: 8.6pt;
+  line-height: 1.1;
   color: var(--muted);
+  text-align: left;
 }
 
 h1 ~ p a {
@@ -125,6 +137,7 @@ h2 {
   border-bottom: 0.9pt solid var(--rule-strong);
   break-after: avoid-page;
   page-break-after: avoid;
+  text-align: left;
 }
 
 /* Directly after the header rule, no extra gap */
@@ -141,6 +154,15 @@ h2.pagebreak {
   margin-top: 0;
 }
 
+/* `### Company {: .pagebreak }` — same forced break, one level down. Used to
+   keep a role's bullet list from splitting across the page boundary with an
+   orphaned heading-less tail on the next page. */
+h3.pagebreak {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 0;
+}
+
 h3 {
   font-size: 9.5pt;
   font-weight: 700;
@@ -148,6 +170,7 @@ h3 {
   margin: 4pt 0 0 0;
   break-after: avoid-page;
   page-break-after: avoid;
+  text-align: left;
 }
 
 h2 + h3 {
@@ -159,8 +182,9 @@ h2 + h3 {
 h3 + p,
 h3 + p + p {
   margin: 0 0 1pt 0;
-  font-size: 8pt;
+  font-size: 7.6pt;
   color: var(--muted);
+  text-align: left;
 }
 
 /* Whichever role line is last before the bullets carries the gap. */
@@ -254,26 +278,12 @@ p:where(:has(> strong:first-child)) {
   margin: 4pt 0 1.5pt 0;
 }
 
-/* --------------------------------------------------------------------- */
-/* Core Skills lines                                                      */
-/* --------------------------------------------------------------------- */
-
-/* Each skill row is a paragraph carrying `{: .skill }` from the Markdown.
-   ATS: the label must stay inline with its values - splitting them (table
-   cells, or a fixed-width label column) makes extractors emit two lines,
-   so the labels read as orphan skills ("Backend", "Frontend").
-   Typography is left to inherit the body (size + leading) so this section
-   reads at the same density as everything else; the explicit margin only
-   exists to beat the zero-specificity lead-in rule above. */
-p.skill {
-  margin: 0 0 3.5pt 0;
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-p.skill > strong:first-child {
-  font-weight: 700;
-  color: var(--ink);
+/* A lead-in immediately followed by its bullet list ("AI Engineering:")
+   must not be stranded alone at the bottom of a page while the list it
+   introduces starts the next one. */
+p:where(:has(> strong:first-child)):has(+ ul) {
+  break-after: avoid-page;
+  page-break-after: avoid;
 }
 
 /* --------------------------------------------------------------------- */
