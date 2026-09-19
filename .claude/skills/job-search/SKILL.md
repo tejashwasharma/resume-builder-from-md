@@ -7,7 +7,7 @@ description: Ask which of the 9 configured countries to cover today (India via N
 
 **Input:** nothing required besides answering which countries to cover
 today (step 0 asks in chat before anything else runs). Reads
-`../tejashwasharma_resume.md` fresh (the skills, objective, and experience
+`../../designs/design-1/resume.md` fresh (the skills, objective, and experience
 to match against) and this skill's local files every run — never from
 memory:
 
@@ -131,7 +131,7 @@ blocking on a question with no one to answer it.
 
 ### 1. Read the current profile
 
-Read `tejashwasharma_resume.md` fresh. Pull the **Technical Skills** tokens,
+Read `../../designs/design-1/resume.md` fresh. Pull the **Technical Skills** tokens,
 the **objective line**'s target titles, and the experience figure — if
 `target_experience_years` in the config looks stale against what the resume
 states, use the resume's figure and flag the mismatch in the final report.
