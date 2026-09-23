@@ -20,7 +20,7 @@ Senior Software Engineer
 - **Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ
 - **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
 - **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, Firebase (Auth, Firestore, Storage, Hosting)
-- **Cloud & Infrastructure:** AWS EC2, S3, Lambda, CloudFront, CloudWatch, Route 53, IAM, Nginx, Docker
+- **Cloud & Infrastructure:** AWS EC2, S3, Lambda, API Gateway, CloudFront, CloudWatch, Route 53, IAM, Nginx, Docker
 - **Testing & Quality:** Jest, Unit/Integration/E2E Testing, TDD, Test Automation
 - **DevOps & Observability:** Jenkins, GoCD, Datadog, Observe, CI/CD, Jira
 - **AI Engineering:** RAG (Retrieval-Augmented Generation), LLM-Backed Bots, Claude Code, GPT, GitHub Copilot, AI-driven RCA, AGENT.md/SKILLS.md agent-navigation docs
