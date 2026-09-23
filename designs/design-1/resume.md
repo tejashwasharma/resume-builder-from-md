@@ -31,7 +31,7 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 - **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ
 - **Frontend Engineering:** React.js | TypeScript | JavaScript | Redux | Redux Thunk/Saga | AngularJS | SCSS | Styled Components | Micro-Frontends
 - **Databases & Caching:** MongoDB | PostgreSQL | SQL | Redis | ioredis | Mongoose | Sequelize | Firebase (Authentication, Firestore, Storage, Hosting)
-- **Cloud & Infrastructure:** AWS EC2 | S3 | Lambda | CloudFront | CloudWatch | Route 53 | IAM | Nginx | Docker
+- **Cloud & Infrastructure:** AWS EC2 | S3 | Lambda | API Gateway | CloudFront | CloudWatch | Route 53 | IAM | Nginx | Docker
 - **Testing & Quality:** Jest | Unit Testing | Integration Testing | E2E Testing | TDD | Test Automation | 85%+ Test Coverage
 - **DevOps & Observability:** Jenkins | GoCD | PM2 | Datadog | Observe | CI/CD | Postman | Jira
 - **AI-Augmented Engineering:** Claude Code | GPT | GitHub Copilot | AI-Assisted Code Review | AI Test Generation | AI-Assisted Debugging | AI-Driven RCA | AI Security Analysis | AGENT.md / SKILLS.md Agent-Navigation Documentation | Prompt & Playbook Libraries | Prompt Caching & Model Routing
