@@ -457,14 +457,27 @@ postings were added (split by source where there is more than one, e.g.
 India's keyword search vs. company sweep vs. LinkedIn), how many were found
 but already in the ledger, below threshold, dropped by the step 4 title
 filter (Architect/Lead/Manager-track titles and similar), or (overseas)
-dropped for stating no sponsorship, and the top 1-2 new entries by match %. For
-overseas countries, a one-line sponsorship breakdown of what was added
-(`N Yes / N Likely / N Unknown`). Overall: which India company-directory
-page was swept (for continuity across runs), whether LinkedIn ran or was
-skipped for an unauthenticated session, and anything that broke (a search
-returning nothing, a site's layout not matching what extraction expected,
-the sheet unreachable, a tab still 11 columns wide) — never silently
-produce zero rows for a country without saying why.
+dropped for stating no sponsorship. For overseas countries, a one-line
+sponsorship breakdown of what was added (`N Yes / N Likely / N Unknown`).
+Overall: which India company-directory page was swept (for continuity
+across runs), whether LinkedIn ran or was skipped for an unauthenticated
+session, and anything that broke (a search returning nothing, a site's
+layout not matching what extraction expected, the sheet unreachable, a tab
+still 11 columns wide) — never silently produce zero rows for a country
+without saying why.
+
+**After** every sheet write for the run is done, print every row actually
+added this run (across all countries covered today, not just the top 1-2)
+as one ranked table in chat — the same shape as the `linkedin-search`
+skill's Step 5 table, so the two skills read consistently side by side:
+Match % | Role | Company | Location | Experience Required | Salary/Pay |
+Work Mode | Sponsorship | Link, sorted **descending by Match %**. Group by
+country (a `### <Country>` heading per country with at least one new row)
+rather than interleaving countries in one flat table. Omit the `Work Mode`
+and `Sponsorship` columns for the India group, since those stay blank on
+India rows anyway. A country with zero new rows this run gets no table and
+no heading here, consistent with step 7 — just the one-line mention
+already covered above.
 
 ---
 

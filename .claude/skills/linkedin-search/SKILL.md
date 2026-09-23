@@ -296,7 +296,11 @@ auditable rather than asserted.
 
 ## Step 5 — report
 
-Print a ranked table of **at least 20 rows**, sorted by Shortlist % —
+Print a ranked table of **at least 20 rows**, sorted **descending by
+Shortlist %** (highest realistic chance of clearing screening first — this
+is the primary sort key, not Fit %; the two routinely disagree, and
+Shortlist % is the number that should drive which role gets applied to
+first) —
 Fit % | **Shortlist %** | Role | Company | Location | Req. exp. |
 Applicants | Link. The requirement and applicant columns are
 mandatory — they are the evidence behind the gate and behind the Shortlist
