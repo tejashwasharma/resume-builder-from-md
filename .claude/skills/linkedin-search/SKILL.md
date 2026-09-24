@@ -10,8 +10,8 @@ last 24 hours, India, remote-preferred, mid-senior.
 
 **Reads fresh every run** (never from memory):
 
-- `../../designs/design-1/resume.md` — the source of truth for skills,
-  objective, and the experience band to match against.
+- `../../designs/design-2/resume.md` — the source of truth for role,
+  skills, and the experience band to match against.
 - `config.local.json` in this skill directory — query themes, filters, and
   the recency map.
 - `seen_jobs.local.json` in this skill directory — job ids reported in
@@ -131,24 +131,24 @@ changes) — a title with none of the allowed role-noun phrases is dropped
 here regardless of stack overlap, seniority word, or applicant count:
 
 ```js
-const bad   = /intern|fresher|trainee|graduate|associate engineer|sde[ -]?1\b|recruit|sales|marketing|qa engineer|test engineer|support|manual|architect|\blead\b|principal|director|\bmanager\b|head of|vice president|\bvp\b|consultant/i;
-const good  = /software engineer|backend engineer|back[ -]?end engineer|full ?stack engineer|software developer|backend developer|back[ -]?end developer|full ?stack developer|node\.?js developer|iam engineer|security engineer|platform engineer/i;
+const bad   = /intern|fresher|trainee|graduate|associate engineer|sde[ -]?1\b|recruit|sales|marketing|qa engineer|test engineer|support|manual|architect|director|\bmanager\b|head of|vice president|\bvp\b|consultant/i;
+const good  = /software engineer|backend engineer|back[ -]?end engineer|full ?stack engineer|software developer|backend developer|back[ -]?end developer|full ?stack developer|node\.?js developer|iam engineer|security engineer|platform engineer|staff engineer|principal engineer|lead engineer|tech ?lead|engineering lead/i;
 const stack = /node|nest|backend|full ?stack|platform|micro ?service|api|typescript|javascript|identity|iam|auth|saas|distributed|cloud/i;
 const candidates = pool.filter(j => !bad.test(j.title) && good.test(j.title) && stack.test(j.title + ' ' + j.co));
 ```
 
-`good` is the allowlist itself — Engineer/Developer IC titles plus the
-IAM-specific engineer variants (IAM/Security/Platform Engineer) — so a
-seniority prefix like "Senior"/"Staff"/"Sr." still passes as long as the
-role noun after it is one of those phrases ("Senior Backend Engineer"
-matches on "backend engineer"), but "Principal Engineer" or "Staff
-Engineer" alone does not, since neither carries an allowed role-noun
-phrase. `bad` now also excludes Architect/Lead/Principal/Director/
-Manager/VP/Consultant titles outright, even when `good` would otherwise
-match on a stack keyword elsewhere in the string — this replaces the old
-`good` regex, which matched on seniority words alone (`senior|staff|
-principal|lead|architect|...`) and let the whole Architect/Lead/Manager
-track through; that's no longer the policy.
+`good` is the allowlist itself — Engineer/Developer IC titles, the
+IAM-specific engineer variants (IAM/Security/Platform Engineer), and the
+senior IC growth track the resume now targets (Staff Engineer, Principal
+Engineer, Lead Engineer/Tech Lead/Engineering Lead) — so a seniority
+prefix like "Senior"/"Sr." still passes as long as the role noun after it
+is one of those phrases ("Senior Backend Engineer" matches on "backend
+engineer"), and "Staff Engineer" / "Principal Engineer" / "Tech Lead" now
+match directly on their own phrase rather than needing a role-noun suffix.
+`bad` still excludes Architect/Director/Manager/VP/Consultant titles
+outright, even when `good` would otherwise match on a stack keyword
+elsewhere in the string — only that narrower set (not Staff/Principal/
+Lead) is off-track for this resume.
 
 **Backend-major check (manual, on top of the regex above):** the `stack`
 regex only confirms *some* backend/JS-adjacent keyword is present — it
@@ -167,6 +167,37 @@ Java, MySQL, MongoDB, Docker") is kept. See `config.local.json`'s
 `stack_policy` for the full rationale and drop examples — that file is
 gitignored and has been lost once already, so this paragraph is the
 durable copy of the rule.
+
+**Product-company check (hard gate, runs right after the backend-major
+check):** every surviving candidate's employer must be a genuine product
+engineering company — a company that builds and owns the software it
+sells or runs internally. Drop the row entirely, before it ever reaches
+Step 3, if the employer is any of:
+
+- A staffing / recruiting / body-shop firm posting on a client's behalf
+  (titles or company names like "TalentXO", "Applicantz", "VOLTO
+  Consulting", "Zigsaw", "Uplers", agency-style "Hiring for our client"
+  postings, or a company whose LinkedIn page describes it as a staffing/
+  recruitment agency).
+- A pure IT services / outsourcing / consulting shop (TCS, Infosys, Wipro,
+  Accenture, Cognizant, Capgemini, YASH Technologies, and similarly-shaped
+  vendors) — these build software for other companies under contract
+  rather than owning a product, even when the specific req reads like a
+  normal engineering role.
+- An aggregator or job-board relist with no identifiable direct employer.
+
+When the company's nature isn't obvious from the name alone, check the
+posting body and/or the company's LinkedIn "About" blurb (already fetched
+in the years/applicants pass, or one extra lightweight fetch if not) for
+language like "IT services", "staffing solutions", "client engagements",
+"deployed at our client's site" — that language is the tell. A company
+that sells its own SaaS/platform/app, or is a well-known consumer or
+enterprise product brand, passes even if it also does some platform
+consulting on the side. This is a hard drop, same weight as the title and
+backend-major gates — a strong stack/domain match at a staffing or
+services company no longer buys its way into the report or the ledger.
+Log each drop in the "dropped and why" section (Step 5) same as any other
+gate, e.g. `TalentXO — product-company gate, staffing agency`.
 
 The logged-in UI (`/jobs/search/?...&f_E=4,5&f_WT=2` plus a lazy-scroll
 scrape) still works and is the fallback if the guest endpoint starts
@@ -247,7 +278,7 @@ decent-fit role posted three hours ago with 25.
 | 25 | Domain overlap (IAM, authN/authZ, RBAC, OAuth/SAML/OIDC/SCIM, platform/infra, enterprise SaaS) |
 | 20 | Seniority fit — a stated minimum of 7–8 is the sweet spot against 7.4; 4–6 scores well but risks reading over-qualified; 9 is a stretch |
 | 10 | Workplace fit — see location priority below |
-| 10 | Company signal (product engineering org over services/staffing body-shop) |
+| 10 | Company tier signal — every surviving row already cleared the product-company hard gate above, so this scores *within* that set: a well-known product brand or funded product startup scores highest, a smaller/less-established product company scores a little lower, nothing here scores a staffing/services employer since none reach this step |
 
 **Location priority** (added 2026-09-17, since the user is in Agra and has
 no single home-city constraint): remote scores the full 10 regardless of

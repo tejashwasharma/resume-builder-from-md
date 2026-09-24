@@ -7,8 +7,9 @@ description: Ask which of the 9 configured countries to cover today (India via N
 
 **Input:** nothing required besides answering which countries to cover
 today (step 0 asks in chat before anything else runs). Reads
-`../../designs/design-1/resume.md` fresh (the skills, objective, and experience
-to match against) and this skill's local files every run — never from
+`../../designs/design-2/resume.md` fresh — the role + skills source of
+truth for this skill (the role, Core Skills tokens, and experience figure
+to match against) — and this skill's local files every run — never from
 memory:
 
 - `config.local.json` — thresholds, the tracking sheet's URL, a top-level
@@ -22,6 +23,10 @@ memory:
   dedupe ledger.
 - `crawl_state.local.json` — per-country crawl progress (today, only India
   has a company-directory sweep to track).
+- `../company-registry.local.json` — a registry of employers already
+  classified product vs. non-product (staffing/services/aggregator),
+  shared with `linkedin-search`. Read and updated by the step 4
+  product-company filter; see that step for the read/write contract.
 
 **Output:** new rows appended to the tab of each country covered today, in
 the Google Sheet at `config.local.json`'s `sheet_url`, grouped under a bold
@@ -82,16 +87,17 @@ add its block to `config.local.json`.
 `title_keywords` is the global title allowlist enforced in step 4 — a
 case-insensitive substring match against the posting's title, applied
 across every country and source. It covers the Engineer/Developer IC
-track plus the IAM-specific engineer variants your resume specializes in
-(IAM/Security/Platform Engineer); it deliberately does **not** include
-"architect", "lead", "manager", "principal", "consultant", or "director"
-— a posting whose title carries none of the listed phrases is dropped in
-step 4 regardless of stack overlap or match score, even a strong IAM/
-Node.js match with an Architect or Lead-track title. Edit this list
-directly in `config.local.json` if the target titles change; don't infer
-it fresh from the resume's objective line the way `search_seeds` are
-re-derived, since the objective line still names Architect/Lead/Manager
-tracks this filter intentionally excludes.
+track (Senior Software Engineer included — "software engineer" already
+substring-matches it) plus the IAM-specific engineer variants your resume
+specializes in (IAM/Security/Platform Engineer), and now also the senior
+IC growth track named on the resume: Staff Engineer, Principal Engineer,
+Lead Engineer/Tech Lead/Engineering Lead. It deliberately does **not**
+include "architect", "manager", "consultant", or "director" — a posting
+whose title carries none of the listed phrases is dropped in step 4
+regardless of stack overlap or match score, even a strong IAM/Node.js
+match with an Architect or Manager-track title. Edit this list directly
+in `config.local.json` if the target titles change; don't infer it fresh
+from the resume's objective line the way `search_seeds` are re-derived.
 
 Each `sponsorship` block: `default` (starting status when the listing is
 silent — `Unknown` everywhere except UAE's `Yes`), `exclude_if_stated_none`
@@ -131,8 +137,8 @@ blocking on a question with no one to answer it.
 
 ### 1. Read the current profile
 
-Read `../../designs/design-1/resume.md` fresh. Pull the **Technical Skills** tokens,
-the **objective line**'s target titles, and the experience figure — if
+Read `../../designs/design-2/resume.md` fresh. Pull the **Core Skills** tokens,
+the title/summary line's target titles, and the experience figure — if
 `target_experience_years` in the config looks stale against what the resume
 states, use the resume's figure and flag the mismatch in the final report.
 
@@ -157,11 +163,11 @@ resume read in step 1** rather than trusting `search_seeds` verbatim — the
 seeds are proven query shapes from the first run, and the skill set they
 were built from drifts (tailoring, a new cert, a dropped claim). Construct 3-4
 searches spanning the IAM/identity specialty and the core backend stack
-(Node.js/NestJS) — don't bother building a search leg around the
-Architect/Manager/Lead track the objective line names; step 4's
-`title_keywords` filter drops those titles regardless of how a search was
-built to find them, so a query aimed at that track alone will still get
-filtered out — shaped per `job_site`:
+(Node.js/NestJS) — a search leg aimed at the Staff/Principal/Lead track
+is worth building now too, since step 4's `title_keywords` filter keeps
+those titles; don't bother building one around Architect/Manager, which
+the filter still drops regardless of how a search was built to find
+them — shaped per `job_site`:
 
 - **`naukri`** (India): `https://www.naukri.com/<hyphenated-keywords>-jobs`
   (or `-jobs-in-india`). Plus **3b, the company-directory sweep** below —
@@ -295,6 +301,47 @@ front-loads a level or team name before the role ("Member of Technical
 Staff I - Architect", "IAM Principal Consultant") — match against the
 whole title, not just its first word or two.
 
+**Product-company filter (hard gate, runs right after the title filter,
+before the detail-view read below).** Keep only postings whose employer is
+a genuine product engineering company — one that builds and owns the
+software it sells or runs internally.
+
+Check `../company-registry.local.json` (shared with `linkedin-search`,
+one directory up from this skill) first, before deriving anything by
+hand: if the employer name matches an entry (case-insensitive, substring)
+in `product_companies`, keep without further checking; if it matches
+`non_product_companies`, drop without further checking. Only fall through
+to the manual check below for a company the registry doesn't yet know.
+After the manual check classifies it, append the new entry to the
+matching array (`name`, a short `reason`/`note`, `"source": "job-search"`,
+`"first_seen"`: today's date) and bump `last_updated` — do this once per
+run for every newly-classified company, not per-row, so a company seen
+twice in one run is only appended once. Never delete or reclassify an
+existing entry without the user asking.
+
+Drop the row entirely, on the card alone if the company name already
+gives it away, otherwise after a look at the detail view or the
+employer's own listing page:
+
+- Staffing / recruiting / body-shop firms posting on a client's behalf
+  (e.g. TalentXO, Applicantz, VOLTO Consulting, Zigsaw, Uplers,
+  Accelon Consulting, or any "hiring for our client" style posting).
+- Pure IT services / outsourcing / consulting shops (TCS, Infosys, Wipro,
+  Accenture, Cognizant, Capgemini, YASH Technologies, and similarly-shaped
+  vendors) — these build software under contract for other companies
+  rather than owning a product, even when the specific req reads like an
+  ordinary engineering role.
+- Naukri's own company-directory sweep (3b) is filtered by industry, not
+  by company type — a `hasLiveJob` company can still be a staffing or
+  services firm, so this gate still applies to sweep results, not just
+  keyword-search ones.
+
+This is a hard drop, same weight as the title filter — a strong stack or
+sponsorship match at a staffing or services company doesn't buy it back
+in, and it never reaches step 5's experience check or step 6's scoring.
+Count drops here in the step 8 report the same way as title-filter drops
+(e.g. "N dropped: services/staffing company").
+
 Seek renders job details in a side panel on click; Indeed does the same
 for most results but sometimes opens a full page instead depending on the
 posting. **Open that detail view for every candidate that clears the
@@ -378,13 +425,13 @@ days:
   count once.
 - **Role fit** — every candidate scored here already cleared step 4's
   `title_keywords` filter, so this is a finer distinction within that
-  allowed set, not a check against the objective line's Architect/Lead/
-  Manager track (those titles never reach scoring). A senior-marked title
-  ("Senior Software Engineer", "Sr. Backend Engineer") scores highest; a
-  plain "Developer"/"Engineer" title with no seniority marker docks a
-  little; a title that's really an operations/support role wearing an
-  Engineer label ("Support Engineer", "Ops Engineer") docks more, even
-  with strong protocol-keyword overlap.
+  allowed set, not a check against the Architect/Manager track (those
+  titles never reach scoring). A Staff/Principal/Lead-track or
+  senior-marked title ("Senior Software Engineer", "Staff Engineer",
+  "Sr. Backend Engineer") scores highest; a plain "Developer"/"Engineer"
+  title with no seniority marker docks a little; a title that's really an
+  operations/support role wearing an Engineer label ("Support Engineer",
+  "Ops Engineer") docks more, even with strong protocol-keyword overlap.
 - **Domain fit bonus** — IAM/RBAC/OAuth/SSO/SCIM specifically.
 - **Seniority fit** — see step 5's per-site normalization; a figure or
   title centered near 7-8 scores higher than one that only brushes the
@@ -456,7 +503,8 @@ is enough for the skipped ones. Then, per country that ran: how many new
 postings were added (split by source where there is more than one, e.g.
 India's keyword search vs. company sweep vs. LinkedIn), how many were found
 but already in the ledger, below threshold, dropped by the step 4 title
-filter (Architect/Lead/Manager-track titles and similar), or (overseas)
+filter (Architect/Manager-track titles and similar), dropped by the
+step 4 product-company filter (staffing/services employer), or (overseas)
 dropped for stating no sponsorship. For overseas countries, a one-line
 sponsorship breakdown of what was added (`N Yes / N Likely / N Unknown`).
 Overall: which India company-directory page was swept (for continuity
@@ -581,6 +629,9 @@ false.
 
 `config.local.json`, `seen_jobs.local.json`, and `crawl_state.local.json`
 are gitignored (`.claude/skills/job-search/*.local.json` in `.gitignore`).
-This repo is public — never commit a sheet URL, a job ledger, crawl
-progress, or anything derived from them into `SKILL.md` or any other
-tracked file, and never remove the gitignore entry.
+The shared `../company-registry.local.json` is gitignored too
+(`.claude/*/*.local.json` in `.gitignore`) — it's employer-name data
+derived from the same private runs. This repo is public — never commit a
+sheet URL, a job ledger, crawl progress, the company registry, or
+anything derived from them into `SKILL.md` or any other tracked file, and
+never remove either gitignore entry.
