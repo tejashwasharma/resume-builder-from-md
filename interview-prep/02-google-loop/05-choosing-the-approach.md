@@ -965,3 +965,89 @@ materialises everything, turning O(updates × width) into O(updates + n).
 - **Path compression** — repointing nodes straight at the root during `find`.
 - **Trie** — a prefix tree for dictionary and autocomplete lookups.
 - **Sweep line** — sorting events by position and processing them in order.
+
+---
+
+## In brief
+
+- **Read the constraints first** — n tells you the complexity budget before the problem tells you anything else.
+- **Contiguous + sum/count with negatives → prefix sum + hash map;** all-positive or fixed size → sliding window.
+- **Sorted input, or "pair / triplet" → two pointers;** "k-th / top k / streaming" → a heap.
+- **"Next greater / smaller" → monotonic stack;** "max of every window" → monotonic deque.
+- **"Minimum value that works" with a monotonic yes/no → binary search on the answer.**
+- **Connectivity → union-find or BFS/DFS;** shortest unweighted path → BFS; weighted → Dijkstra.
+- **Choices over a sequence with overlapping subproblems → DP;** enumerate all → backtracking.
+
+---
+
+## Quiz
+
+### MCQ: "Count subarrays whose sum is k", values may be negative, n ≤ 10⁵. Which technique?
+- [ ] Sliding window
+- [x] Prefix sum + hash map
+- [ ] Sort + two pointers
+- [ ] Binary search
+**Why:** Negatives break the window; count earlier prefix sums equal to prefix − k.
+
+### MCQ: "For each day, how many days until a warmer one?" Which structure?
+- [ ] Min-heap
+- [x] Monotonic stack of indices
+- [ ] Hash map
+- [ ] Union-find
+**Why:** Each day waits on the stack until something warmer pops it — the next-greater pattern.
+
+### MCQ: "Minimum eating speed to finish in h hours." What signals binary search on the answer?
+- [ ] The input is sorted
+- [x] Feasibility is monotonic in the speed
+- [ ] n is small
+- [ ] There are duplicates
+**Why:** If speed k works, every faster speed works — search the smallest feasible k.
+
+### MCQ: "Top k frequent words in a stream of 10⁹ events." First reach for…
+- [ ] Sort everything
+- [x] A hash map of counts plus a size-k heap
+- [ ] A trie only
+- [ ] BFS
+**Why:** Counting then keeping only k candidates bounds memory for the ranking step to O(k).
+
+### MCQ: "Fewest moves from A to B where every move costs 1."
+- [ ] DFS
+- [x] BFS
+- [ ] Dijkstra with a heap
+- [ ] DP over subsets
+**Why:** BFS explores by distance, so the first time it reaches B is the shortest.
+
+### MCQ: "Are these two accounts in the same group?" asked many times as groups merge.
+- [ ] BFS per query
+- [x] Union-find
+- [ ] Topological sort
+- [ ] Sliding window
+**Why:** Union-find answers connectivity in near-constant time as unions arrive.
+
+### MCQ: "Longest substring with at most 2 distinct characters."
+- [ ] Prefix sums
+- [x] Variable sliding window with a count map
+- [ ] Binary search
+- [ ] Heap
+**Why:** Grow right, shrink left while more than 2 distinct — a monotonic window condition.
+
+### MCQ: "All subsets / permutations / valid placements."
+- [ ] Greedy
+- [x] Backtracking
+- [ ] Two pointers
+- [ ] Union-find
+**Why:** Enumerating every candidate is choose → recurse → undo.
+
+### MCQ: "Maximum value choosing items with a weight limit, each once."
+- [ ] Greedy by value/weight
+- [x] 0/1 knapsack DP
+- [ ] Binary search
+- [ ] Heap
+**Why:** Greedy fails for 0/1; the choice at each item depends on the remaining capacity — DP over capacity.
+
+### MCQ: "Order tasks given 'A must come before B' rules."
+- [x] Topological sort
+- [ ] Dijkstra
+- [ ] Sliding window
+- [ ] Trie
+**Why:** Dependencies form a DAG; Kahn's algorithm (or DFS post-order) produces an order or detects a cycle.

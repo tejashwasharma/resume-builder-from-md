@@ -3,9 +3,11 @@
 Study material for Senior Software Engineer / IAM-platform roles, built from
 the skills and experience on `../tejashwasharma_resume.md`.
 
-Reads as a book: a contents page, numbered chapters grouped into parts, and
-sections you tick off as you go. The published artifact adds AI drilling and
-cross-device progress; the Markdown here is the source of truth for both.
+Reads as one study flow: topics down the side, chapters inside each topic, and
+inside every chapter four stages left to right — **Learn** (the theory, one
+short screen at a time), **Workshop** (worked solutions, implementations,
+interview questions), **Code** (a TypeScript editor that runs your solution
+against tests) and **Quiz** (MCQs). The Markdown here is the source of truth.
 
 Two halves that work together:
 
@@ -23,8 +25,9 @@ be. The drills are where the actual preparation happens.
 ## Two ways to use it
 
 **In the browser** — the published book: https://claude.ai/code/artifact/d4c0a041-fd0a-469d-a77d-bcb6679f9610
-(private, sign in as the owner to open it) — contents page, chapter navigation,
-per-section progress, search, drilling and mock rounds. Works on a phone.
+(private, sign in as the owner to open it) — your path through the topics with
+time estimates, chapter-by-chapter progress, search, a code editor with tests,
+AI-generated problems and AI edge-case review, and quizzes. Works on a phone.
 
 There's also an **Ask** button (bottom right, or press `/`). It answers from
 the book's own chapters rather than from general knowledge: it picks the

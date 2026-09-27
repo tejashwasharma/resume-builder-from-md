@@ -1,42 +1,38 @@
 <meta charset="utf-8">
 <title>The Interview Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <style>
 /*{{CSS}}*/
 </style>
 
-<div class="progress-bar"><div id="bar"></div></div>
-
 <div class="shell">
   <aside class="sidebar" id="sidebar">
-    <a class="brand" id="go-contents">
-      <span class="brand-mark">📕</span>
-      <span>
-        The Interview Book
-        <small id="brand-sub">Contents</small>
-      </span>
+    <a class="brand" id="go-home" href="#">
+      <span class="brand-title">The Interview Book</span>
+      <span class="brand-sub" id="brand-sub">Your path</span>
     </a>
     <div class="search">
-      <input id="search" type="search" placeholder="Search the book…" autocomplete="off">
+      <label class="sr-only" for="search">Search the book</label>
+      <input id="search" type="search" placeholder="Search the book" autocomplete="off">
     </div>
-    <nav id="nav"></nav>
+    <nav id="nav" aria-label="Topics and chapters"></nav>
+    <div class="sidebar-foot">
+      <button class="ghost small" id="theme" type="button" title="Switch light / dark / system">Theme</button>
+    </div>
   </aside>
 
-  <main class="main">
-    <div class="toolbar">
-      <button class="menu-btn ghost" id="menu">☰</button>
-      <button id="tab-book" class="primary">Book</button>
-      <button id="tab-drill">Drill</button>
-      <button id="tab-mock">Mock</button>
-      <button id="tab-progress">Progress</button>
-      <span class="spacer"></span>
-      <span class="read-pct" id="read-pct"></span>
-      <button class="ghost" id="theme" title="Toggle theme">◐</button>
+  <main class="main" id="main">
+    <div class="topbar">
+      <button class="ghost menu-btn" id="menu" type="button" aria-label="Open topics">☰</button>
+      <span class="topbar-title" id="topbar-title"></span>
     </div>
     <div id="view"></div>
   </main>
 </div>
 
-<button class="ask-fab" id="ask-fab" hidden title="Ask about the book">✦</button>
+<button class="ask-fab" id="ask-fab" type="button" hidden title="Ask the book (/)">Ask</button>
 
 <div class="ask-panel" id="ask-panel" hidden>
   <div class="ask-head">
@@ -44,14 +40,25 @@
       <div class="t">Ask the book</div>
       <div class="s" id="ask-ctx">Answers come from these chapters</div>
     </div>
-    <button id="ask-close" title="Close">×</button>
+    <button id="ask-close" type="button" title="Close">×</button>
   </div>
   <div class="ask-log" id="ask-log"></div>
   <div class="ask-foot">
-    <textarea id="ask-input" rows="1" placeholder="Ask anything — about a topic, or your own experience…"></textarea>
-    <button class="primary" id="ask-send">Ask</button>
+    <label class="sr-only" for="ask-input">Your question</label>
+    <textarea id="ask-input" rows="1" placeholder="Ask about this chapter, or anything in the book"></textarea>
+    <button class="primary" id="ask-send" type="button">Ask</button>
   </div>
 </div>
+
+<!-- The test runner, as text: the Code stage turns it into a Web Worker. -->
+<script type="text/plain" id="runner-src">
+/*{{RUNNER}}*/
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
 
 <script>
 window.__DATA__ = /*{{DATA}}*/;

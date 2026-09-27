@@ -696,6 +696,367 @@ adding one is a common sign the candidate hasn't seen why it's unnecessary.
 
 ---
 
+## Problem bank — 2-D array problems
+
+Every 2-D array problem type from the Scaler track. All of them come down to
+**index arithmetic**: say which `(i, j)` you visit, in what order, and what
+stays constant along the way (the row, the column, `i − j` on a diagonal,
+`i + j` on an anti-diagonal). Get that sentence right and the loops write
+themselves.
+
+| Group | Problems |
+| --- | --- |
+| Row / column work | row-wise sums, column-wise sums |
+| Diagonals | main diagonal and anti-diagonal of a square matrix, every anti-diagonal of an n×m matrix |
+| Transforms | transpose (square in place, rectangular), rotate 90° clockwise and anticlockwise |
+| Boundary and spiral | print the boundary clockwise, print in spiral order |
+
+In TS, create an n×m matrix with
+`Array.from({ length: n }, () => new Array(m).fill(0))` —
+**not** `new Array(n).fill(new Array(m).fill(0))`, which fills every row with
+the *same* array, so writing one cell writes the whole column.
+
+---
+
+### Row / column work
+
+### Q: Print the row-wise sums and the column-wise sums of an n×m matrix
+**Level:** foundation · **Tags:** google-coding, matrix, 2d-array, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `[[3, 8, 9], [6, 2, 3], [5, 3, 2]]` → row sums `[20, 11, 10]`,
+column sums `[14, 13, 14]`.
+
+**The insight.** Row sums: outer loop over rows, inner over columns, reset the
+sum per row. Column sums: **swap the loops** — outer over columns, inner over
+rows. Same cells, different grouping.
+
+```ts
+function rowSums(mat: number[][]): number[] {
+  return mat.map((row) => row.reduce((s, x) => s + x, 0));
+}
+
+function colSums(mat: number[][]): number[] {
+  const n = mat.length, m = mat[0]?.length ?? 0;
+  const out = new Array<number>(m).fill(0);
+  for (let j = 0; j < m; j++) {
+    for (let i = 0; i < n; i++) out[j] += mat[i][j];
+  }
+  return out;
+}
+```
+
+**Complexity.** O(n·m) time, O(1) extra besides the output.
+
+</details>
+
+**Follow-ups:**
+1. Q: Which loop order is faster in practice for column sums, and why?
+   <details><summary>Answer</summary>
+
+   Iterating `i` outer and `j` inner (row by row) and adding into `out[j]`
+   reads memory sequentially within each row; the column-outer loop jumps
+   between rows on every step. Same O(n·m), but the row-major order is more
+   cache-friendly — it matters for large matrices of typed arrays.
+
+   </details>
+
+---
+
+### Diagonals
+
+### Q: Print the main diagonal and the anti-diagonal of a square matrix
+**Level:** foundation · **Tags:** google-coding, matrix, diagonals, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** For
+`[[1,2,3],[4,5,6],[7,8,9]]` the main diagonal (top-left → bottom-right) is
+`1 5 9`; the anti-diagonal (top-right → bottom-left) is `3 5 7`.
+
+**The insight.** On the main diagonal `i === j`; on the anti-diagonal
+`i + j === n − 1`. One loop each — never a nested loop that checks the
+condition for every cell (that's O(n²) for O(n) output).
+
+```ts
+function mainDiagonal(mat: number[][]): number[] {
+  return mat.map((_, i) => mat[i][i]);
+}
+
+function antiDiagonal(mat: number[][]): number[] {
+  const n = mat.length;
+  return mat.map((_, i) => mat[i][n - 1 - i]);
+}
+```
+
+**Complexity.** O(n) time, O(1) extra.
+
+</details>
+
+**Follow-ups:**
+1. Q: Sum both diagonals without double-counting the centre.
+   <details><summary>Answer</summary>
+
+   Add both, then subtract `mat[n>>1][n>>1]` if `n` is odd — the only cell on
+   both diagonals.
+
+   </details>
+
+### Q: Print every anti-diagonal (top-right to bottom-left) of an n×m matrix
+**Level:** intermediate · **Tags:** google-coding, matrix, diagonals, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** For
+
+```
+ 1  2  3
+ 4  5  6
+ 7  8  9
+```
+
+print `1`, `2 4`, `3 5 7`, `6 8`, `9` — each line one anti-diagonal, read
+from its top-right end.
+
+**The insight.** Every anti-diagonal has a constant `i + j`. There are
+`n + m − 1` of them. Each one **starts** either on the top row
+(`(0, j)` for every column j) or, after that, on the last column
+(`(i, m − 1)` for rows 1..n−1). From a start, step `i++, j--` until you leave
+the matrix.
+
+```ts
+function antiDiagonals(mat: number[][]): number[][] {
+  const n = mat.length, m = mat[0]?.length ?? 0;
+  const out: number[][] = [];
+  const walk = (i: number, j: number) => {
+    const d: number[] = [];
+    while (i < n && j >= 0) d.push(mat[i++][j--]);   // down-left
+    out.push(d);
+  };
+  for (let j = 0; j < m; j++) walk(0, j);             // starts on the top row
+  for (let i = 1; i < n; i++) walk(i, m - 1);         // then down the last column
+  return out;
+}
+```
+
+**Complexity.** O(n·m) time — each cell visited once. O(1) extra besides output.
+
+**Test it.** 1×m → m diagonals of one element each. n×1 → n of one each.
+
+</details>
+
+**Follow-ups:**
+1. Q: Print the diagonals going top-left to bottom-right instead, starting from the last column.
+   <details><summary>Answer</summary>
+
+   Constant `i − j`. Starts are on the top row from the last column leftwards,
+   then down the first column; step `i++, j++`. Same `n + m − 1` diagonals,
+   same O(n·m).
+
+   </details>
+
+---
+
+### Transforms
+
+### Q: Transpose a matrix — in place for a square matrix, into a new one for a rectangle
+**Level:** foundation · **Tags:** google-coding, matrix, transpose, in-place, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** Transpose turns row `i` into column `i`: `T[j][i] = M[i][j]`.
+`[[1,2,3],[4,5,6],[7,8,9]]` → `[[1,4,7],[2,5,8],[3,6,9]]`.
+
+**The insight.** Swap `mat[i][j]` with `mat[j][i]` — but **only for `j > i`**
+(the upper triangle). Looping over every cell swaps each pair twice and
+restores the original: the bug everybody writes once.
+
+```ts
+function transposeInPlace(mat: number[][]): void {
+  const n = mat.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {           // upper triangle only
+      [mat[i][j], mat[j][i]] = [mat[j][i], mat[i][j]];
+    }
+  }
+}
+
+function transpose(mat: number[][]): number[][] {   // n×m → m×n
+  const n = mat.length, m = mat[0]?.length ?? 0;
+  const t = Array.from({ length: m }, () => new Array<number>(n));
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) t[j][i] = mat[i][j];
+  return t;
+}
+```
+
+**Complexity.** O(n²) / O(n·m) time. In place O(1) space; rectangular O(n·m)
+for the new matrix — a non-square matrix *can't* be transposed in place without
+reallocating, because its shape changes.
+
+</details>
+
+**Follow-ups:**
+1. Q: What does transposing twice give?
+   <details><summary>Answer</summary>
+
+   The original matrix. That's exactly why the full-loop version fails: it
+   performs both transpositions of every pair.
+
+   </details>
+
+### Q: Rotate a square matrix 90° clockwise and 90° anticlockwise, in place
+**Level:** intermediate · **Tags:** google-coding, matrix, rotation, in-place, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `[[1,2,3],[4,5,6],[7,8,9]]` → clockwise `[[7,4,1],[8,5,2],[9,6,3]]`;
+anticlockwise `[[3,6,9],[2,5,8],[1,4,7]]`. No extra matrix. The clockwise case
+is worked in full [above](#q-rotate-image-rotate-an-nn-matrix-90-clockwise-in-place);
+this puts both directions side by side.
+
+**The insight.**
+- **Clockwise** = transpose, then reverse each **row**.
+- **Anticlockwise** = transpose, then reverse each **column** (equivalently
+  reverse the row order).
+
+Check on the example: transpose → `[[1,4,7],[2,5,8],[3,6,9]]`. Reverse each
+row → `[[7,4,1],[8,5,2],[9,6,3]]` ✓. Reverse the row order instead →
+`[[3,6,9],[2,5,8],[1,4,7]]` ✓.
+
+```ts
+function rotateClockwise(mat: number[][]): void {
+  transposeInPlace(mat);
+  for (const row of mat) row.reverse();          // reverse each row
+}
+
+function rotateAnticlockwise(mat: number[][]): void {
+  transposeInPlace(mat);
+  mat.reverse();                                  // reverse the order of rows
+}
+```
+
+**Complexity.** O(n²) time, O(1) extra space.
+
+</details>
+
+**Follow-ups:**
+1. Q: Rotate by 180°.
+   <details><summary>Answer</summary>
+
+   Reverse the row order and reverse each row — or rotate clockwise twice.
+   No transpose needed.
+
+   </details>
+
+---
+
+### Boundary and spiral
+
+The shape of both: four runs per ring — **top row left→right, right column
+top→bottom, bottom row right→left, left column bottom→top** — each of
+`side − 1` steps so the corners are printed exactly once. The spiral is the
+boundary repeated on shrinking rings.
+
+### Q: Print the boundary of an n×n matrix clockwise, starting at the top-left
+**Level:** foundation · **Tags:** google-coding, matrix, boundary, traversal, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** For a 4×4 matrix numbered 1..16 row by row:
+`1 2 3 4 8 12 16 15 14 13 9 5`.
+
+**The insight.** Walk with one `(i, j)` cursor. Each of the four sides takes
+`n − 1` steps; the cursor ends each side on the corner that starts the next.
+That shared-corner discipline is what prevents printing corners twice.
+
+```ts
+function boundary(mat: number[][]): number[] {
+  const n = mat.length;
+  if (n === 1) return [mat[0][0]];              // 0 steps per side would print nothing
+  const out: number[] = [];
+  let i = 0, j = 0;
+  for (let k = 0; k < n - 1; k++) out.push(mat[i][j++]);   // top: left → right
+  for (let k = 0; k < n - 1; k++) out.push(mat[i++][j]);   // right: top → bottom
+  for (let k = 0; k < n - 1; k++) out.push(mat[i][j--]);   // bottom: right → left
+  for (let k = 0; k < n - 1; k++) out.push(mat[i--][j]);   // left: bottom → top
+  return out;
+}
+```
+
+**Complexity.** O(n) time — `4(n − 1)` cells. O(1) extra.
+
+</details>
+
+**Follow-ups:**
+1. Q: Why does n = 1 need a special case?
+   <details><summary>Answer</summary>
+
+   With `n − 1 = 0` steps per side, the loops print nothing, but the single
+   cell is the boundary. It's the degenerate ring — the spiral hits it for
+   every odd n.
+
+   </details>
+
+### Q: Print an n×m matrix in spiral order
+**Level:** intermediate · **Tags:** google-coding, matrix, spiral, traversal, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `[[1,2,3,4],[5,6,7,8],[9,10,11,12]]` →
+`1 2 3 4 8 12 11 10 9 5 6 7`.
+
+**The insight.** Peel rings. Keep four walls — `top`, `bottom`, `left`,
+`right` — print one side, then move that wall inward. The two guards before the
+bottom row and the left column handle the leftover **single row** or **single
+column** in the middle of a rectangular matrix — without them it's printed
+twice.
+
+```ts
+function spiral(mat: number[][]): number[] {
+  const out: number[] = [];
+  if (mat.length === 0) return out;
+  let top = 0, bottom = mat.length - 1, left = 0, right = mat[0].length - 1;
+  while (top <= bottom && left <= right) {
+    for (let j = left; j <= right; j++) out.push(mat[top][j]);
+    top++;
+    for (let i = top; i <= bottom; i++) out.push(mat[i][right]);
+    right--;
+    if (top <= bottom) {                       // a row is still left
+      for (let j = right; j >= left; j--) out.push(mat[bottom][j]);
+      bottom--;
+    }
+    if (left <= right) {                       // a column is still left
+      for (let i = bottom; i >= top; i--) out.push(mat[i][left]);
+      left++;
+    }
+  }
+  return out;
+}
+```
+
+The lecture's version for an n×n matrix runs the boundary loop with
+`steps = n − 1`, moves the cursor to `(i + 1, j + 1)` and subtracts 2 from
+`steps` per ring, printing the centre cell when `steps` reaches 0. The
+four-walls version above is the one to write, because it also handles n×m.
+
+**Complexity.** O(n·m) time, O(1) extra.
+
+**Test it.** 1×m (one row), n×1 (one column), 3×3 (odd centre), 2×2, empty.
+
+</details>
+
+**Follow-ups:**
+1. Q: Generate an n×n matrix filled 1..n² in spiral order.
+   <details><summary>Answer</summary>
+
+   The same four-walls loop, writing `mat[i][j] = next++` instead of reading.
+   LeetCode "Spiral Matrix II".
+
+   </details>
+
+---
+
 ## Interview Q&A
 
 ### Q: Count the number of islands in a grid. Walk me through it.
@@ -817,3 +1178,471 @@ queue.
 - **Transpose** — swapping `grid[r][c]` with `grid[c][r]`.
 - **Grid DP** — dynamic programming with `(r, c)` as the state.
 - **Ragged array** — rows of differing lengths; ask whether the grid is guaranteed rectangular.
+
+---
+
+## Exercises
+
+Matrices are `number[][]`, row by row. Say which `(i, j)` you visit and in what
+order before you write the loops. Problems marked **core** are the must-solve set.
+
+### Exercise: Row sums and column sums
+**Level:** foundation · **Topic:** loop order decides the grouping · **Hint:** Same cells, two groupings: swap which index is outer.
+**Function:** `rowColSums(mat: number[][]): number[][]`
+**Source:** scaler
+
+Return `[rowSums, colSums]` for an n×m matrix.
+`[[3,8,9],[6,2,3],[5,3,2]]` → `[[20,11,10],[14,13,14]]`.
+
+```tests
+[{"args": [[[3, 8, 9], [6, 2, 3], [5, 3, 2]]], "expected": [[20, 11, 10], [14, 13, 14]]},
+ {"args": [[[1, 2, 3]]], "expected": [[6], [1, 2, 3]]},
+ {"args": [[[1], [2]]], "expected": [[1, 2], [3]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rowColSums(mat: number[][]): number[][] {
+  const n = mat.length, m = mat[0].length;
+  const rows = new Array<number>(n).fill(0), cols = new Array<number>(m).fill(0);
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) { rows[i] += mat[i][j]; cols[j] += mat[i][j]; }
+  return [rows, cols];
+}
+```
+</details>
+
+### Exercise: Both diagonals of a square matrix
+**Level:** foundation · **Topic:** i === j and i + j === n − 1 · **Hint:** One loop per diagonal — no nested loop needed.
+**Function:** `diagonals(mat: number[][]): number[][]`
+**Source:** scaler
+
+Return `[mainDiagonal, antiDiagonal]`, each read top to bottom.
+`[[1,2,3],[4,5,6],[7,8,9]]` → `[[1,5,9],[3,5,7]]`.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[1, 5, 9], [3, 5, 7]]},
+ {"args": [[[7]]], "expected": [[7], [7]]},
+ {"args": [[[1, 2], [3, 4]]], "expected": [[1, 4], [2, 3]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function diagonals(mat: number[][]): number[][] {
+  const n = mat.length;
+  return [mat.map((_, i) => mat[i][i]), mat.map((_, i) => mat[i][n - 1 - i])];
+}
+```
+</details>
+
+### Exercise: Every anti-diagonal
+**Level:** intermediate · **Topic:** constant i + j; starts on the top row, then the last column · **Hint:** There are n + m − 1 anti-diagonals; step down-left from each start.
+**Function:** `antiDiagonals(mat: number[][]): number[][]`
+**Core:** true · **Source:** scaler
+
+Return every top-right → bottom-left diagonal of an n×m matrix, starting from the top-left corner.
+`[[1,2,3],[4,5,6],[7,8,9]]` → `[[1],[2,4],[3,5,7],[6,8],[9]]`.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[1], [2, 4], [3, 5, 7], [6, 8], [9]]},
+ {"args": [[[1, 2, 3]]], "expected": [[1], [2], [3]]},
+ {"args": [[[1], [2]]], "expected": [[1], [2]]},
+ {"args": [[[1, 2], [3, 4], [5, 6]]], "expected": [[1], [2, 3], [4, 5], [6]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function antiDiagonals(mat: number[][]): number[][] {
+  const n = mat.length, m = mat[0].length, out: number[][] = [];
+  const walk = (i: number, j: number) => {
+    const d: number[] = [];
+    while (i < n && j >= 0) d.push(mat[i++][j--]);
+    out.push(d);
+  };
+  for (let j = 0; j < m; j++) walk(0, j);
+  for (let i = 1; i < n; i++) walk(i, m - 1);
+  return out;
+}
+```
+</details>
+
+### Exercise: Transpose a rectangular matrix
+**Level:** foundation · **Topic:** t[j][i] = m[i][j] · **Hint:** An n×m matrix becomes m×n — it needs a new array.
+**Function:** `transpose(mat: number[][]): number[][]`
+**Source:** scaler
+
+Return the transpose. `[[1,2,3],[4,5,6]]` → `[[1,4],[2,5],[3,6]]`.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6]]], "expected": [[1, 4], [2, 5], [3, 6]]},
+ {"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[1, 4, 7], [2, 5, 8], [3, 6, 9]]},
+ {"args": [[[5]]], "expected": [[5]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function transpose(mat: number[][]): number[][] {
+  const n = mat.length, m = mat[0].length;
+  const t = Array.from({ length: m }, () => new Array<number>(n));
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) t[j][i] = mat[i][j];
+  return t;
+}
+```
+</details>
+
+### Exercise: Transpose a square matrix in place
+**Level:** foundation · **Topic:** swap only the upper triangle · **Hint:** Visiting every cell swaps each pair twice — and undoes itself.
+**Function:** `transposeInPlace(mat: number[][]): void`
+**Source:** scaler · **Check:** arg0
+
+Transpose the n×n matrix **in place**. The test checks the matrix you were given.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[1, 4, 7], [2, 5, 8], [3, 6, 9]]},
+ {"args": [[[1, 2], [3, 4]]], "expected": [[1, 3], [2, 4]]},
+ {"args": [[[9]]], "expected": [[9]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function transposeInPlace(mat: number[][]): void {
+  const n = mat.length;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++) [mat[i][j], mat[j][i]] = [mat[j][i], mat[i][j]];
+}
+```
+</details>
+
+### Exercise: Rotate 90° clockwise in place
+**Level:** intermediate · **Topic:** transpose, then reverse each row · **Hint:** Rotation is two simpler moves composed.
+**Function:** `rotateClockwise(mat: number[][]): void`
+**Core:** true · **Source:** scaler · **Check:** arg0
+
+Rotate the n×n matrix 90° clockwise, in place. `[[1,2,3],[4,5,6],[7,8,9]]` → `[[7,4,1],[8,5,2],[9,6,3]]`.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[7, 4, 1], [8, 5, 2], [9, 6, 3]]},
+ {"args": [[[1, 2], [3, 4]]], "expected": [[3, 1], [4, 2]]},
+ {"args": [[[1]]], "expected": [[1]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rotateClockwise(mat: number[][]): void {
+  const n = mat.length;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++) [mat[i][j], mat[j][i]] = [mat[j][i], mat[i][j]];
+  for (const row of mat) row.reverse();
+}
+```
+</details>
+
+### Exercise: Rotate 90° anticlockwise in place
+**Level:** intermediate · **Topic:** transpose, then reverse the row order · **Hint:** Same transpose as clockwise; flip the other way.
+**Function:** `rotateAnticlockwise(mat: number[][]): void`
+**Source:** scaler · **Check:** arg0
+
+Rotate the n×n matrix 90° anticlockwise, in place. `[[1,2,3],[4,5,6],[7,8,9]]` → `[[3,6,9],[2,5,8],[1,4,7]]`.
+
+```tests
+[{"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [[3, 6, 9], [2, 5, 8], [1, 4, 7]]},
+ {"args": [[[1, 2], [3, 4]]], "expected": [[2, 4], [1, 3]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rotateAnticlockwise(mat: number[][]): void {
+  const n = mat.length;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++) [mat[i][j], mat[j][i]] = [mat[j][i], mat[i][j]];
+  mat.reverse();
+}
+```
+</details>
+
+### Exercise: Boundary, clockwise
+**Level:** foundation · **Topic:** four runs of n − 1 steps · **Hint:** Each side stops one short so corners are printed once.
+**Function:** `boundary(mat: number[][]): number[]`
+**Source:** scaler
+
+Return the boundary of an n×n matrix clockwise from the top-left.
+4×4 numbered 1..16 → `[1,2,3,4,8,12,16,15,14,13,9,5]`.
+
+```tests
+[{"args": [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]], "expected": [1, 2, 3, 4, 8, 12, 16, 15, 14, 13, 9, 5]},
+ {"args": [[[7]]], "expected": [7]},
+ {"args": [[[1, 2], [3, 4]]], "expected": [1, 2, 4, 3]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function boundary(mat: number[][]): number[] {
+  const n = mat.length;
+  if (n === 1) return [mat[0][0]];
+  const out: number[] = [];
+  let i = 0, j = 0;
+  for (let k = 0; k < n - 1; k++) out.push(mat[i][j++]);
+  for (let k = 0; k < n - 1; k++) out.push(mat[i++][j]);
+  for (let k = 0; k < n - 1; k++) out.push(mat[i][j--]);
+  for (let k = 0; k < n - 1; k++) out.push(mat[i--][j]);
+  return out;
+}
+```
+</details>
+
+### Exercise: Spiral order
+**Level:** intermediate · **Topic:** four walls moving inward · **Hint:** Guard the bottom row and left column for a leftover single row or column.
+**Function:** `spiral(mat: number[][]): number[]`
+**Core:** true · **Source:** scaler
+
+Return the elements of an n×m matrix in clockwise spiral order.
+`[[1,2,3,4],[5,6,7,8],[9,10,11,12]]` → `[1,2,3,4,8,12,11,10,9,5,6,7]`.
+
+```tests
+[{"args": [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]], "expected": [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7]},
+ {"args": [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], "expected": [1, 2, 3, 6, 9, 8, 7, 4, 5]},
+ {"args": [[[1], [2], [3]]], "expected": [1, 2, 3]},
+ {"args": [[[1, 2, 3]]], "expected": [1, 2, 3]},
+ {"args": [[]], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function spiral(mat: number[][]): number[] {
+  const out: number[] = [];
+  if (mat.length === 0) return out;
+  let top = 0, bottom = mat.length - 1, left = 0, right = mat[0].length - 1;
+  while (top <= bottom && left <= right) {
+    for (let j = left; j <= right; j++) out.push(mat[top][j]);
+    top++;
+    for (let i = top; i <= bottom; i++) out.push(mat[i][right]);
+    right--;
+    if (top <= bottom) { for (let j = right; j >= left; j--) out.push(mat[bottom][j]); bottom--; }
+    if (left <= right) { for (let i = bottom; i >= top; i--) out.push(mat[i][left]); left++; }
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Rotting oranges
+**Level:** intermediate · **Topic:** multi-source BFS by levels · **Hint:** Start the BFS from every rotten orange at once; each level is a minute.
+**Function:** `orangesRotting(grid: number[][]): number`
+**Core:** true
+
+`0` empty, `1` fresh, `2` rotten. Each minute, rotten oranges rot their 4-neighbours. Return the minutes until none are fresh, or `-1` if impossible.
+`[[2,1,1],[1,1,0],[0,1,1]]` → `4`.
+
+```tests
+[{"args": [[[2, 1, 1], [1, 1, 0], [0, 1, 1]]], "expected": 4},
+ {"args": [[[2, 1, 1], [0, 1, 1], [1, 0, 1]]], "expected": -1},
+ {"args": [[[0, 2]]], "expected": 0},
+ {"args": [[[1]]], "expected": -1},
+ {"args": [[[2, 2], [1, 1]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function orangesRotting(grid: number[][]): number {
+  const n = grid.length, m = grid[0].length;
+  let queue: number[][] = [], fresh = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    if (grid[i][j] === 2) queue.push([i, j]);
+    else if (grid[i][j] === 1) fresh++;
+  }
+  let minutes = 0;
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  while (queue.length && fresh) {
+    const next: number[][] = [];
+    for (const [i, j] of queue) for (const [di, dj] of dirs) {
+      const r = i + di, c = j + dj;
+      if (r >= 0 && r < n && c >= 0 && c < m && grid[r][c] === 1) { grid[r][c] = 2; fresh--; next.push([r, c]); }
+    }
+    queue = next;
+    minutes++;
+  }
+  return fresh ? -1 : minutes;
+}
+```
+</details>
+
+### Exercise: Search a sorted matrix
+**Level:** intermediate · **Topic:** staircase from the top-right corner · **Hint:** From the top-right, every comparison rules out a row or a column.
+**Function:** `searchMatrix(mat: number[][], target: number): boolean`
+**Core:** true
+
+Rows are sorted left to right and columns top to bottom. Return whether `target` is present, in O(n + m).
+
+```tests
+[{"args": [[[1, 4, 7, 11], [2, 5, 8, 12], [3, 6, 9, 16], [10, 13, 14, 17]], 5], "expected": true},
+ {"args": [[[1, 4, 7, 11], [2, 5, 8, 12], [3, 6, 9, 16], [10, 13, 14, 17]], 15], "expected": false},
+ {"args": [[[1]], 1], "expected": true},
+ {"args": [[[1, 3]], 2], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function searchMatrix(mat: number[][], target: number): boolean {
+  let i = 0, j = mat[0].length - 1;
+  while (i < mat.length && j >= 0) {
+    if (mat[i][j] === target) return true;
+    if (mat[i][j] > target) j--; else i++;
+  }
+  return false;
+}
+```
+</details>
+
+### Exercise: Longest increasing path
+**Level:** senior · **Topic:** DFS with memoisation · **Hint:** The longest path from a cell never changes — cache it.
+**Function:** `longestIncreasingPath(mat: number[][]): number`
+
+Return the length of the longest strictly increasing path moving up, down, left or right.
+`[[9,9,4],[6,6,8],[2,1,1]]` → `4` (1 → 2 → 6 → 9).
+
+```tests
+[{"args": [[[9, 9, 4], [6, 6, 8], [2, 1, 1]]], "expected": 4},
+ {"args": [[[3, 4, 5], [3, 2, 6], [2, 2, 1]]], "expected": 4},
+ {"args": [[[1]]], "expected": 1},
+ {"args": [[[1, 2], [4, 3]]], "expected": 4}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function longestIncreasingPath(mat: number[][]): number {
+  const n = mat.length, m = mat[0].length;
+  const memo = Array.from({ length: n }, () => new Array<number>(m).fill(0));
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const dfs = (i: number, j: number): number => {
+    if (memo[i][j]) return memo[i][j];
+    let best = 1;
+    for (const [di, dj] of dirs) {
+      const r = i + di, c = j + dj;
+      if (r >= 0 && r < n && c >= 0 && c < m && mat[r][c] > mat[i][j]) best = Math.max(best, 1 + dfs(r, c));
+    }
+    return (memo[i][j] = best);
+  };
+  let ans = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) ans = Math.max(ans, dfs(i, j));
+  return ans;
+}
+```
+</details>
+
+### Exercise: Number of islands
+**Level:** intermediate · **Topic:** flood fill (DFS or BFS) · **Hint:** Each unvisited land cell starts a new island; sink everything it reaches.
+**Function:** `numIslands(grid: number[][]): number`
+**Core:** true
+
+`1` is land, `0` water. Count the islands (4-directionally connected land).
+`[[1,1,0,0],[1,0,0,1],[0,0,1,1]]` → `2`.
+
+```tests
+[{"args": [[[1, 1, 0, 0], [1, 0, 0, 1], [0, 0, 1, 1]]], "expected": 2},
+ {"args": [[[0]]], "expected": 0},
+ {"args": [[[1, 0, 1], [0, 1, 0], [1, 0, 1]]], "expected": 5},
+ {"args": [[[1, 1], [1, 1]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function numIslands(grid: number[][]): number {
+  const n = grid.length, m = grid[0].length;
+  let count = 0;
+  const sink = (i: number, j: number) => {
+    const stack = [[i, j]];
+    grid[i][j] = 0;
+    while (stack.length) {
+      const [r, c] = stack.pop()!;
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = r + dr, y = c + dc;
+        if (x >= 0 && x < n && y >= 0 && y < m && grid[x][y] === 1) { grid[x][y] = 0; stack.push([x, y]); }
+      }
+    }
+  };
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) if (grid[i][j] === 1) { count++; sink(i, j); }
+  return count;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **A matrix is an array of rows:** `mat[i][j]` is row i, column j; n×m has n rows.
+- **Build rows independently:** `Array.from({length: n}, () => new Array(m).fill(0))` — never `.fill(sameArray)`.
+- **Say what stays constant:** the row, the column, `i − j` on a diagonal, `i + j` on an anti-diagonal.
+- **Transpose swaps only the upper triangle**; clockwise rotation = transpose + reverse each row.
+- **Boundary and spiral:** four runs per ring, each stopping one short so corners print once.
+- **Grids as graphs:** flood fill for regions, BFS by levels for shortest steps, DFS + memo for longest paths.
+
+## Quiz
+
+### MCQ: What's wrong with `new Array(3).fill(new Array(3).fill(0))`?
+- [ ] Nothing
+- [x] All three rows are the same array, so writing one cell writes a whole column
+- [ ] fill can't take arrays
+- [ ] It creates a 1-D array
+**Why:** fill copies the reference; build each row with Array.from.
+
+### MCQ: Which quantity is constant along an anti-diagonal (top-right to bottom-left)?
+- [ ] i
+- [ ] j
+- [ ] i − j
+- [x] i + j
+**Why:** Moving down-left adds 1 to i and subtracts 1 from j.
+
+### MCQ: How many anti-diagonals does an n×m matrix have?
+- [ ] n
+- [ ] m
+- [x] n + m − 1
+- [ ] n · m
+**Why:** They start along the top row (m) and down the last column (n − 1 more).
+
+### MCQ: Transposing a square matrix in place, you swap mat[i][j] with mat[j][i] for…
+- [ ] Every i, j
+- [x] j > i only
+- [ ] i === j only
+- [ ] j < i and j > i
+**Why:** Visiting both triangles swaps each pair twice, undoing the transpose.
+
+### MCQ: Rotate 90° clockwise in place =
+- [ ] Reverse each row, then transpose… only
+- [x] Transpose, then reverse each row
+- [ ] Transpose twice
+- [ ] Reverse the row order only
+**Why:** Transpose makes rows into columns; reversing each row fixes the direction.
+
+### MCQ: Why does the spiral loop need guards before the bottom row and left column?
+- [ ] For performance
+- [x] To avoid re-printing a leftover single row or column in a rectangle
+- [ ] To handle negative numbers
+- [ ] They aren't needed
+**Why:** After the top and right passes, the remaining ring may be a single row or column.
+
+### MCQ: Minimum minutes for every orange to rot is found with…
+- [ ] DFS from each fresh orange
+- [x] BFS started from all rotten oranges at once, level by level
+- [ ] Sorting the grid
+- [ ] Dynamic programming over rows
+**Why:** Multi-source BFS: each level is one minute.
+
+### MCQ: Searching a row- and column-sorted matrix in O(n + m) starts at…
+- [ ] The top-left
+- [ ] The centre
+- [x] The top-right (or bottom-left) corner
+- [ ] Any cell
+**Why:** From there every comparison eliminates a whole row or column.

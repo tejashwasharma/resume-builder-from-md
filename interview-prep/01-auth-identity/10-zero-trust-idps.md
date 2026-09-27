@@ -124,8 +124,24 @@ as already present.
 
 Strong in large regulated enterprises — banking, insurance, government — often
 in hybrid or on-premises deployments where Okta and Entra are less common.
-PingFederate is the federation server, PingOne the cloud offering. If your
-exposure is evaluation rather than integration, say so plainly.
+
+| Product | What it is | When you meet it |
+| --- | --- | --- |
+| **PingFederate** | Self-hosted federation server: SAML IdP/SP, OAuth 2.0 AS, OIDC OP | On-prem or private-cloud enterprises that keep identity in their own data centre |
+| **PingOne** (incl. PingOne SSO / MFA / DaVinci) | The SaaS platform; DaVinci is its no-code journey orchestration | Cloud-first Ping customers; the Okta-equivalent offering |
+| **PingAccess** / **PingDirectory** | Reverse-proxy access gateway; high-scale LDAP directory | Legacy web apps protected at the proxy; very large user stores |
+
+**Integrating a SaaS app with a Ping customer** looks like any other
+standards-based IdP — which is the point worth making: you configure a **SAML
+connection** (exchange metadata, map `NameID` and attributes) or an **OIDC
+client**, and provisioning via **SCIM** if they use PingOne's or
+PingFederate's outbound provisioning. The practical differences from Okta and
+Entra are operational: a PingFederate admin manages **connections** and
+**adapters** on their own servers, change control is slower, and metadata or
+certificate rollovers are coordinated by email rather than pulled from a URL —
+plan for manual certificate rotation.
+
+If your exposure is evaluation rather than integration, say so plainly.
 
 
 ## Building it

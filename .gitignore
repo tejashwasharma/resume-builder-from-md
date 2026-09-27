@@ -10,3 +10,4 @@ tailor/output/
 # Local-only study notes with real employer/internal-architecture detail.
 # Never commit, push, or publish anything under here.
 private-notes/
+scaler/

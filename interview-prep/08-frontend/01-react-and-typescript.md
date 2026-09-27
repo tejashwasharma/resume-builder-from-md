@@ -106,6 +106,84 @@ everything. Sagas use generators and are better for complex orchestration —
 cancellation, debouncing, coordinating several flows. Sagas are more powerful
 and much heavier; most apps don't need them.
 
+### Redux Saga, concretely
+
+A **saga** is a generator function that `redux-saga` middleware runs. It
+listens for actions and `yield`s **effects** — plain objects describing work
+(`call` an API, `put` an action, `take` the next action) — which the
+middleware executes. Because effects are descriptions, a saga can be tested by
+stepping the generator and comparing the yielded objects, without mocking
+`fetch`.
+
+```ts
+import { call, put, takeLatest, delay } from 'redux-saga/effects';
+
+function* fetchUser(action: { type: 'user/fetch'; id: string }) {
+  try {
+    const user = yield call(api.getUser, action.id);   // effect: call a function
+    yield put({ type: 'user/loaded', user });          // effect: dispatch an action
+  } catch (e) {
+    yield put({ type: 'user/failed', error: String(e) });
+  }
+}
+
+function* searchAsYouType(action: { type: 'search/changed'; q: string }) {
+  yield delay(300);                                    // debounce…
+  yield put({ type: 'search/run', q: action.q });
+}
+
+export function* rootSaga() {
+  yield takeLatest('user/fetch', fetchUser);           // cancels the previous fetch
+  yield takeLatest('search/changed', searchAsYouType); // …because takeLatest cancels the older delay
+}
+```
+
+| Helper | Behaviour | Use for |
+| --- | --- | --- |
+| `takeEvery` | Run a saga for every matching action, concurrently | Independent events (analytics) |
+| `takeLatest` | Cancel the running saga when a new action arrives | Fetch-on-select, search-as-you-type |
+| `takeLeading` | Ignore new actions while one is running | Submit buttons (no double-submit) |
+| `race` / `cancel` | First of several effects wins; cancel a forked task | Timeouts, "stop polling on logout" |
+
+**What sagas buy over thunks:** cancellation and debouncing are one word
+(`takeLatest`) instead of hand-rolled `AbortController` plumbing; long-running
+flows (polling, websockets via `eventChannel`, multi-step wizards) read as
+straight-line code; and tests assert on effects, not on mocks. **What they
+cost:** generators and effect vocabulary to learn, indirection when debugging,
+and a dependency most new apps replace with RTK Query or React Query for data
+fetching. The honest answer in an interview: you used sagas where
+orchestration was genuinely complex, and you'd reach for RTK Query or React
+Query first today.
+
+## Micro-frontends
+
+A **micro-frontend** architecture splits one web app into independently built
+and deployed pieces, each owned by a team — the frontend version of
+microservices. The resume's AngularJS → React migration used this shape
+([Gyrix](../00-experience/gyrix.md)).
+
+**How the pieces get composed:**
+
+| Approach | How it works | Trade-off |
+| --- | --- | --- |
+| **Module Federation** (webpack 5 / Rspack) | A host app loads remote bundles at runtime and **shares** dependencies like React as singletons | Runtime composition, shared deps; version skew between remotes is the risk |
+| **single-spa** | A root config mounts/unmounts framework apps by route; each app exposes `bootstrap/mount/unmount` | Mixes frameworks (AngularJS + React side by side) — ideal for a gradual migration |
+| **Build-time packages** | Each part is an npm package the shell compiles in | Simple, but a change needs a shell redeploy — not really independent |
+| **iframes / server-side includes** | Hard isolation | Isolation is the benefit and the cost (routing, styling, shared state) |
+
+**The migration pattern (strangler fig):** mount the new React app for one
+route at a time inside the existing AngularJS shell (single-spa or a route
+switch), move shared concerns (auth token, user context) into a small shared
+module, and retire AngularJS routes as they're replaced. Users see one app
+throughout.
+
+**What goes wrong:** duplicated React copies (two React instances break hooks
+— share it as a singleton), CSS leaking between apps (scope with CSS
+Modules/styled-components or a prefix), inconsistent design (a shared
+component library), and too many round-trips at load (preload remotes).
+Micro-frontends solve an **organisational** problem — independent team
+deploys — and are overhead for a single small team.
+
 **When you don't need Redux:** if the state is server data, a data-fetching
 library (React Query, SWR) handles caching, refetching and invalidation better
 than hand-written reducers. If it's local UI state, `useState` is fine. Redux

@@ -802,3 +802,508 @@ about 25 lines — rather than pretend one exists.
 - **Quickselect** — O(n) average k-th element via one-sided quicksort partitioning.
 - **Heapsort** — popping a whole heap; O(n log n), in place, not stable.
 - **Comparator** — the function defining order; flipping it turns a min-heap into a max-heap.
+
+---
+
+## Exercises
+
+JavaScript has no built-in priority queue, so most of these start by writing a
+small binary heap — that is part of the exercise. Where the order of results
+doesn't matter, the tests accept any order. Problems marked **core** are the
+must-solve set.
+
+### Exercise: Heap sort with your own min-heap
+**Level:** intermediate · **Topic:** binary heap: sift up on push, sift down on pop · **Hint:** Children of i are 2i + 1 and 2i + 2; the parent is (i − 1) >> 1.
+**Function:** `heapSort(nums: number[]): number[]`
+**Core:** true
+
+Implement a binary min-heap (`push`, `pop`) from scratch and use it to return `nums` sorted ascending — no `.sort()`.
+`[5, 1, 4, 2, 3]` → `[1, 2, 3, 4, 5]`.
+
+```tests
+[{"args": [[5, 1, 4, 2, 3]], "expected": [1, 2, 3, 4, 5]},
+ {"args": [[]], "expected": []},
+ {"args": [[2, 2, 1]], "expected": [1, 2, 2]},
+ {"args": [[-1, -5, 0]], "expected": [-5, -1, 0]},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 7919) % 100003)]", "perf": true, "label": "n = 100,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+function heapSort(nums: number[]): number[] {
+  const h = new MinHeap();
+  for (const x of nums) h.push(x);
+  const out: number[] = [];
+  while (h.size()) out.push(h.pop());
+  return out;
+}
+```
+</details>
+
+### Exercise: K-th largest element
+**Level:** intermediate · **Topic:** min-heap of size k · **Hint:** Keep the k largest seen so far; the heap's top is the answer.
+**Function:** `findKthLargest(nums: number[], k: number): number`
+**Core:** true
+
+Return the k-th largest element (not necessarily distinct). `[3,2,1,5,6,4], 2` → `5`; `[3,2,3,1,2,4,5,5,6], 4` → `4`.
+
+```tests
+[{"args": [[3, 2, 1, 5, 6, 4], 2], "expected": 5},
+ {"args": [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], "expected": 4},
+ {"args": [[1], 1], "expected": 1},
+ {"args": [[2, 1], 2], "expected": 1},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 31) % 100003), 50]", "perf": true, "label": "n = 100,000, k = 50"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+function findKthLargest(nums: number[], k: number): number {
+  const h = new MinHeap();
+  for (const x of nums) { h.push(x); if (h.size() > k) h.pop(); }
+  return h.peek();
+}
+```
+</details>
+
+### Exercise: Top k frequent elements
+**Level:** intermediate · **Topic:** count, then bucket (or heap) by frequency · **Hint:** Frequencies are at most n — bucket them instead of sorting.
+**Function:** `topKFrequent(nums: number[], k: number): number[]`
+**Core:** true · **Compare:** unordered
+
+Return the k most frequent values, in any order. The answer is unique in the tests. `[1,1,1,2,2,3], 2` → `[1, 2]`.
+
+```tests
+[{"args": [[1, 1, 1, 2, 2, 3], 2], "expected": [1, 2]},
+ {"args": [[1], 1], "expected": [1]},
+ {"args": [[4, 4, 5, 5, 5, 6], 1], "expected": [5]},
+ {"args": [[7, 7, 8, 8, 8, 9, 9, 9, 9], 2], "expected": [9, 8]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function topKFrequent(nums: number[], k: number): number[] {
+  const count = new Map<number, number>();
+  for (const x of nums) count.set(x, (count.get(x) ?? 0) + 1);
+  const buckets: number[][] = Array.from({ length: nums.length + 1 }, () => []);
+  for (const [v, c] of count) buckets[c].push(v);
+  const out: number[] = [];
+  for (let c = nums.length; c > 0 && out.length < k; c--) out.push(...buckets[c]);
+  return out.slice(0, k);
+}
+```
+</details>
+
+### Exercise: K closest points to the origin
+**Level:** intermediate · **Topic:** max-heap of size k on a computed key, or sort · **Hint:** Compare squared distances — no square roots needed.
+**Function:** `kClosest(points: number[][], k: number): number[][]`
+**Compare:** unordered
+
+Return the k points closest to (0, 0), in any order. The answer is unique in the tests.
+`[[1,3],[-2,2]], 1` → `[[-2,2]]`.
+
+```tests
+[{"args": [[[1, 3], [-2, 2]], 1], "expected": [[-2, 2]]},
+ {"args": [[[3, 3], [5, -1], [-2, 4]], 2], "expected": [[3, 3], [-2, 4]]},
+ {"args": [[[0, 1]], 1], "expected": [[0, 1]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function kClosest(points: number[][], k: number): number[][] {
+  const d = (p: number[]) => p[0] * p[0] + p[1] * p[1];
+  return [...points].sort((a, b) => d(a) - d(b)).slice(0, k);
+}
+```
+</details>
+
+### Exercise: Sort a nearly sorted array
+**Level:** intermediate · **Topic:** min-heap of size k + 1 · **Hint:** Every element is within k of its final place, so the smallest of the next k + 1 is ready.
+**Function:** `sortNearlySorted(nums: number[], k: number): number[]`
+
+Each element is at most `k` positions from where it belongs. Sort in O(n log k). `[6,5,3,2,8,10,9], 3` → `[2,3,5,6,8,9,10]`.
+
+```tests
+[{"args": [[6, 5, 3, 2, 8, 10, 9], 3], "expected": [2, 3, 5, 6, 8, 9, 10]},
+ {"args": [[1, 2, 3], 0], "expected": [1, 2, 3]},
+ {"args": [[2, 1], 1], "expected": [1, 2]},
+ {"args": [[], 2], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+function sortNearlySorted(nums: number[], k: number): number[] {
+  const h = new MinHeap(), out: number[] = [];
+  for (const x of nums) { h.push(x); if (h.size() > k) out.push(h.pop()); }
+  while (h.size()) out.push(h.pop());
+  return out;
+}
+```
+</details>
+
+### Exercise: Last stone weight
+**Level:** foundation · **Topic:** max-heap by negating values · **Hint:** Smash the two heaviest until at most one is left.
+**Function:** `lastStoneWeight(stones: number[]): number`
+
+Repeatedly smash the two heaviest stones x ≤ y: if equal both vanish, else y − x remains. Return the last weight or 0.
+`[2,7,4,1,8,1]` → `1`.
+
+```tests
+[{"args": [[2, 7, 4, 1, 8, 1]], "expected": 1},
+ {"args": [[1]], "expected": 1},
+ {"args": [[3, 3]], "expected": 0},
+ {"args": [[10, 4, 2, 10]], "expected": 2}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+function lastStoneWeight(stones: number[]): number {
+  const h = new MinHeap();
+  for (const s of stones) h.push(-s);                 // negate: a min-heap acts as a max-heap
+  while (h.size() > 1) {
+    const y = -h.pop(), x = -h.pop();
+    if (y !== x) h.push(-(y - x));
+  }
+  return h.size() ? -h.pop() : 0;
+}
+```
+</details>
+
+### Exercise: Minimum meeting rooms
+**Level:** intermediate · **Topic:** sort by start; min-heap of end times · **Hint:** A room frees up when the earliest-ending meeting ends before the next start.
+**Function:** `minMeetingRooms(intervals: number[][]): number`
+**Core:** true
+
+Return the fewest rooms so no overlapping meetings share one (a meeting ending at t frees its room for one starting at t).
+`[[0,30],[5,10],[15,20]]` → `2`.
+
+```tests
+[{"args": [[[0, 30], [5, 10], [15, 20]]], "expected": 2},
+ {"args": [[[7, 10], [2, 4]]], "expected": 1},
+ {"args": [[]], "expected": 0},
+ {"args": [[[1, 5], [2, 6], [3, 7], [5, 8]]], "expected": 3},
+ {"args": [[[1, 2], [2, 3]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+function minMeetingRooms(intervals: number[][]): number {
+  const s = [...intervals].sort((a, b) => a[0] - b[0]);
+  const ends = new MinHeap();
+  for (const [start, end] of s) {
+    if (ends.size() && ends.peek() <= start) ends.pop();
+    ends.push(end);
+  }
+  return ends.size();
+}
+```
+</details>
+
+### Exercise: Task scheduler
+**Level:** intermediate · **Topic:** count the most frequent task; fill the idle slots · **Hint:** The busiest task sets the frame: (maxCount − 1) gaps of n + 1.
+**Function:** `leastInterval(tasks: string[], n: number): number`
+
+Same tasks must be at least `n` intervals apart; each interval runs one task or idles. Return the minimum total intervals.
+`["A","A","A","B","B","B"], 2` → `8`.
+
+```tests
+[{"args": [["A", "A", "A", "B", "B", "B"], 2], "expected": 8},
+ {"args": [["A", "A", "A", "B", "B", "B"], 0], "expected": 6},
+ {"args": [["A", "A", "A", "A", "A", "A", "B", "C", "D", "E", "F", "G"], 2], "expected": 16},
+ {"args": [["A"], 5], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function leastInterval(tasks: string[], n: number): number {
+  const count = new Map<string, number>();
+  for (const t of tasks) count.set(t, (count.get(t) ?? 0) + 1);
+  const max = Math.max(...count.values());
+  const withMax = [...count.values()].filter((c) => c === max).length;
+  return Math.max(tasks.length, (max - 1) * (n + 1) + withMax);
+}
+```
+</details>
+
+### Exercise: Median of a data stream
+**Level:** senior · **Topic:** two heaps: max-heap low half, min-heap high half · **Hint:** Keep the halves balanced so the median is at one or both tops.
+**Function:** `run(ops: string[], args: number[][]): (number | null)[]`
+**Core:** true · **Compare:** float
+
+Implement `MedianFinder` with `addNum(x)` and `findMedian()` in O(log n) / O(1). The driver replays the operations and collects results (`null` for `addNum`).
+`["addNum","addNum","findMedian","addNum","findMedian"]` with `[[1],[2],[],[3],[]]` → `[null,null,1.5,null,2]`.
+
+```starter
+class MedianFinder {
+  addNum(x: number): void {}
+  findMedian(): number { return 0; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: number[][]): (number | null)[] {
+  const m = new MedianFinder();
+  return ops.map((op, i) => (m as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["addNum", "addNum", "findMedian", "addNum", "findMedian"], [[1], [2], [], [3], []]], "expected": [null, null, 1.5, null, 2]},
+ {"args": [["addNum", "findMedian", "addNum", "findMedian", "addNum", "findMedian"], [[5], [], [-1], [], [10], []]], "expected": [null, 5, null, 2, null, 5]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinHeap {
+  private a: number[] = [];
+  size(): number { return this.a.length; }
+  peek(): number { return this.a[0]; }
+  push(x: number): void {
+    const a = this.a; a.push(x);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p] <= a[i]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): number {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < a.length && a[l] < a[m]) m = l;
+        if (r < a.length && a[r] < a[m]) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top;
+  }
+}
+
+class MedianFinder {
+  private lo = new MinHeap();   // stores negatives: acts as a max-heap of the low half
+  private hi = new MinHeap();
+  addNum(x: number): void {
+    this.lo.push(-x);
+    this.hi.push(-this.lo.pop());
+    if (this.hi.size() > this.lo.size()) this.lo.push(-this.hi.pop());
+  }
+  findMedian(): number {
+    return this.lo.size() > this.hi.size() ? -this.lo.peek() : (-this.lo.peek() + this.hi.peek()) / 2;
+  }
+}
+
+function run(ops: string[], args: number[][]): (number | null)[] {
+  const m = new MedianFinder();
+  return ops.map((op, i) => (m as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **A binary heap is an array:** children of i at 2i + 1 and 2i + 2, parent at (i − 1) >> 1.
+- **push / pop are O(log n)** (sift up / sift down); peek is O(1); building from an array is O(n).
+- **k largest → a min-heap of size k** (the smallest of the k is the one to evict); k smallest → a max-heap.
+- **JS has no built-in heap:** write one, or negate values to turn a min-heap into a max-heap.
+- **Two heaps** keep a running median: a max-heap of the low half and a min-heap of the high half.
+- **Meeting rooms:** sort by start, heap of end times; the heap's size is the answer.
+- **Sometimes no heap at all:** counting sort / buckets beat a heap when values are bounded.
+
+---
+
+## Quiz
+
+### MCQ: To keep the k largest elements of a stream, use…
+- [ ] A max-heap of all elements
+- [x] A min-heap of size k
+- [ ] A sorted array
+- [ ] A queue
+**Why:** The smallest of the k largest sits at the top, ready to be evicted by something bigger.
+
+### MCQ: In an array-backed heap, the parent of index i is…
+- [ ] i / 2
+- [x] (i − 1) >> 1
+- [ ] 2i + 1
+- [ ] i − 1
+**Why:** Children are 2i + 1 and 2i + 2, so the parent is floor((i − 1) / 2).
+
+### MCQ: Building a heap from n items by sifting down from the middle costs…
+- [ ] O(n log n)
+- [x] O(n)
+- [ ] O(log n)
+- [ ] O(n²)
+**Why:** Most nodes are near the bottom and sift only a short distance.
+
+### MCQ: The running median uses two heaps. Which way round?
+- [ ] Two min-heaps
+- [x] Max-heap for the lower half, min-heap for the upper half
+- [ ] Min-heap lower, max-heap upper
+- [ ] One heap is enough
+**Why:** The tops are then the two middle values.
+
+### MCQ: Meeting rooms II: what does the min-heap hold?
+- [ ] Start times
+- [x] End times of meetings in progress
+- [ ] Meeting lengths
+- [ ] Room ids
+**Why:** If the earliest end is ≤ the next start, that room is reused.
+
+### MCQ: How do you get a max-heap from a min-heap implementation?
+- [ ] Reverse the array
+- [x] Push negated values
+- [ ] Pop twice
+- [ ] It's impossible
+**Why:** Negating flips the order; negate again on the way out.
+
+### MCQ: Top-k frequent with n elements: why can buckets beat a heap?
+- [ ] Heaps can't hold counts
+- [x] Frequencies are bounded by n, so bucket by count in O(n)
+- [ ] Buckets use less memory always
+- [ ] They can't
+**Why:** Counting sort on the frequency avoids the log k factor.

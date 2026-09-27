@@ -992,3 +992,419 @@ things they unblock.
 - **Lazy deletion** — pushing duplicate heap entries and skipping stale ones, instead of decrease-key.
 - **Bellman-Ford** — shortest path tolerating negative weights; detects negative cycles.
 - **MST** — minimum spanning tree; connects all vertices at least total cost.
+
+---
+
+## Exercises
+
+Graphs arrive as `n` nodes numbered `0..n−1` plus an edge list — build the
+adjacency list first, every time. Where several answers are valid, the problem
+pins down one (for example the lexicographically smallest order). Problems
+marked **core** are the must-solve set.
+
+### Exercise: Connected components
+**Level:** foundation · **Topic:** adjacency list + DFS from every unvisited node · **Hint:** Each DFS started from an unvisited node is one new component.
+**Function:** `countComponents(n: number, edges: number[][]): number`
+**Core:** true
+
+Undirected graph. Return the number of connected components. `5, [[0,1],[1,2],[3,4]]` → `2`.
+
+```tests
+[{"args": [5, [[0, 1], [1, 2], [3, 4]]], "expected": 2},
+ {"args": [5, [[0, 1], [1, 2], [2, 3], [3, 4]]], "expected": 1},
+ {"args": [3, []], "expected": 3},
+ {"args": [1, []], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countComponents(n: number, edges: number[][]): number {
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) { adj[a].push(b); adj[b].push(a); }
+  const seen = new Array<boolean>(n).fill(false);
+  let count = 0;
+  for (let s = 0; s < n; s++) {
+    if (seen[s]) continue;
+    count++;
+    const stack = [s]; seen[s] = true;
+    while (stack.length) for (const v of adj[stack.pop()!]) if (!seen[v]) { seen[v] = true; stack.push(v); }
+  }
+  return count;
+}
+```
+</details>
+
+### Exercise: Cycle in an undirected graph
+**Level:** intermediate · **Topic:** DFS with the parent check (or union-find) · **Hint:** Reaching a visited node that isn't your parent means a cycle.
+**Function:** `hasCycleUndirected(n: number, edges: number[][]): boolean`
+
+Return whether the undirected graph has a cycle. `4, [[0,1],[1,2],[2,0],[2,3]]` → `true`.
+
+```tests
+[{"args": [4, [[0, 1], [1, 2], [2, 0], [2, 3]]], "expected": true},
+ {"args": [4, [[0, 1], [1, 2], [2, 3]]], "expected": false},
+ {"args": [2, []], "expected": false},
+ {"args": [5, [[0, 1], [3, 4], [4, 2], [2, 3]]], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function hasCycleUndirected(n: number, edges: number[][]): boolean {
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+  for (const [a, b] of edges) {
+    const ra = find(a), rb = find(b);
+    if (ra === rb) return true;
+    parent[ra] = rb;
+  }
+  return false;
+}
+```
+</details>
+
+### Exercise: Course schedule — can you finish?
+**Level:** intermediate · **Topic:** cycle detection in a directed graph (Kahn's algorithm) · **Hint:** If the topological sort can't take every node, there's a cycle.
+**Function:** `canFinish(n: number, prereqs: number[][]): boolean`
+**Core:** true
+
+`[a, b]` means b must come before a. Can all `n` courses be completed? `2, [[1,0]]` → `true`; `2, [[1,0],[0,1]]` → `false`.
+
+```tests
+[{"args": [2, [[1, 0]]], "expected": true},
+ {"args": [2, [[1, 0], [0, 1]]], "expected": false},
+ {"args": [3, []], "expected": true},
+ {"args": [4, [[1, 0], [2, 1], [3, 2], [1, 3]]], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function canFinish(n: number, prereqs: number[][]): boolean {
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  const indeg = new Array<number>(n).fill(0);
+  for (const [a, b] of prereqs) { adj[b].push(a); indeg[a]++; }
+  const q = indeg.map((d, i) => (d === 0 ? i : -1)).filter((i) => i >= 0);
+  let taken = 0;
+  for (let h = 0; h < q.length; h++) {
+    taken++;
+    for (const v of adj[q[h]]) if (--indeg[v] === 0) q.push(v);
+  }
+  return taken === n;
+}
+```
+</details>
+
+### Exercise: Install order (smallest topological order)
+**Level:** intermediate · **Topic:** Kahn's algorithm with a min-priority choice · **Hint:** Among ready nodes, always take the smallest — that makes the order unique.
+**Function:** `installOrder(n: number, deps: number[][]): number[]`
+**Core:** true
+
+`[a, b]` means a depends on b (b installs first). Return the lexicographically smallest valid install order, or `[]` if there's a cycle.
+`4, [[1,0],[2,0],[3,1],[3,2]]` → `[0,1,2,3]`.
+
+```tests
+[{"args": [4, [[1, 0], [2, 0], [3, 1], [3, 2]]], "expected": [0, 1, 2, 3]},
+ {"args": [3, [[0, 1], [1, 2]]], "expected": [2, 1, 0]},
+ {"args": [2, [[0, 1], [1, 0]]], "expected": []},
+ {"args": [3, []], "expected": [0, 1, 2]},
+ {"args": [4, [[0, 3]]], "expected": [1, 2, 3, 0]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function installOrder(n: number, deps: number[][]): number[] {
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  const indeg = new Array<number>(n).fill(0);
+  for (const [a, b] of deps) { adj[b].push(a); indeg[a]++; }
+  const ready: number[] = [];
+  for (let i = 0; i < n; i++) if (indeg[i] === 0) ready.push(i);
+  const out: number[] = [];
+  while (ready.length) {
+    ready.sort((x, y) => y - x);                      // small n: a sorted array stands in for a heap
+    const u = ready.pop()!;
+    out.push(u);
+    for (const v of adj[u]) if (--indeg[v] === 0) ready.push(v);
+  }
+  return out.length === n ? out : [];
+}
+```
+</details>
+
+### Exercise: Number of provinces
+**Level:** intermediate · **Topic:** union-find · **Hint:** Union every connected pair; count the distinct roots.
+**Function:** `findCircleNum(isConnected: number[][]): number`
+
+`isConnected[i][j] = 1` if cities i and j are directly connected. Count the groups. `[[1,1,0],[1,1,0],[0,0,1]]` → `2`.
+
+```tests
+[{"args": [[[1, 1, 0], [1, 1, 0], [0, 0, 1]]], "expected": 2},
+ {"args": [[[1, 0, 0], [0, 1, 0], [0, 0, 1]]], "expected": 3},
+ {"args": [[[1]]], "expected": 1},
+ {"args": [[[1, 0, 0, 1], [0, 1, 1, 0], [0, 1, 1, 1], [1, 0, 1, 1]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findCircleNum(isConnected: number[][]): number {
+  const n = isConnected.length;
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+  let groups = n;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    if (isConnected[i][j]) { const a = find(i), b = find(j); if (a !== b) { parent[a] = b; groups--; } }
+  }
+  return groups;
+}
+```
+</details>
+
+### Exercise: Word ladder
+**Level:** senior · **Topic:** BFS on an implicit graph · **Hint:** Neighbours are computed by changing one letter, not stored.
+**Function:** `ladderLength(begin: string, end: string, words: string[]): number`
+**Core:** true
+
+Return the number of words in the shortest transformation sequence from `begin` to `end` (changing one letter at a time, every intermediate word in `words`), or 0.
+`"hit", "cog", ["hot","dot","dog","lot","log","cog"]` → `5`.
+
+```tests
+[{"args": ["hit", "cog", ["hot", "dot", "dog", "lot", "log", "cog"]], "expected": 5},
+ {"args": ["hit", "cog", ["hot", "dot", "dog", "lot", "log"]], "expected": 0},
+ {"args": ["a", "c", ["a", "b", "c"]], "expected": 2}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function ladderLength(begin: string, end: string, words: string[]): number {
+  const dict = new Set(words);
+  if (!dict.has(end)) return 0;
+  let level = [begin], steps = 1;
+  const seen = new Set([begin]);
+  while (level.length) {
+    const next: string[] = [];
+    for (const w of level) {
+      if (w === end) return steps;
+      for (let i = 0; i < w.length; i++) for (let c = 97; c <= 122; c++) {
+        const cand = w.slice(0, i) + String.fromCharCode(c) + w.slice(i + 1);
+        if (dict.has(cand) && !seen.has(cand)) { seen.add(cand); next.push(cand); }
+      }
+    }
+    level = next; steps++;
+  }
+  return 0;
+}
+```
+</details>
+
+### Exercise: Network delay time
+**Level:** senior · **Topic:** Dijkstra · **Hint:** The answer is the largest shortest-path distance from k.
+**Function:** `networkDelayTime(times: number[][], n: number, k: number): number`
+**Core:** true
+
+Nodes `1..n`; `times[i] = [u, v, w]` is a directed edge of weight w. A signal starts at k. Return when every node has received it, or −1.
+`[[2,1,1],[2,3,1],[3,4,1]], 4, 2` → `2`.
+
+```tests
+[{"args": [[[2, 1, 1], [2, 3, 1], [3, 4, 1]], 4, 2], "expected": 2},
+ {"args": [[[1, 2, 1]], 2, 1], "expected": 1},
+ {"args": [[[1, 2, 1]], 2, 2], "expected": -1},
+ {"args": [[[1, 2, 5], [1, 3, 1], [3, 2, 1]], 3, 1], "expected": 2}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function networkDelayTime(times: number[][], n: number, k: number): number {
+  const adj: [number, number][][] = Array.from({ length: n + 1 }, () => []);
+  for (const [u, v, w] of times) adj[u].push([v, w]);
+  const dist = new Array<number>(n + 1).fill(Infinity);
+  dist[k] = 0;
+  const done = new Array<boolean>(n + 1).fill(false);
+  for (let iter = 0; iter < n; iter++) {                // O(n²) Dijkstra — fine for small n
+    let u = -1;
+    for (let i = 1; i <= n; i++) if (!done[i] && (u === -1 || dist[i] < dist[u])) u = i;
+    if (u === -1 || dist[u] === Infinity) break;
+    done[u] = true;
+    for (const [v, w] of adj[u]) dist[v] = Math.min(dist[v], dist[u] + w);
+  }
+  const worst = Math.max(...dist.slice(1));
+  return worst === Infinity ? -1 : worst;
+}
+```
+</details>
+
+### Exercise: Cheapest flights within k stops
+**Level:** senior · **Topic:** Bellman–Ford limited to k + 1 rounds · **Hint:** Relax every edge k + 1 times, each round from the previous round's copy.
+**Function:** `findCheapestPrice(n: number, flights: number[][], src: number, dst: number, k: number): number`
+
+Return the cheapest price from src to dst with at most k stops, or −1.
+`4, [[0,1,100],[1,2,100],[2,0,100],[1,3,600],[2,3,200]], 0, 3, 1` → `700`.
+
+```tests
+[{"args": [4, [[0, 1, 100], [1, 2, 100], [2, 0, 100], [1, 3, 600], [2, 3, 200]], 0, 3, 1], "expected": 700},
+ {"args": [3, [[0, 1, 100], [1, 2, 100], [0, 2, 500]], 0, 2, 1], "expected": 200},
+ {"args": [3, [[0, 1, 100], [1, 2, 100], [0, 2, 500]], 0, 2, 0], "expected": 500},
+ {"args": [2, [], 0, 1, 1], "expected": -1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findCheapestPrice(n: number, flights: number[][], src: number, dst: number, k: number): number {
+  let cost = new Array<number>(n).fill(Infinity);
+  cost[src] = 0;
+  for (let round = 0; round <= k; round++) {
+    const next = [...cost];
+    for (const [u, v, w] of flights) if (cost[u] + w < next[v]) next[v] = cost[u] + w;
+    cost = next;
+  }
+  return cost[dst] === Infinity ? -1 : cost[dst];
+}
+```
+</details>
+
+### Exercise: Minimum spanning tree cost (Kruskal)
+**Level:** intermediate · **Topic:** sort edges + union-find · **Hint:** Take the cheapest edge that joins two different components.
+**Function:** `mstCost(n: number, edges: number[][]): number`
+
+Undirected weighted graph `[u, v, w]` on nodes `0..n−1`. Return the total weight of a minimum spanning tree, or −1 if the graph is disconnected.
+`4, [[0,1,1],[1,2,2],[2,3,1],[0,3,4],[0,2,3]]` → `4`.
+
+```tests
+[{"args": [4, [[0, 1, 1], [1, 2, 2], [2, 3, 1], [0, 3, 4], [0, 2, 3]]], "expected": 4},
+ {"args": [3, [[0, 1, 5]]], "expected": -1},
+ {"args": [1, []], "expected": 0},
+ {"args": [3, [[0, 1, 2], [1, 2, 2], [0, 2, 1]]], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function mstCost(n: number, edges: number[][]): number {
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+  let total = 0, used = 0;
+  for (const [u, v, w] of [...edges].sort((a, b) => a[2] - b[2])) {
+    const a = find(u), b = find(v);
+    if (a === b) continue;
+    parent[a] = b; total += w; used++;
+  }
+  return used === n - 1 ? total : -1;
+}
+```
+</details>
+
+### Exercise: Shortest path in a binary grid
+**Level:** intermediate · **Topic:** BFS over 8 directions · **Hint:** BFS finds the fewest steps when every step costs the same.
+**Function:** `shortestPathBinaryMatrix(grid: number[][]): number`
+
+From top-left to bottom-right through `0` cells, moving in 8 directions. Return the path length in cells, or −1.
+`[[0,1],[1,0]]` → `2`; `[[0,0,0],[1,1,0],[1,1,0]]` → `4`.
+
+```tests
+[{"args": [[[0, 1], [1, 0]]], "expected": 2},
+ {"args": [[[0, 0, 0], [1, 1, 0], [1, 1, 0]]], "expected": 4},
+ {"args": [[[1, 0, 0], [1, 1, 0], [1, 1, 0]]], "expected": -1},
+ {"args": [[[0]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function shortestPathBinaryMatrix(grid: number[][]): number {
+  const n = grid.length;
+  if (grid[0][0] || grid[n - 1][n - 1]) return -1;
+  let level = [[0, 0]], steps = 1;
+  const seen = grid.map((r) => r.map(() => false));
+  seen[0][0] = true;
+  while (level.length) {
+    const next: number[][] = [];
+    for (const [r, c] of level) {
+      if (r === n - 1 && c === n - 1) return steps;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const x = r + dr, y = c + dc;
+        if (x >= 0 && y >= 0 && x < n && y < n && !grid[x][y] && !seen[x][y]) { seen[x][y] = true; next.push([x, y]); }
+      }
+    }
+    level = next; steps++;
+  }
+  return -1;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Build the adjacency list first** — from an edge list, every time; say directed or undirected.
+- **BFS = shortest path in unweighted graphs;** DFS = reachability, components, cycles, topological order.
+- **Grids are graphs:** cells are nodes, 4 (or 8) neighbours are edges.
+- **Topological sort (Kahn):** repeatedly take nodes with in-degree 0; if some remain, there's a cycle.
+- **Union-find** answers "same group?" as edges arrive, near O(1) with path compression.
+- **Dijkstra** for non-negative weights; **Bellman–Ford** for negative edges or a hop limit.
+- **Mark visited when you enqueue,** not when you dequeue — or nodes get queued many times.
+
+---
+
+## Quiz
+
+### MCQ: Why mark a node visited when you enqueue it in BFS rather than when you dequeue it?
+- [ ] It's faster to write
+- [x] Otherwise it can be enqueued many times before it's processed
+- [ ] BFS requires it for correctness of order
+- [ ] It doesn't matter
+**Why:** Marking late lets several neighbours add the same node; the queue can blow up.
+
+### MCQ: Kahn's algorithm finishes with some nodes never taken. That means…
+- [ ] The graph is disconnected
+- [x] There's a cycle
+- [ ] The graph is undirected
+- [ ] The order is not unique
+**Why:** Nodes on a cycle never reach in-degree 0.
+
+### MCQ: Shortest path with non-negative edge weights:
+- [ ] BFS
+- [x] Dijkstra
+- [ ] DFS
+- [ ] Topological sort
+**Why:** BFS only works when every edge costs the same.
+
+### MCQ: 'Cheapest flight with at most k stops' suits…
+- [ ] Plain Dijkstra
+- [x] Bellman–Ford limited to k + 1 rounds
+- [ ] Union-find
+- [ ] DFS without memo
+**Why:** Each round extends paths by one edge; stopping after k + 1 rounds enforces the hop limit.
+
+### MCQ: Detecting a cycle in a directed graph with DFS needs…
+- [ ] A visited set only
+- [x] Three states: unvisited, on the current path, done
+- [ ] The parent check
+- [ ] A queue
+**Why:** Reaching a node that's still on the current path means a back edge — a cycle.
+
+### MCQ: Union-find with path compression and union by rank costs per operation…
+- [ ] O(n)
+- [x] O(log n) at worst, effectively O(α(n))
+- [ ] O(1) exactly
+- [ ] O(n log n)
+**Why:** α is the inverse Ackermann function — under 5 for any realistic n.
+
+### MCQ: Kruskal's minimum spanning tree adds edges…
+- [ ] In input order
+- [x] Cheapest first, skipping any that join two nodes already connected
+- [ ] Most expensive first
+- [ ] From one start node outward
+**Why:** Union-find tells you whether an edge would form a cycle.
+
+### MCQ: In word ladder, the graph's edges are…
+- [ ] Given as input
+- [x] Computed: words differing by one letter
+- [ ] All pairs of words
+- [ ] Alphabetical neighbours
+**Why:** An implicit graph — generate neighbours by changing each letter.

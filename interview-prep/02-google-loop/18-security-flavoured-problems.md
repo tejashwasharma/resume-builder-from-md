@@ -1371,3 +1371,315 @@ Min and HyperLogLog do, which is why they work across shards.
 - **Misra–Gries / Space-Saving** — bounded-counter heavy-hitter algorithms.
 - **Bloom filter** — fixed-memory membership with false positives but no false negatives.
 - **Tumbling vs sliding window** — non-overlapping fixed buckets vs a window that moves with every event.
+
+---
+
+## Exercises
+
+Standard patterns in security and infrastructure vocabulary — the kind of
+problem your domain makes likely. Each statement pins the exact rules so the
+tests are unambiguous; the Workshop walkthroughs discuss the real-world
+versions. Problems marked **core** are the must-solve set.
+
+### Exercise: Evaluate an IAM policy
+**Level:** intermediate · **Topic:** wildcard matching + deny overrides allow · **Hint:** Check every statement; any matching deny wins, otherwise any matching allow, otherwise deny.
+**Function:** `evaluate(statements: { effect: string; actions: string[]; resources: string[] }[], action: string, resource: string): string`
+**Core:** true
+
+Each statement has `effect` (`"allow"` or `"deny"`), `actions` and `resources` patterns, where `*` matches any sequence of characters (including `/`). Return `"allow"` or `"deny"`: an explicit matching deny always wins; with no matching statement the default is deny.
+Statements `[{allow, ["s3:Get*"], ["bucket/*"]}]`, `"s3:GetObject"`, `"bucket/a.txt"` → `"allow"`.
+
+```tests
+[{"args": [[{"effect": "allow", "actions": ["s3:Get*"], "resources": ["bucket/*"]}], "s3:GetObject", "bucket/a.txt"], "expected": "allow"},
+ {"args": [[{"effect": "allow", "actions": ["*"], "resources": ["*"]}, {"effect": "deny", "actions": ["s3:Delete*"], "resources": ["bucket/prod/*"]}], "s3:DeleteObject", "bucket/prod/x"], "expected": "deny"},
+ {"args": [[{"effect": "allow", "actions": ["s3:Get*"], "resources": ["bucket/*"]}], "s3:PutObject", "bucket/a.txt"], "expected": "deny"},
+ {"args": [[], "iam:ListUsers", "*"], "expected": "deny"},
+ {"args": [[{"effect": "allow", "actions": ["kms:Decrypt"], "resources": ["key/*/prod"]}], "kms:Decrypt", "key/team-a/prod"], "expected": "allow"},
+ {"args": [[{"effect": "allow", "actions": ["kms:Decrypt"], "resources": ["key/*/prod"]}], "kms:Decrypt", "key/team-a/dev"], "expected": "deny"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function evaluate(statements: { effect: string; actions: string[]; resources: string[] }[], action: string, resource: string): string {
+  // Glob to regex: escape everything, then turn \* back into .*
+  const match = (pattern: string, s: string) =>
+    new RegExp('^' + pattern.split('*').map((p) => p.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(s);
+  let allowed = false;
+  for (const st of statements) {
+    if (!st.actions.some((a) => match(a, action)) || !st.resources.some((r) => match(r, resource))) continue;
+    if (st.effect === 'deny') return 'deny';
+    allowed = true;
+  }
+  return allowed ? 'allow' : 'deny';
+}
+```
+</details>
+
+### Exercise: Effective permissions in a hierarchy
+**Level:** intermediate · **Topic:** walk up the ancestors, union the grants · **Hint:** A grant on any ancestor applies to every node below it.
+**Function:** `effectivePermissions(parents: string[][], grants: string[][], principal: string, node: string): string[]`
+
+`parents` holds `[child, parent]` pairs (the root has none); `grants` holds `[node, principal, permission]`. Return the sorted, de-duplicated permissions `principal` has on `node`, including those granted on ancestors.
+
+```tests
+[{"args": [[["folder", "org"], ["project", "folder"], ["vm", "project"]], [["org", "alice", "viewer"], ["project", "alice", "editor"], ["folder", "bob", "owner"]], "alice", "vm"], "expected": ["editor", "viewer"]},
+ {"args": [[["folder", "org"], ["project", "folder"]], [["project", "alice", "editor"]], "alice", "folder"], "expected": []},
+ {"args": [[["b", "a"]], [["a", "x", "p"], ["b", "x", "p"]], "x", "b"], "expected": ["p"]},
+ {"args": [[], [["org", "bob", "admin"]], "bob", "org"], "expected": ["admin"]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function effectivePermissions(parents: string[][], grants: string[][], principal: string, node: string): string[] {
+  const up = new Map(parents.map(([c, p]) => [c, p] as const));
+  const perms = new Set<string>();
+  const byNode = new Map<string, string[]>();
+  for (const [n, who, perm] of grants) if (who === principal) byNode.set(n, [...(byNode.get(n) ?? []), perm]);
+  for (let cur: string | undefined = node; cur !== undefined; cur = up.get(cur)) for (const p of byNode.get(cur) ?? []) perms.add(p);
+  return [...perms].sort();
+}
+```
+</details>
+
+### Exercise: Normalise a path and detect traversal
+**Level:** intermediate · **Topic:** stack of segments · **Hint:** '.' does nothing; '..' pops — and popping an empty stack means it escaped the root.
+**Function:** `resolvePath(path: string): string | null`
+**Core:** true
+
+Resolve an absolute path's `.` and `..` segments and repeated slashes. Return the normalised path, or `null` if it ever climbs above `/`.
+`"/a/./b/../../c/"` → `"/c"`; `"/../etc/passwd"` → `null`.
+
+```tests
+[{"args": ["/a/./b/../../c/"], "expected": "/c"},
+ {"args": ["/../etc/passwd"], "expected": null},
+ {"args": ["/"], "expected": "/"},
+ {"args": ["//home//user/.//docs"], "expected": "/home/user/docs"},
+ {"args": ["/a/b/../../../x"], "expected": null},
+ {"args": ["/a/.."], "expected": "/"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function resolvePath(path: string): string | null {
+  const stack: string[] = [];
+  for (const seg of path.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') { if (!stack.length) return null; stack.pop(); }
+    else stack.push(seg);
+  }
+  return '/' + stack.join('/');
+}
+```
+</details>
+
+### Exercise: CIDR longest-prefix match
+**Level:** senior · **Topic:** IPs as 32-bit integers + masks (or a bit trie) · **Hint:** Convert to integers once; the most specific matching rule has the longest prefix.
+**Function:** `cidrMatch(rules: string[][], ip: string): string | null`
+
+`rules` holds `[cidr, name]` pairs such as `["10.0.0.0/8", "internal"]`. Return the name of the matching rule with the longest prefix, or `null`.
+`[["10.0.0.0/8","internal"],["10.1.0.0/16","team"]]`, `"10.1.2.3"` → `"team"`.
+
+```tests
+[{"args": [[["10.0.0.0/8", "internal"], ["10.1.0.0/16", "team"]], "10.1.2.3"], "expected": "team"},
+ {"args": [[["10.0.0.0/8", "internal"], ["10.1.0.0/16", "team"]], "10.2.0.1"], "expected": "internal"},
+ {"args": [[["192.168.1.0/24", "lan"]], "192.168.2.1"], "expected": null},
+ {"args": [[["0.0.0.0/0", "any"], ["8.8.8.8/32", "dns"]], "8.8.8.8"], "expected": "dns"},
+ {"args": [[["0.0.0.0/0", "any"]], "255.255.255.255"], "expected": "any"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function cidrMatch(rules: string[][], ip: string): string | null {
+  const toInt = (s: string) => s.split('.').reduce((acc, o) => acc * 256 + Number(o), 0);
+  const x = toInt(ip);
+  let best: string | null = null, bestLen = -1;
+  for (const [cidr, name] of rules) {
+    const [base, bits] = cidr.split('/');
+    const len = Number(bits);
+    const block = 2 ** (32 - len);                         // arithmetic, not >>: /0 and /32 stay exact
+    if (Math.floor(x / block) === Math.floor(toInt(base) / block) && len > bestLen) { best = name; bestLen = len; }
+  }
+  return best;
+}
+```
+</details>
+
+### Exercise: Diff two SBOMs
+**Level:** foundation · **Topic:** hash join on component name · **Hint:** Index one side by name, then walk the other.
+**Function:** `sbomDiff(before: string[][], after: string[][]): { added: string[]; removed: string[]; changed: string[][] }`
+
+Each SBOM lists `[name, version]`. Return `added` and `removed` names (sorted) and `changed` as `[name, oldVersion, newVersion]` sorted by name.
+
+```tests
+[{"args": [[["lodash", "4.17.20"], ["react", "18.2.0"], ["left-pad", "1.0.0"]], [["lodash", "4.17.21"], ["react", "18.2.0"], ["zod", "3.22.0"]]], "expected": {"added": ["zod"], "removed": ["left-pad"], "changed": [["lodash", "4.17.20", "4.17.21"]]}},
+ {"args": [[], [["a", "1"]]], "expected": {"added": ["a"], "removed": [], "changed": []}},
+ {"args": [[["a", "1"]], [["a", "1"]]], "expected": {"added": [], "removed": [], "changed": []}}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function sbomDiff(before: string[][], after: string[][]): { added: string[]; removed: string[]; changed: string[][] } {
+  const a = new Map(before.map(([n, v]) => [n, v] as const)), b = new Map(after.map(([n, v]) => [n, v] as const));
+  const added = [...b.keys()].filter((n) => !a.has(n)).sort();
+  const removed = [...a.keys()].filter((n) => !b.has(n)).sort();
+  const changed = [...b.keys()].filter((n) => a.has(n) && a.get(n) !== b.get(n)).sort().map((n) => [n, a.get(n)!, b.get(n)!]);
+  return { added, removed, changed };
+}
+```
+</details>
+
+### Exercise: Dedupe near-duplicate audit events
+**Level:** intermediate · **Topic:** last-kept time per key, sliding window · **Hint:** Compare with the last event you KEPT for that key, not the last one you saw.
+**Function:** `dedupeEvents(events: [string, number][], windowMs: number): number[]`
+**Core:** true
+
+Events are `[key, timeMs]` in time order. Keep an event unless an event with the same key was **kept** within the previous `windowMs` (t − kept < windowMs). Return the indices of the kept events.
+
+```tests
+[{"args": [[["login:alice", 0], ["login:alice", 500], ["login:bob", 600], ["login:alice", 1000], ["login:alice", 1400]], 1000], "expected": [0, 2, 3]},
+ {"args": [[["a", 0], ["a", 999], ["a", 1998]], 1000], "expected": [0, 2]},
+ {"args": [[], 10], "expected": []},
+ {"args": [[["x", 5], ["y", 5]], 1], "expected": [0, 1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function dedupeEvents(events: [string, number][], windowMs: number): number[] {
+  const lastKept = new Map<string, number>();
+  const out: number[] = [];
+  events.forEach(([key, t], i) => {
+    const prev = lastKept.get(key);
+    if (prev !== undefined && t - prev < windowMs) return;
+    lastKept.set(key, t);
+    out.push(i);
+  });
+  return out;
+}
+```
+</details>
+
+### Exercise: Top-k clients per window
+**Level:** intermediate · **Topic:** tumbling windows + counts, sorted with a tie-break · **Hint:** Bucket by floor(t / windowMs), count per bucket, then rank.
+**Function:** `topKPerWindow(log: [string, number][], windowMs: number, k: number): string[][]`
+
+Requests are `[clientId, timeMs]`. Split time into windows `[0, w)`, `[w, 2w)`, …; for each window that has requests, in time order, return the top `k` clients by request count (ties: alphabetical).
+
+```tests
+[{"args": [[["a", 0], ["b", 10], ["a", 20], ["c", 1500], ["c", 1600], ["b", 1700]], 1000, 1], "expected": [["a"], ["c"]]},
+ {"args": [[["x", 0], ["y", 1], ["z", 2]], 100, 2], "expected": [["x", "y"]]},
+ {"args": [[], 1000, 3], "expected": []},
+ {"args": [[["b", 0], ["a", 0], ["b", 5000]], 1000, 5], "expected": [["a", "b"], ["b"]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function topKPerWindow(log: [string, number][], windowMs: number, k: number): string[][] {
+  const windows = new Map<number, Map<string, number>>();
+  for (const [c, t] of log) {
+    const w = Math.floor(t / windowMs);
+    if (!windows.has(w)) windows.set(w, new Map());
+    const m = windows.get(w)!;
+    m.set(c, (m.get(c) ?? 0) + 1);
+  }
+  return [...windows.keys()].sort((a, b) => a - b).map((w) =>
+    [...windows.get(w)!].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, k).map(([c]) => c));
+}
+```
+</details>
+
+### Exercise: Detect leaked credentials
+**Level:** foundation · **Topic:** anchored patterns, one pass · **Hint:** Match exact known formats rather than guessing.
+**Function:** `findSecrets(lines: string[]): number[]`
+
+Return the indices of lines containing an AWS access key id (`AKIA` followed by exactly 16 characters from `A–Z0–9`) or a GitHub token (`ghp_` followed by exactly 36 letters or digits). A longer run of those characters is not a match.
+
+```tests
+[{"args": [["const id = 'AKIAABCDEFGHIJKLMNOP';", "hello", "token=ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "AKIA123"]], "expected": [0, 2]},
+ {"args": [["AKIAABCDEFGHIJKLMNOPQ"]], "expected": [], "label": "17 chars after AKIA"},
+ {"args": [[]], "expected": []},
+ {"args": [["x ghp_Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9 y"]], "expected": [0]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findSecrets(lines: string[]): number[] {
+  const aws = /(?<![A-Z0-9])AKIA[A-Z0-9]{16}(?![A-Z0-9])/;
+  const gh = /ghp_[A-Za-z0-9]{36}(?![A-Za-z0-9])/;
+  const out: number[] = [];
+  lines.forEach((l, i) => { if (aws.test(l) || gh.test(l)) out.push(i); });
+  return out;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Strip the vocabulary** — "IAM policy", "SBOM", "audit log" are wildcard matching, hash joins and sliding windows underneath.
+- **Deny overrides allow; the default is deny.** Evaluate every matching statement before answering.
+- **Paths: a stack of segments.** `..` on an empty stack is a traversal attempt — reject, don't clamp.
+- **IPs are 32-bit integers;** CIDR membership is a prefix comparison, longest prefix wins.
+- **Dedupe against what you kept,** not the last thing you saw.
+- **Say exact vs approximate out loud:** count-min sketches and HyperLogLog trade accuracy for bounded memory at scale.
+
+---
+
+## Quiz
+
+### MCQ: A policy has a matching allow and a matching deny. The decision is…
+- [ ] allow
+- [x] deny
+- [ ] whichever statement is first
+- [ ] undefined
+**Why:** Explicit deny overrides; that's the safe default in every major cloud IAM.
+
+### MCQ: Normalising `/../etc/passwd` inside a sandbox root should…
+- [ ] Clamp to /etc/passwd
+- [x] Reject it as a traversal attempt
+- [ ] Return it unchanged
+- [ ] Strip the dots
+**Why:** Clamping hides an attack; rejecting surfaces it.
+
+### MCQ: Why convert IPv4 addresses to integers for CIDR matching?
+- [ ] Strings can't be compared
+- [x] Prefix membership becomes a masked comparison, O(1)
+- [ ] It encrypts them
+- [ ] Integers are shorter to log
+**Why:** A /n rule matches when the top n bits are equal.
+
+### MCQ: Two CIDR rules match an IP: /8 and /16. Which applies?
+- [ ] /8 — it's broader
+- [x] /16 — the longest prefix is most specific
+- [ ] Both
+- [ ] The first listed
+**Why:** Routing and firewall rules use the most specific match.
+
+### MCQ: Deduping audit events within a window, compare the new event against…
+- [ ] The previous event of any key
+- [x] The last kept event with the same key
+- [ ] The first event ever
+- [ ] All events in memory
+**Why:** Comparing with the last seen (not kept) event can drop events forever in a steady stream.
+
+### MCQ: Counting distinct IPs over billions of requests with tiny memory, you'd accept…
+- [ ] An exact hash set
+- [x] HyperLogLog, with ~1–2% error
+- [ ] Sorting all requests
+- [ ] A trie of IPs
+**Why:** When memory is the constraint, an approximate sketch with known error is the honest answer.
+
+### MCQ: Detecting secrets by exact known formats (e.g. `AKIA…`) rather than entropy alone trades…
+- [ ] Nothing
+- [x] Fewer false positives for missing unknown formats
+- [ ] Speed for memory
+- [ ] Accuracy for speed
+**Why:** Entropy catches unknown formats but is noisy; production scanners combine both.
