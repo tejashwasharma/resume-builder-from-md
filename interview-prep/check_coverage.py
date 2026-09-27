@@ -29,7 +29,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-RESUME = ROOT.parent / "designs" / "design-1" / "resume.md"
+# Every design is a claim someone may read, so the prep must cover the union of
+# their skills. Design 1 is the primary layout; design 2 adds claims of its own
+# (the RAG support bot, the Node→Go migration) that design 1 leaves out.
+RESUMES = [
+    ROOT.parent / "designs" / "design-1" / "resume.md",
+    ROOT.parent / "designs" / "design-2" / "resume.md",
+]
 
 # A token needs this many mentions outside the index to count as covered.
 MIN_MENTIONS = 2
@@ -58,7 +64,7 @@ ALIASES = {
     # are the same skill under another name, not a new claim to prepare for.
     "React.js": ["React"],
     "Express.js": ["Express"],
-    "Redux Thunk/Saga": ["Redux"],
+    "Redux Thunk/Saga": ["redux-saga", "Redux Saga"],
     "Styled Components": ["Styled Components", "Styled-Components"],
     "AWS EC2": ["EC2"],
     "Unit Testing": ["unit test"],
@@ -80,6 +86,11 @@ ALIASES = {
     "85%+ Test Coverage": ["coverage"],
     "AI-Assisted Debugging": ["debugging"],
     "AGENT.md / SKILLS.md Agent-Navigation Documentation": ["AGENT.md"],
+    # "RAG" as a bare substring matches "storage" and "leverage"; search for
+    # the spelled-out term instead.
+    "RAG": ["retrieval-augmented"],
+    "LLM-Backed Bots": ["LLM-backed", "support bot"],
+    "Unit/Integration/E2E Testing": ["unit test", "integration test", "E2E"],
 }
 
 # Matched case-insensitively: the resume capitalises these labels differently
@@ -95,30 +106,34 @@ ROLE_LEVEL = {
 
 
 def resume_tokens() -> list[tuple[str, str]]:
-    """[(skill line label, token)] from the resume's Technical Skills section.
+    """[(skill line label, token)] from every resume's skills section.
 
     Only that section: elsewhere the resume uses the same `- **Label:** value`
     shape for things that are not skills (the Major Clients entries, Personal
     Details), and sweeping those in would demand a guide for "Date of Birth".
+    Design 1 calls it "Technical Skills", design 2 "Core Skills".
     """
-    if not RESUME.exists():
-        print(f"ERROR: resume not found at {RESUME}", file=sys.stderr)
-        sys.exit(2)
-    md = RESUME.read_text(encoding="utf-8")
-    section = re.search(r"^## Technical Skills\b.*?(?=^## |\Z)", md, re.M | re.S)
-    if not section:
-        print("ERROR: no '## Technical Skills' section in the resume", file=sys.stderr)
-        sys.exit(2)
-    out = []
-    for label, values in re.findall(r"^-?\s*\*\*(.+?):\*\* (.+)$", section.group(0), re.M):
-        # The template separates skills with pipes; commas and middots survive
-        # from the older layout and stay accepted.
-        for tok in re.split(r"[|,·]", values):
-            # Keep the real name out of a parenthesised list fragment
-            # ("Firebase (Auth" / "Hosting)") rather than the broken punctuation.
-            tok = tok.strip().strip("()").split("(")[0].strip()
-            if tok:
-                out.append((label, tok))
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for resume in RESUMES:
+        if not resume.exists():
+            print(f"ERROR: resume not found at {resume}", file=sys.stderr)
+            sys.exit(2)
+        md = resume.read_text(encoding="utf-8")
+        section = re.search(r"^## (?:Technical|Core) Skills\b.*?(?=^## |\Z)", md, re.M | re.S)
+        if not section:
+            print(f"ERROR: no skills section in {resume}", file=sys.stderr)
+            sys.exit(2)
+        for label, values in re.findall(r"^-?\s*\*\*(.+?):\*\* (.+)$", section.group(0), re.M):
+            # The template separates skills with pipes; commas and middots survive
+            # from the older layout and stay accepted.
+            for tok in re.split(r"[|,·]", values):
+                # Keep the real name out of a parenthesised list fragment
+                # ("Firebase (Auth" / "Hosting)") rather than the broken punctuation.
+                tok = tok.strip().strip("()").split("(")[0].strip()
+                if tok and tok.lower() not in seen:
+                    seen.add(tok.lower())
+                    out.append((label, tok))
     return out
 
 

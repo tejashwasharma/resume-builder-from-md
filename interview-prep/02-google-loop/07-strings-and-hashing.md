@@ -619,6 +619,383 @@ that you can state the O(n) alternative exists without attempting it.
 ---
 
 
+## Problem bank — every string problem type
+
+The full sweep of string problem types from the Scaler DSA track: character
+arithmetic, counting sort, carry-forward over characters, palindromes, and the
+hash-map fundamentals that every string-counting problem leans on. Array-input
+hashing problems (frequency queries, distinct-in-window, zero-sum subarray)
+live in the [arrays bank](06-arrays-and-two-pointers.md#problem-bank-every-array-problem-type).
+
+| Group | Problems |
+| --- | --- |
+| Character arithmetic | toggle case, reverse a string, reverse the word order |
+| Counting | sort a lowercase string (counting sort), count "a…g" pairs |
+| Palindromes | is it a palindrome, is s[l..r] a palindrome, count palindromic substrings |
+| Hashing fundamentals | Map vs Set, what can be a key, cost of each operation |
+
+**Two facts every answer below relies on.** Strings in JS/TS are
+**immutable** — `s[i] = 'x'` silently does nothing, so build into an array and
+`join('')` once. And `s.charCodeAt(i)` gives the UTF-16 code: `'A'` = 65,
+`'Z'` = 90, `'a'` = 97, `'z'` = 122 — upper and lower case differ by exactly
+32.
+
+---
+
+### Character arithmetic
+
+### Q: Toggle the case of every character in a string of letters
+**Level:** foundation · **Tags:** google-coding, strings, ascii, bits, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"InterViewBit"` → `"iNTERvIEWbIT"`. Input has only A–Z and a–z.
+
+**The insight.** `'a' − 'A' = 32`, and 32 is a single bit (`1 << 5`).
+Upper-case letters have bit 5 clear, lower-case have it set — so XOR with 32
+flips the case in one operation, no branch needed.
+
+```ts
+function toggleCase(s: string): string {
+  const out: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    out[i] = String.fromCharCode(s.charCodeAt(i) ^ 32);   // flip bit 5
+  }
+  return out.join('');
+}
+```
+
+The branching version is equally fine to say: if code is 65–90 add 32, if
+97–122 subtract 32.
+
+**Complexity.** O(n) time, O(n) for the output (strings are immutable, so you
+can't do better).
+
+**Test it.** `"a"` → `"A"`. Empty → empty. Digits would break the XOR trick
+(`'1' ^ 32` is `'\x11'`) — which is why the constraint matters; ask for it.
+
+</details>
+
+**Follow-ups:**
+1. Q: Why not `s += ch` in the loop?
+   <details><summary>Answer</summary>
+
+   Each `+=` may copy the whole string so far — O(n²) in the worst case. Engines
+   optimise it with ropes sometimes, but you can't rely on that in an
+   interview answer; an array plus one `join` is O(n) guaranteed.
+
+   </details>
+
+### Q: Reverse a string, and reverse the order of words in a sentence
+**Level:** foundation · **Tags:** google-coding, strings, two-pointers, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"scaler"` → `"relacs"`. Words: `"  the sky  is blue "` →
+`"blue is sky the"` (one space between words, no leading/trailing spaces).
+
+**The insight.** Reversal is the two-pointer swap from the arrays chapter, on
+a character array. Word order: reverse the whole string, then reverse each
+word — the same trick as array rotation. In an interview, the split/reverse
+one-liner is acceptable if you then say what it costs.
+
+```ts
+function reverseString(s: string): string {
+  const a = s.split('');
+  for (let i = 0, j = a.length - 1; i < j; i++, j--) [a[i], a[j]] = [a[j], a[i]];
+  return a.join('');
+}
+
+function reverseWords(s: string): string {
+  const words: string[] = [];
+  let i = 0;
+  while (i < s.length) {
+    while (i < s.length && s[i] === ' ') i++;       // skip spaces
+    let j = i;
+    while (j < s.length && s[j] !== ' ') j++;       // scan a word
+    if (i < j) words.push(s.slice(i, j));
+    i = j;
+  }
+  words.reverse();
+  return words.join(' ');
+}
+```
+
+**Complexity.** Both O(n) time, O(n) space.
+
+**Test it.** Multiple spaces, leading/trailing spaces, a single word, empty
+string, a string of only spaces → `""`.
+
+</details>
+
+**Follow-ups:**
+1. Q: Do the word reversal in O(1) extra space on a mutable character array.
+   <details><summary>Answer</summary>
+
+   Reverse the whole array, then reverse each word in place, then compact the
+   spaces with a read/write pointer pair. Three O(n) passes, no extra array.
+
+   </details>
+2. Q: Does `s.split('').reverse().join('')` reverse every string correctly?
+   <details><summary>Answer</summary>
+
+   No — it reverses UTF-16 code units, so an emoji (a surrogate pair) or a
+   letter with a combining accent is split and scrambled. `[...s].reverse()`
+   fixes surrogate pairs; combining marks need `Intl.Segmenter`. Worth a
+   sentence at a company that ships in every language.
+
+   </details>
+
+---
+
+### Counting
+
+The alphabet is bounded — 26 lower-case letters, 128 ASCII — so a fixed-size
+count array replaces a hash map and makes "sort" O(n).
+
+### Q: Sort a string of lower-case letters
+**Level:** foundation · **Tags:** google-coding, strings, counting-sort, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"dcbeaed"` → `"abcddee"`.
+
+**Brute force.** `[...s].sort().join('')`: O(n log n).
+
+**The insight.** Only 26 possible values. Count each letter (index
+`code − 97`), then emit each letter `count` times in order: **counting sort**.
+
+```ts
+function sortLowercase(s: string): string {
+  const count = new Array<number>(26).fill(0);
+  for (let i = 0; i < s.length; i++) count[s.charCodeAt(i) - 97]++;
+  const out: string[] = [];
+  for (let c = 0; c < 26; c++) {
+    if (count[c] > 0) out.push(String.fromCharCode(97 + c).repeat(count[c]));
+  }
+  return out.join('');
+}
+```
+
+**Complexity.** O(n + 26) = O(n) time, O(26) = O(1) extra space besides the
+output.
+
+</details>
+
+**Follow-ups:**
+1. Q: When is counting sort the wrong choice?
+   <details><summary>Answer</summary>
+
+   When the value range `k` is large relative to `n` — sorting 10 numbers in
+   the range 0–10⁹ would allocate a billion counters. It is O(n + k), so it
+   wins only when k is small.
+
+   </details>
+
+### Q: Count pairs (i, j) with i < j, s[i] = 'a' and s[j] = 'g'
+**Level:** foundation · **Tags:** google-coding, strings, carry-forward, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"abegag"` → `3`: (0, 3), (0, 5), (4, 5).
+
+**Brute force.** Every pair: O(n²).
+
+**The insight — carry forward.** Every `'g'` pairs with **every `'a'` before
+it**. Walk left to right carrying `countA`; on a `'g'`, add `countA` to the
+answer. (Equivalently walk right to left carrying `countG` and add on each
+`'a'` — the lecture's version.)
+
+```ts
+function countAGPairs(s: string): number {
+  let countA = 0, pairs = 0;
+  for (const ch of s) {
+    if (ch === 'a') countA++;
+    else if (ch === 'g') pairs += countA;   // this g closes a pair with each earlier a
+  }
+  return pairs;
+}
+```
+
+**Complexity.** O(n) time, O(1) space.
+
+**Test it.** `"ga"` → 0 (order matters). `"aaggg"` → 6. No 'a' → 0.
+
+</details>
+
+**Follow-ups:**
+1. Q: Count subsequences equal to "abc" (i < j < k).
+   <details><summary>Answer</summary>
+
+   Carry three counters: `a` (count of "a"), `ab` (count of "ab"
+   subsequences), `abc`. On `'a'`: `a++`. On `'b'`: `ab += a`. On `'c'`:
+   `abc += ab`. The same carry-forward, one level deeper — it's a tiny DP.
+
+   </details>
+
+---
+
+### Palindromes
+
+A palindrome reads the same both ways. Two moves cover nearly everything:
+**two pointers from the ends** (is this one a palindrome?) and **expand around
+each centre** (find or count palindromic substrings). There are `2n − 1`
+centres — n single characters for odd lengths, n − 1 gaps for even lengths.
+
+### Q: Is the string a palindrome — and is the substring s[l..r] a palindrome?
+**Level:** foundation · **Tags:** google-coding, strings, palindrome, two-pointers, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"madam"` → true, `"naman"` → true, `"scaler"` → false.
+`isPal("anamadamspe", 3, 7)` → `"madam"` → true.
+
+**Algorithm.** Compare `s[l]` with `s[r]`, move inward, fail on the first
+mismatch. The whole-string check is the range check on `[0, n − 1]`.
+
+```ts
+function isPalindromeRange(s: string, l: number, r: number): boolean {
+  while (l < r) {
+    if (s[l] !== s[r]) return false;
+    l++; r--;
+  }
+  return true;
+}
+const isPalindrome = (s: string) => isPalindromeRange(s, 0, s.length - 1);
+```
+
+**Complexity.** O(r − l) time, O(1) space — no reversed copy needed.
+
+</details>
+
+**Follow-ups:**
+1. Q: Ignore case and non-alphanumeric characters ("A man, a plan, a canal: Panama").
+   <details><summary>Answer</summary>
+
+   Same two pointers; skip `l` forward and `r` backward past characters that
+   fail `/[a-z0-9]/i`, and compare `toLowerCase()`. Don't build a cleaned copy
+   unless asked — skipping keeps O(1) space.
+
+   </details>
+2. Q: Can it become a palindrome by deleting at most one character?
+   <details><summary>Answer</summary>
+
+   Run the two pointers; on the first mismatch at `(l, r)` return
+   `isPalindromeRange(s, l + 1, r) || isPalindromeRange(s, l, r − 1)`. O(n).
+
+   </details>
+
+### Q: Count the palindromic substrings
+**Level:** intermediate · **Tags:** google-coding, strings, palindrome, expand-around-centre, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"aaa"` → `6` (`a`, `a`, `a`, `aa`, `aa`, `aaa`). `"abc"` → 3.
+The *longest* palindromic substring is the worked problem above; this is its
+counting twin and uses the same expansion.
+
+**Brute force.** Check all n²/2 substrings with the two-pointer check: O(n³).
+
+**The insight.** Every palindrome has a centre. Expand outward from each of the
+`2n − 1` centres while the ends match; each successful step is one more
+palindrome.
+
+```ts
+function countPalindromicSubstrings(s: string): number {
+  let count = 0;
+  const expand = (l: number, r: number) => {
+    while (l >= 0 && r < s.length && s[l] === s[r]) {
+      count++;          // s[l..r] is a palindrome
+      l--; r++;
+    }
+  };
+  for (let c = 0; c < s.length; c++) {
+    expand(c, c);       // odd length, centred on s[c]
+    expand(c, c + 1);   // even length, centred between c and c+1
+  }
+  return count;
+}
+```
+
+**Complexity.** O(n²) time worst case (`"aaaa…"`), O(1) space. Manacher's
+algorithm does it in O(n); name it, don't write it unless asked.
+
+</details>
+
+**Follow-ups:**
+1. Q: Return the longest palindromic substring with the same expansion.
+   <details><summary>Answer</summary>
+
+   Make `expand` return the length `r − l − 1` after it stops, and track the
+   best centre and length. The full worked answer is
+   [above](#q-longest-palindromic-substring-the-longest-contiguous-palindrome-in-s).
+
+   </details>
+
+---
+
+### Hashing fundamentals
+
+### Q: HashMap vs HashSet — what are the operations, what do they cost, and what can be a key?
+**Level:** foundation · **Tags:** google-coding, hashing, hash-map, hash-set, scaler
+
+<details><summary>Model answer</summary>
+
+**The two structures.**
+
+| | `Map<K, V>` | `Set<K>` |
+| --- | --- | --- |
+| Stores | key → value pairs | keys only |
+| Add | `m.set(k, v)` (overwrites) | `s.add(k)` (no-op if present) |
+| Read | `m.get(k)` → `undefined` if missing | — |
+| Membership | `m.has(k)` | `s.has(k)` |
+| Remove | `m.delete(k)` | `s.delete(k)` |
+| Size | `m.size` | `s.size` |
+
+All are **O(1) average**, O(n) worst case (every key in one bucket). Iteration
+order in JS is insertion order — unlike Java's `HashMap`, where it is
+unspecified, which is why "the first non-repeating element" must iterate the
+*array*, not the map, to be portable.
+
+**Typical shapes.** Country → population: `Map<string, number>`. Country →
+list of states: `Map<string, string[]>`. "Have I seen this word": `Set<string>`.
+
+**What can be a key.** In Java/Scaler's framing: only immutable values —
+primitives and strings — are safe keys. In JS, `Map` accepts anything, but
+objects and arrays are compared **by reference**, so
+`m.set([1, 2], 'x'); m.get([1, 2])` is `undefined`. To key by contents, build
+a canonical string: `` `${r},${c}` `` for a grid cell, the sorted letters for
+an anagram group.
+
+**Why a hash map beats a direct-address array.** Direct addressing
+(`bool room[1e9]`) gives O(1) too, but allocates space for every possible
+key. A hash map allocates for the keys you actually store.
+
+</details>
+
+**Follow-ups:**
+1. Q: When would you pick a sorted structure over a hash map?
+   <details><summary>Answer</summary>
+
+   When you need order: the smallest key, range queries, floor/ceiling,
+   iterating in sorted order. A balanced BST (Java `TreeMap`) gives O(log n)
+   for those; JS has no built-in one, so you'd use a sorted array with binary
+   search, or a heap if only the min/max matters.
+
+   </details>
+2. Q: What makes the worst case O(n), and how do real implementations defend against it?
+   <details><summary>Answer</summary>
+
+   Collisions — many keys hashing to one bucket, either by bad luck or by an
+   attacker choosing keys (hash-flooding DoS). Defences: randomised/seeded hash
+   functions (SipHash in Python, Rust), and Java 8's switch from a bucket's
+   linked list to a red-black tree once it grows past 8 entries, capping it at
+   O(log n).
+
+   </details>
+
+---
+
 ## Interview Q&A
 
 ### Q: Why is building a string in a loop with `+=` a problem, and what do you do instead?
@@ -785,3 +1162,470 @@ single-child nodes into one edge, or a DAWG if the word set is static.
 - **Trie** — prefix tree; O(length) insert and lookup, independent of dictionary size.
 - **Radix tree** — a trie with single-child chains compressed into one edge.
 - **KMP** — Knuth–Morris–Pratt; O(n + m) substring search using a failure table.
+
+---
+
+## Exercises
+
+Strings are immutable in TypeScript: build into an array and `join('')` once.
+Problems marked **core** are the must-solve set.
+
+### Exercise: Toggle the case of every letter
+**Level:** foundation · **Topic:** character codes (±32, or XOR 32) · **Hint:** Upper and lower case differ by exactly one bit.
+**Function:** `toggleCase(s: string): string`
+**Source:** scaler
+
+`s` contains only letters. Return it with every letter's case flipped.
+`"InterViewBit"` → `"iNTERvIEWbIT"`.
+
+```tests
+[{"args": ["InterViewBit"], "expected": "iNTERvIEWbIT"},
+ {"args": ["a"], "expected": "A"},
+ {"args": [""], "expected": ""},
+ {"args": ["ABCxyz"], "expected": "abcXYZ"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function toggleCase(s: string): string {
+  const out: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = String.fromCharCode(s.charCodeAt(i) ^ 32);
+  return out.join('');
+}
+```
+</details>
+
+### Exercise: Reverse a string
+**Level:** foundation · **Topic:** two pointers on a character array · **Hint:** Strings are immutable — work on an array of characters.
+**Function:** `reverseString(s: string): string`
+**Source:** scaler
+
+Return `s` reversed. `"scaler"` → `"relacs"`.
+
+```tests
+[{"args": ["scaler"], "expected": "relacs"},
+ {"args": [""], "expected": ""},
+ {"args": ["a"], "expected": "a"},
+ {"args": ["ab"], "expected": "ba"},
+ {"args": ["racecar"], "expected": "racecar"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function reverseString(s: string): string {
+  const a = s.split('');
+  for (let i = 0, j = a.length - 1; i < j; i++, j--) [a[i], a[j]] = [a[j], a[i]];
+  return a.join('');
+}
+```
+</details>
+
+### Exercise: Reverse the words in a sentence
+**Level:** foundation · **Topic:** scan words, reverse their order · **Hint:** Collect the words while skipping runs of spaces.
+**Function:** `reverseWords(s: string): string`
+**Core:** true · **Source:** scaler
+
+Return the words of `s` in reverse order, separated by single spaces, with no leading or trailing spaces.
+`"  the sky  is blue "` → `"blue is sky the"`.
+
+```tests
+[{"args": ["  the sky  is blue "], "expected": "blue is sky the"},
+ {"args": ["hello"], "expected": "hello"},
+ {"args": ["   "], "expected": ""},
+ {"args": ["a b"], "expected": "b a"},
+ {"args": [""], "expected": ""}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function reverseWords(s: string): string {
+  const words: string[] = [];
+  let i = 0;
+  while (i < s.length) {
+    while (i < s.length && s[i] === ' ') i++;
+    let j = i;
+    while (j < s.length && s[j] !== ' ') j++;
+    if (i < j) words.push(s.slice(i, j));
+    i = j;
+  }
+  return words.reverse().join(' ');
+}
+```
+</details>
+
+### Exercise: Sort a lowercase string
+**Level:** foundation · **Topic:** counting sort over 26 letters · **Hint:** Count each letter, then emit them in order.
+**Function:** `sortLowercase(s: string): string`
+**Core:** true · **Source:** scaler
+
+`s` has only `a`–`z`. Return its letters sorted, in O(n). `"dcbeaed"` → `"abcddee"`.
+
+```tests
+[{"args": ["dcbeaed"], "expected": "abcddee"},
+ {"args": [""], "expected": ""},
+ {"args": ["zzza"], "expected": "azzz"},
+ {"args": ["abc"], "expected": "abc"},
+ {"gen": "['zyxwvutsrqponmlkjihgfedcba'.repeat(20000)]", "perf": true, "label": "n = 520,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function sortLowercase(s: string): string {
+  const count = new Array<number>(26).fill(0);
+  for (let i = 0; i < s.length; i++) count[s.charCodeAt(i) - 97]++;
+  const out: string[] = [];
+  for (let c = 0; c < 26; c++) if (count[c]) out.push(String.fromCharCode(97 + c).repeat(count[c]));
+  return out.join('');
+}
+```
+</details>
+
+### Exercise: Count 'a' … 'g' pairs
+**Level:** foundation · **Topic:** carry forward a count · **Hint:** Every 'g' pairs with every 'a' seen before it.
+**Function:** `countAGPairs(s: string): number`
+**Core:** true · **Source:** scaler
+
+Count index pairs `i < j` with `s[i] === 'a'` and `s[j] === 'g'`.
+`"abegag"` → `3`.
+
+```tests
+[{"args": ["abegag"], "expected": 3},
+ {"args": ["aaggg"], "expected": 6},
+ {"args": ["ga"], "expected": 0},
+ {"args": [""], "expected": 0},
+ {"args": ["agag"], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countAGPairs(s: string): number {
+  let countA = 0, pairs = 0;
+  for (const ch of s) {
+    if (ch === 'a') countA++;
+    else if (ch === 'g') pairs += countA;
+  }
+  return pairs;
+}
+```
+</details>
+
+### Exercise: Is it a palindrome?
+**Level:** foundation · **Topic:** two pointers from the ends · **Hint:** Compare the ends and move inward; stop at the first mismatch.
+**Function:** `isPalindrome(s: string): boolean`
+**Source:** scaler
+
+Return `true` if `s` reads the same forwards and backwards. `"madam"` → `true`, `"scaler"` → `false`.
+
+```tests
+[{"args": ["madam"], "expected": true},
+ {"args": ["naman"], "expected": true},
+ {"args": ["scaler"], "expected": false},
+ {"args": [""], "expected": true},
+ {"args": ["ab"], "expected": false},
+ {"args": ["aa"], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isPalindrome(s: string): boolean {
+  for (let l = 0, r = s.length - 1; l < r; l++, r--) if (s[l] !== s[r]) return false;
+  return true;
+}
+```
+</details>
+
+### Exercise: Is a substring a palindrome?
+**Level:** foundation · **Topic:** two pointers on a range · **Hint:** Same check, but start at l and r instead of the ends.
+**Function:** `isPalindromeRange(s: string, l: number, r: number): boolean`
+**Source:** scaler
+
+Return `true` if `s[l..r]` (inclusive) is a palindrome. `("anamadamspe", 3, 7)` → `true` ("madam").
+
+```tests
+[{"args": ["anamadamspe", 3, 7], "expected": true},
+ {"args": ["anamadamspe", 0, 3], "expected": false},
+ {"args": ["abc", 1, 1], "expected": true},
+ {"args": ["abba", 0, 3], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isPalindromeRange(s: string, l: number, r: number): boolean {
+  for (; l < r; l++, r--) if (s[l] !== s[r]) return false;
+  return true;
+}
+```
+</details>
+
+### Exercise: Count palindromic substrings
+**Level:** intermediate · **Topic:** expand around each centre · **Hint:** There are 2n − 1 centres: every character and every gap.
+**Function:** `countPalindromicSubstrings(s: string): number`
+**Core:** true · **Source:** scaler
+
+Count the substrings of `s` that are palindromes (each occurrence counts). `"aaa"` → `6`, `"abc"` → `3`.
+
+```tests
+[{"args": ["aaa"], "expected": 6},
+ {"args": ["abc"], "expected": 3},
+ {"args": [""], "expected": 0},
+ {"args": ["abba"], "expected": 6},
+ {"args": ["a"], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countPalindromicSubstrings(s: string): number {
+  let count = 0;
+  const expand = (l: number, r: number) => {
+    while (l >= 0 && r < s.length && s[l] === s[r]) { count++; l--; r++; }
+  };
+  for (let c = 0; c < s.length; c++) { expand(c, c); expand(c, c + 1); }
+  return count;
+}
+```
+</details>
+
+### Exercise: First non-repeating character
+**Level:** foundation · **Topic:** frequency count, then scan · **Hint:** Count every character, then find the first with count 1.
+**Function:** `firstUniqChar(s: string): number`
+
+Return the **index** of the first character that appears exactly once, or `-1`.
+`"leetcode"` → `0`; `"loveleetcode"` → `2`; `"aabb"` → `-1`.
+
+```tests
+[{"args": ["leetcode"], "expected": 0},
+ {"args": ["loveleetcode"], "expected": 2},
+ {"args": ["aabb"], "expected": -1},
+ {"args": [""], "expected": -1},
+ {"args": ["z"], "expected": 0}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function firstUniqChar(s: string): number {
+  const count = new Map<string, number>();
+  for (const ch of s) count.set(ch, (count.get(ch) ?? 0) + 1);
+  for (let i = 0; i < s.length; i++) if (count.get(s[i]) === 1) return i;
+  return -1;
+}
+```
+</details>
+
+### Exercise: Longest substring without repeating characters
+**Level:** intermediate · **Topic:** variable sliding window · **Hint:** Remember where each character was last seen; jump the left edge past it.
+**Function:** `lengthOfLongestSubstring(s: string): number`
+**Core:** true
+
+Return the length of the longest substring with all-distinct characters.
+`"abcabcbb"` → `3`; `"pwwkew"` → `3`.
+
+```tests
+[{"args": ["abcabcbb"], "expected": 3},
+ {"args": ["bbbbb"], "expected": 1},
+ {"args": ["pwwkew"], "expected": 3},
+ {"args": [""], "expected": 0},
+ {"args": ["abba"], "expected": 2},
+ {"args": ["dvdf"], "expected": 3},
+ {"gen": "['abcdefghijklmnopqrstuvwxyz'.repeat(4000)]", "perf": true, "label": "n = 104,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function lengthOfLongestSubstring(s: string): number {
+  const last = new Map<string, number>();
+  let best = 0, l = 0;
+  for (let r = 0; r < s.length; r++) {
+    const prev = last.get(s[r]);
+    if (prev !== undefined && prev >= l) l = prev + 1;
+    last.set(s[r], r);
+    best = Math.max(best, r - l + 1);
+  }
+  return best;
+}
+```
+</details>
+
+### Exercise: Minimum window substring
+**Level:** senior · **Topic:** sliding window with counts · **Hint:** Grow until every needed count is met, then shrink while it still is.
+**Function:** `minWindow(s: string, t: string): string`
+**Core:** true
+
+Return the shortest substring of `s` containing every character of `t` (with multiplicity), or `""`. The answer is unique in the tests.
+`s = "ADOBECODEBANC", t = "ABC"` → `"BANC"`.
+
+```tests
+[{"args": ["ADOBECODEBANC", "ABC"], "expected": "BANC"},
+ {"args": ["a", "a"], "expected": "a"},
+ {"args": ["a", "aa"], "expected": ""},
+ {"args": ["ab", "b"], "expected": "b"},
+ {"args": ["aaflslflsldkalskaaa", "aaa"], "expected": "aaa"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function minWindow(s: string, t: string): string {
+  const need = new Map<string, number>();
+  for (const ch of t) need.set(ch, (need.get(ch) ?? 0) + 1);
+  let missing = t.length, l = 0, bestL = 0, bestLen = Infinity;
+  for (let r = 0; r < s.length; r++) {
+    const c = s[r];
+    if ((need.get(c) ?? 0) > 0) missing--;
+    need.set(c, (need.get(c) ?? 0) - 1);
+    while (missing === 0) {
+      if (r - l + 1 < bestLen) { bestLen = r - l + 1; bestL = l; }
+      const d = s[l++];
+      need.set(d, need.get(d)! + 1);
+      if (need.get(d)! > 0) missing++;
+    }
+  }
+  return bestLen === Infinity ? '' : s.slice(bestL, bestL + bestLen);
+}
+```
+</details>
+
+### Exercise: Group anagrams
+**Level:** intermediate · **Topic:** canonical key in a hash map · **Hint:** Words that are anagrams share the same sorted letters.
+**Function:** `groupAnagrams(words: string[]): string[][]`
+**Core:** true · **Compare:** unordered
+
+Group the words that are anagrams of each other. Inside each group keep the input order; the groups may come in any order.
+`["eat","tea","tan","ate","nat","bat"]` → `[["eat","tea","ate"],["tan","nat"],["bat"]]`.
+
+```tests
+[{"args": [["eat", "tea", "tan", "ate", "nat", "bat"]], "expected": [["eat", "tea", "ate"], ["tan", "nat"], ["bat"]]},
+ {"args": [[""]], "expected": [[""]]},
+ {"args": [["a"]], "expected": [["a"]]},
+ {"args": [["ab", "ba", "abc"]], "expected": [["ab", "ba"], ["abc"]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function groupAnagrams(words: string[]): string[][] {
+  const groups = new Map<string, string[]>();
+  for (const w of words) {
+    const key = [...w].sort().join('');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(w);
+  }
+  return [...groups.values()];
+}
+```
+</details>
+
+### Exercise: Longest palindromic substring
+**Level:** intermediate · **Topic:** expand around centre, keep the best · **Hint:** Every palindrome has a centre — try all 2n − 1 of them.
+**Function:** `longestPalindrome(s: string): string`
+
+Return the longest palindromic substring (the tests have a unique answer). `"cbbd"` → `"bb"`; `"forgeeksskeegfor"` → `"geeksskeeg"`.
+
+```tests
+[{"args": ["cbbd"], "expected": "bb"},
+ {"args": ["forgeeksskeegfor"], "expected": "geeksskeeg"},
+ {"args": ["a"], "expected": "a"},
+ {"args": ["abacdfgdcaba"], "expected": "aba"},
+ {"args": ["racecar"], "expected": "racecar"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function longestPalindrome(s: string): string {
+  let start = 0, len = 0;
+  const expand = (l: number, r: number) => {
+    while (l >= 0 && r < s.length && s[l] === s[r]) { l--; r++; }
+    if (r - l - 1 > len) { len = r - l - 1; start = l + 1; }
+  };
+  for (let c = 0; c < s.length; c++) { expand(c, c); expand(c, c + 1); }
+  return s.slice(start, start + len);
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Strings are immutable** in JS/TS: build into an array and `join('')` once — `+=` in a loop can go quadratic.
+- **Character codes:** `'a'` = 97, `'A'` = 65; case differs by exactly 32 (one bit).
+- **Bounded alphabet → count array** of 26 instead of a map; counting sort is O(n).
+- **Carry forward over characters** — every 'g' pairs with every 'a' before it.
+- **Palindromes:** two pointers to check one, expand around 2n − 1 centres to find or count them.
+- **Sliding window with counts** for "substring containing / without" questions.
+- **Map vs Set:** O(1) average operations; object keys compare by reference, so key by a canonical string.
+
+## Quiz
+
+### MCQ: Why avoid `s += ch` inside a loop over a long string?
+- [ ] It's a syntax error in TS
+- [x] Each += may copy the whole string, making the loop O(n²)
+- [ ] It changes the string's encoding
+- [ ] It only works for ASCII
+**Why:** Strings are immutable; collect characters in an array and join once.
+
+### MCQ: `String.fromCharCode('a'.charCodeAt(0) ^ 32)` gives…
+- [ ] 'b'
+- [x] 'A'
+- [ ] ' '
+- [ ] 'a'
+**Why:** Upper and lower case differ only in bit 5 (value 32); XOR flips it.
+
+### MCQ: Sorting a string of only lowercase letters can be done in…
+- [ ] O(n log n) at best
+- [x] O(n) with a 26-slot count array
+- [ ] O(n²)
+- [ ] O(26 log n)
+**Why:** Counting sort: count each letter, emit them in order.
+
+### MCQ: How many centres does expand-around-centre try for a string of length n?
+- [ ] n
+- [ ] n / 2
+- [x] 2n − 1
+- [ ] n²
+**Why:** n single characters (odd lengths) plus n − 1 gaps (even lengths).
+
+### MCQ: `new Map().set([1, 2], 'x').get([1, 2])` returns…
+- [ ] 'x'
+- [x] undefined
+- [ ] It throws
+- [ ] [1, 2]
+**Why:** Objects and arrays are compared by reference — use a canonical string key like '1,2'.
+
+### MCQ: Longest substring without repeats: when you see a repeated character, the left edge…
+- [ ] Resets to 0
+- [ ] Moves one step right
+- [x] Jumps just past that character's previous position (if inside the window)
+- [ ] Stays put
+**Why:** Everything up to the earlier copy can't be in a valid window any more.
+
+### MCQ: Group anagrams uses which key per word?
+- [ ] The word's length
+- [ ] The first letter
+- [x] The word's sorted letters (or a 26-count signature)
+- [ ] The word reversed
+**Why:** All anagrams share one canonical form.
+
+### MCQ: Why must 'first non-repeating element' scan the array, not the map, in a portable answer?
+- [ ] Maps are slower
+- [x] Only the array gives input order; map iteration order isn't guaranteed in every language
+- [ ] Maps can't store counts
+- [ ] The map is empty by then
+**Why:** JS Map keeps insertion order, but Java's HashMap doesn't — the array order is the safe source.
+
+### MCQ: What makes a hash map's worst case O(n)?
+- [ ] Too few keys
+- [x] Many keys colliding into one bucket
+- [ ] Using string keys
+- [ ] Deleting keys
+**Why:** Collisions — by chance or an attacker's choice. Seeded hashing and tree-ified buckets (Java 8) defend against it.

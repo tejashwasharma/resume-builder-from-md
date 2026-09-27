@@ -79,3 +79,39 @@ never rewrite existing entries.
 - `/drill weak` — read `progress/log.md`, drill what they've previously
   struggled with, across topics.
 - `/drill <topic> quick` — 3 questions, no follow-ups.
+- `/drill <topic> coding` (or "coding practice", "give me a problem") —
+  coding-practice mode, below.
+
+## Coding-practice mode
+
+For problem-solving and coding practice rather than verbal recall. The
+material is the `## Exercises` section of the coding chapters (`04`, `06`,
+`07`, `08`, `13`, `14`, `16`, and more as they gain one): each `### Exercise:`
+block has a statement, a `**Hint:**`, a ```tests fence and a reference
+solution. The same problems run in the study site's Code stage; this is the
+terminal version of it.
+
+1. **Pose only the problem** — the statement under the heading. Nothing from
+   the Hint, the Solution, or the chapter's Workshop walkthrough. Ask for a
+   TypeScript solution with the exact signature in `**Function:**`.
+2. **Make them talk first.** Brute force and its complexity, then the better
+   idea and its complexity — the order a Google interviewer expects. If they
+   are stuck after one nudge, give the `**Topic:**` and `**Hint:**` line —
+   never more.
+3. **Run their code against the block's tests.** Write their code plus a small
+   harness to a scratch file (reuse `site/runner.js`: `makeRunner().run(fn,
+   tests, {adapter, check, compare, ref})`, with the reference solution as
+   `ref` for `gen` cases), and run it with
+   `node --experimental-transform-types --no-warnings <file>.ts`. Report each
+   failing case with input, expected and actual. A solution that hasn't been
+   run hasn't been graded.
+4. **Grade** on correctness (the run), complexity (including whether a `perf`
+   case passes), edge cases handled unprompted, and whether they stated the
+   approach before coding. Then show the reference solution and point at the
+   specific difference.
+5. **Escalate** with a variant (the Workshop section's follow-ups are good
+   sources) and have them code it.
+
+Log it like any other drill, with the topic as `<topic> coding` and the weak
+areas phrased as the bug or missed insight (`forgot k %= n in rotate`), not
+the problem name.

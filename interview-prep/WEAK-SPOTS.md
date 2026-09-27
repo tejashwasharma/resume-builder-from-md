@@ -29,25 +29,30 @@ is what signals the level.
 
 ---
 
-## 2. Golang is listed but nothing you describe used it
+## 2. Golang — "you migrated a 2–3B request/day service to Go. Prove it."
 
-**The gap.** Go sits in your Backend skill line. All eleven Contentstack
-bullets describe Node/NestJS work. Nothing on the page evidences Go.
+**The gap.** Design 1 lists Go in the skills line only. Design 2 goes much
+further: the headline latency bullet says the win came partly from
+*migrating the auth service from Node.js to Golang*. That turns Go from a
+listed skill into a claimed production migration on the most important
+service on the page.
 
-**Why it bites.** Listing a language invites a question in it, and "I've used
-it a little" after listing it alongside Node reads worse than not listing it.
+**Why it bites.** A migration claim draws three probes, in order: *why Go*
+(what did Node actually fail at — a specific property, not "Go is faster"),
+*how did you migrate without an outage* (shadow traffic, decision diffing,
+canary), and *how much of 13s → 200ms was the language vs the policy and
+cache redesign*. Crediting the whole 65x to the rewrite is the answer a
+senior interviewer is waiting to catch.
 
-**Two honest routes** — pick one, don't drift between them:
+**What resolves it.** [contentstack](00-experience/contentstack.md) Story 9
+has the structure for all three, and
+[the Go chapter](03-backend/03-golang.md) covers the language questions that
+follow (goroutines, channels, `context`, the race detector).
 
-- **Prepare it properly.** `03-backend/03-golang.md` covers goroutines,
-  channels, the memory model, and the questions that actually get asked. This
-  is the better option if you have real Go exposure to build on.
-- **Reframe it.** Move Go to a clearly secondary position on the resume, and
-  have a one-line answer ready: what you used it for, at what depth, and what
-  you'd need to ramp. Confident scoping beats bluffing.
-
-> **FILL IN:** what Go have you actually written? Production service, internal
-> tool, side project, or reading only? The answer decides which route is honest.
+> **FILL IN:** your real share of the migration, the rollout shape, and the
+> credit split between the migration and the Rego/Redis redesign. If you send
+> design 1 (no migration claim), the old risk returns — have a one-line answer
+> for "where have you used Go?"
 
 ---
 

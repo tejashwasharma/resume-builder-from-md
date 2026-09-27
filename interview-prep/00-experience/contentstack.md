@@ -3,9 +3,10 @@
 **Senior Software Engineer I** · Aug 2024 – Aug 2026
 **Software Engineer II** · Nov 2022 – Jul 2024
 
-Eight stories covering all 14 resume bullets. Interviewers ask about
-*projects*, not bullets, so related bullets are grouped into the narrative
-you'd actually tell.
+Ten stories covering all 14 bullets of design 1 plus the two claims only
+design 2 makes (the Node→Go migration and the RAG support bot, Stories 9 and
+10). Interviewers ask about *projects*, not bullets, so related bullets are
+grouped into the narrative you'd actually tell.
 
 Every follow-up has a model answer. Two kinds:
 
@@ -1245,6 +1246,184 @@ than activity.
 
    Together they're the difference between AI tooling that's cost-justified at
    team scale and one that gets switched off when finance notices.
+
+   </details>
+
+---
+
+## Story 9 — Migrating the auth service from Node.js to Go
+
+*Covers design 2's version of bullet 8: "Optimized authentication
+infrastructure serving 2–3B requests daily by migrating the service from
+Node.js to Golang and redesigning Rego/OPA policy evaluation and Redis caching,
+cutting latency from ~13s to under 200ms." Design 1 states the same result
+without the migration — know which version the interviewer is holding.*
+
+**Situation.** An authentication service on the hot path of 2–3B requests a
+day, written in Node.js, with a slow tail (Story 5).
+
+**Task.** Get the tail latency down and give the service headroom.
+
+**Action.** Migrated the service from Node.js to Go, alongside the Rego/OPA and
+Redis redesign in Story 5.
+
+**Result.** Together with Story 5's changes, ~13s → under 200ms at the tail.
+
+> **FILL IN:** the split of credit. How much of the win was the Go migration
+> and how much the policy/caching redesign? If you can't separate them, say so
+> and say why — "we shipped them together behind one flag" is an honest answer;
+> attributing the whole 65x to the language is not, and a senior interviewer
+> will know it.
+
+### Q: Why migrate to Go? What did Node.js actually fail at?
+**Level:** senior · **Tags:** golang, nodejs, performance, migration
+
+<details><summary>Answer — structure to fill</summary>
+
+Interviewers distrust "we rewrote it in a faster language". The answer that
+survives names a **specific property** of the workload and the language:
+
+- **CPU-bound work on the hot path.** Policy evaluation, JWT signature
+  verification and JSON (de)serialisation are CPU work. Node runs JS on one
+  thread per process; a slow evaluation blocks every other request in that
+  process (event-loop lag). Go schedules goroutines across all cores inside
+  one process, so one slow request doesn't stall the rest.
+- **Tail latency from GC and event-loop stalls.** A long synchronous task in
+  Node shows up as p99 latency for *unrelated* requests. Go's GC is
+  low-pause and concurrent, and its scheduler preempts long-running
+  goroutines.
+- **Native OPA.** OPA itself is written in Go and embeddable as a library
+  (`github.com/open-policy-agent/opa/rego`), so evaluation can run in-process
+  with prepared queries instead of over HTTP to a sidecar or through Wasm.
+  If that's what you did, it is probably the strongest single reason.
+- **Memory per request and container density** — fewer, cheaper pods for the
+  same throughput.
+
+> **FILL IN:** which of these was the real driver, with one number you saw
+> (event-loop lag, CPU saturation, pod count, OPA call latency).
+
+</details>
+
+**Follow-ups:**
+
+1. Q: How do you migrate a service on the hot path of 2–3B requests a day without an outage?
+   <details><summary>Answer — structure to fill</summary>
+
+   The standard safe shape — say which parts you used:
+
+   1. **Contract first.** Freeze the API (gRPC/Protobuf makes this natural —
+      the `.proto` is the contract both implementations serve).
+   2. **Shadow traffic.** Mirror production requests to the Go service,
+      discard its responses, and **diff** its decisions against Node's. For an
+      auth service the diff is the whole game — a mismatched allow/deny is a
+      security bug, not a performance bug.
+   3. **Canary by percentage or by tenant**, behind a flag, with automatic
+      rollback on error rate or decision-mismatch rate.
+   4. **Ramp** 1% → 10% → 50% → 100%, then keep Node deployable for a
+      rollback window before deleting it.
+
+   > **FILL IN:** did you shadow and diff? How long was the ramp? What was
+   > the rollback trigger?
+
+   </details>
+
+2. Q: What was hard about writing Go after years of Node?
+   <details><summary>Answer</summary>
+
+   Honest, specific answers score here: explicit error handling instead of
+   exceptions (`if err != nil` everywhere — and it's a feature, because every
+   failure path in an auth service is visible); `context.Context` for
+   deadlines and cancellation through every call; goroutine leaks when a
+   channel is never read; no generics habits carried over carelessly;
+   structuring packages instead of npm modules. See
+   [the Go chapter](../03-backend/03-golang.md).
+
+   > **FILL IN:** one Go bug you actually hit (a goroutine leak, a nil map
+   > write, a data race caught by `-race`) — it's what makes the claim real.
+
+   </details>
+
+---
+
+## Story 10 — The RAG-based Slack support bot
+
+*Covers design 2's AI bullet: "Built a RAG-based Slack support bot on internal
+docs and ticket history, answering questions across the full auth domain
+(RBAC, SSO, SCIM, OAuth) for Contentstack's support team in production."
+Design 1 doesn't carry this bullet — it is design 2 only.*
+
+**Situation.** The support team fielded a steady stream of auth-domain
+questions (RBAC, SSO, SCIM, OAuth) that needed an engineer to answer.
+
+**Task.** Let support answer those themselves, from what the team already
+knew.
+
+**Action.** Built a retrieval-augmented generation (RAG) bot in Slack over
+internal docs and ticket history.
+
+**Result.** Live in production with the support team.
+
+> **FILL IN:** the result as a number — questions answered per week, share
+> resolved without an engineer, time-to-answer before vs after. "Live in
+> production" is the weakest part of the bullet; one metric makes it strong.
+
+The mechanism — ingest, chunk, embed, retrieve, generate with citations — is
+taught in [RAG and LLM-backed bots](../07-ai-tooling/03-rag-and-llm-bots.md).
+
+### Q: Walk me through how your support bot answers a question.
+**Level:** senior · **Tags:** rag, llm, ai-engineering, slack
+
+<details><summary>Answer — structure to fill</summary>
+
+Tell it as the pipeline, one sentence per stage, naming your actual choice at
+each:
+
+1. **Ingest** — which sources (Confluence/docs, resolved tickets, runbooks),
+   how they were kept fresh.
+2. **Chunk** — by heading or by ticket, with overlap; tickets summarised to
+   question + resolution so noise doesn't dominate retrieval.
+3. **Embed and index** — the embedding model and the vector store.
+4. **Retrieve** — top-k by similarity, ideally hybrid with keyword search
+   (error codes like `invalid_grant` or SAML status URNs are exact strings that
+   embeddings handle badly).
+5. **Generate** — the model, a prompt that says "answer only from the context,
+   cite the source, say you don't know otherwise".
+6. **Answer in the thread** with source links, and collect 👍/👎 as feedback.
+
+> **FILL IN:** your stack at each step (embedding model, vector store, LLM,
+> framework if any), and the chunking rule you settled on.
+
+</details>
+
+**Follow-ups:**
+
+1. Q: How did you stop it from confidently answering wrong?
+   <details><summary>Answer — structure to fill</summary>
+
+   The defences that matter: retrieve-then-answer only from context; a
+   similarity threshold below which it says "I don't know — here are the
+   closest docs"; mandatory citations so a human can check; a golden set of
+   real questions with known answers re-run on every prompt or index change;
+   and the feedback reactions reviewed weekly.
+
+   > **FILL IN:** which of these you had, and one wrong answer you caught and
+   > what you changed because of it.
+
+   </details>
+
+2. Q: Ticket history contains customer data. How did you handle access control?
+   <details><summary>Answer — structure to fill</summary>
+
+   This is your domain — answer it like an IAM engineer. Options: scrub or
+   redact PII and customer identifiers at ingestion; restrict the bot to the
+   support channel/workspace whose members may already see those tickets; and,
+   strongest, **permission-aware retrieval** — tag every chunk with its source
+   ACL and filter retrieval by the asker's identity, so the bot can never
+   surface a document the asker couldn't open themselves. Plus: never put
+   secrets or tokens in the index, and treat retrieved text as untrusted input
+   (prompt injection from a ticket body).
+
+   > **FILL IN:** what you actually did at ingestion and at query time.
 
    </details>
 

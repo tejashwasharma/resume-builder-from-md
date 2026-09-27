@@ -807,3 +807,440 @@ ship.
 - **Ring buffer** — a fixed-capacity queue reusing slots via modular arithmetic.
 - **Level batching** — expanding a whole BFS level per iteration so a counter measures distance.
 - **Sentinel** — an artificial element (a trailing `0` bar, a dummy node) that removes an edge case.
+
+---
+
+## Exercises
+
+Design problems (a stack or queue with extra powers) come with a driver already
+written: you implement the class, and `run(ops, args)` replays the operations and
+collects what each returns (`null` for operations that return nothing).
+Problems marked **core** are the must-solve set.
+
+### Exercise: Valid parentheses
+**Level:** foundation · **Topic:** stack of expected closers · **Hint:** Push on an opener; on a closer, the top must match.
+**Function:** `isValid(s: string): boolean`
+**Core:** true
+
+`s` contains only `()[]{}`. Return whether every bracket is closed in the right order.
+`"()[]{}"` → `true`; `"(]"` → `false`; `"([)]"` → `false`.
+
+```tests
+[{"args": ["()[]{}"], "expected": true},
+ {"args": ["(]"], "expected": false},
+ {"args": ["([)]"], "expected": false},
+ {"args": ["{[]}"], "expected": true},
+ {"args": [""], "expected": true},
+ {"args": ["("], "expected": false},
+ {"args": [")"], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isValid(s: string): boolean {
+  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+  const stack: string[] = [];
+  for (const ch of s) {
+    if (ch in pairs) { if (stack.pop() !== pairs[ch]) return false; }
+    else stack.push(ch);
+  }
+  return stack.length === 0;
+}
+```
+</details>
+
+### Exercise: Min stack
+**Level:** intermediate · **Topic:** a parallel stack of running minima · **Hint:** Store, next to each value, the minimum at the time it was pushed.
+**Function:** `run(ops: string[], args: number[][]): (number | null)[]`
+**Core:** true
+
+Implement `MinStack` with `push(x)`, `pop()`, `top()` and `getMin()`, all O(1). The driver replays `ops[i]` with `args[i]` and collects each return value (`null` when there is none).
+`["push","push","push","getMin","pop","top","getMin"]` with `[[-2],[0],[-3],[],[],[],[]]` → `[null,null,null,-3,null,0,-2]`.
+
+```starter
+class MinStack {
+  push(x: number): void {}
+  pop(): void {}
+  top(): number { return 0; }
+  getMin(): number { return 0; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: number[][]): (number | null)[] {
+  const s = new MinStack();
+  return ops.map((op, i) => (s as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["push", "push", "push", "getMin", "pop", "top", "getMin"], [[-2], [0], [-3], [], [], [], []]], "expected": [null, null, null, -3, null, 0, -2]},
+ {"args": [["push", "push", "getMin", "pop", "getMin"], [[5], [5], [], [], []]], "expected": [null, null, 5, null, 5]},
+ {"args": [["push", "getMin", "push", "getMin", "top"], [[1], [], [-1], [], []]], "expected": [null, 1, null, -1, -1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MinStack {
+  private vals: number[] = [];
+  private mins: number[] = [];
+  push(x: number): void {
+    this.vals.push(x);
+    this.mins.push(this.mins.length ? Math.min(x, this.mins[this.mins.length - 1]) : x);
+  }
+  pop(): void { this.vals.pop(); this.mins.pop(); }
+  top(): number { return this.vals[this.vals.length - 1]; }
+  getMin(): number { return this.mins[this.mins.length - 1]; }
+}
+
+function run(ops: string[], args: number[][]): (number | null)[] {
+  const s = new MinStack();
+  return ops.map((op, i) => (s as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Queue using two stacks
+**Level:** intermediate · **Topic:** amortised transfer from in-stack to out-stack · **Hint:** Only pour the in-stack into the out-stack when the out-stack is empty.
+**Function:** `run(ops: string[], args: number[][]): (number | boolean | null)[]`
+
+Implement `MyQueue` (`push(x)`, `pop()`, `peek()`, `empty()`) using only two stacks, amortised O(1) per operation. The driver replays `ops[i]` with `args[i]` and collects each return value (`null` when there is none).
+
+```starter
+class MyQueue {
+  push(x: number): void {}
+  pop(): number { return 0; }
+  peek(): number { return 0; }
+  empty(): boolean { return true; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: number[][]): (number | boolean | null)[] {
+  const q = new MyQueue();
+  return ops.map((op, i) => (q as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["push", "push", "peek", "pop", "empty"], [[1], [2], [], [], []]], "expected": [null, null, 1, 1, false]},
+ {"args": [["push", "pop", "empty", "push", "push", "pop", "peek"], [[5], [], [], [6], [7], [], []]], "expected": [null, 5, true, null, null, 6, 7]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class MyQueue {
+  private inS: number[] = [];
+  private outS: number[] = [];
+  push(x: number): void { this.inS.push(x); }
+  private shift(): void { if (!this.outS.length) while (this.inS.length) this.outS.push(this.inS.pop()!); }
+  pop(): number { this.shift(); return this.outS.pop()!; }
+  peek(): number { this.shift(); return this.outS[this.outS.length - 1]; }
+  empty(): boolean { return !this.inS.length && !this.outS.length; }
+}
+
+function run(ops: string[], args: number[][]): (number | boolean | null)[] {
+  const q = new MyQueue();
+  return ops.map((op, i) => (q as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Evaluate reverse Polish notation
+**Level:** foundation · **Topic:** stack as an evaluator · **Hint:** Numbers push; an operator pops two, applies, pushes the result.
+**Function:** `evalRPN(tokens: string[]): number`
+
+Evaluate an expression in reverse Polish notation with `+ - * /`; division truncates toward zero.
+`["2","1","+","3","*"]` → `9`; `["4","13","5","/","+"]` → `6`.
+
+```tests
+[{"args": [["2", "1", "+", "3", "*"]], "expected": 9},
+ {"args": [["4", "13", "5", "/", "+"]], "expected": 6},
+ {"args": [["10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+"]], "expected": 22},
+ {"args": [["7"]], "expected": 7},
+ {"args": [["7", "-2", "/"]], "expected": -3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function evalRPN(tokens: string[]): number {
+  const st: number[] = [];
+  for (const t of tokens) {
+    if (!'+-*/'.includes(t) || t.length > 1) { st.push(Number(t)); continue; }
+    const b = st.pop()!, a = st.pop()!;
+    st.push(t === '+' ? a + b : t === '-' ? a - b : t === '*' ? a * b : Math.trunc(a / b));
+  }
+  return st[0];
+}
+```
+</details>
+
+### Exercise: Next greater element
+**Level:** intermediate · **Topic:** monotonic decreasing stack · **Hint:** Keep a stack of indices still waiting for something bigger.
+**Function:** `nextGreater(nums: number[]): number[]`
+**Core:** true
+
+For each element, return the first strictly greater element to its right, or `-1`.
+`[4, 5, 2, 25]` → `[5, 25, 25, -1]`.
+
+```tests
+[{"args": [[4, 5, 2, 25]], "expected": [5, 25, 25, -1]},
+ {"args": [[13, 7, 6, 12]], "expected": [-1, 12, 12, -1]},
+ {"args": [[]], "expected": []},
+ {"args": [[1, 1, 1]], "expected": [-1, -1, -1]},
+ {"gen": "[Array.from({length: 100000}, (_, i) => 100000 - i)]", "perf": true, "label": "n = 100,000, decreasing"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function nextGreater(nums: number[]): number[] {
+  const out = new Array<number>(nums.length).fill(-1);
+  const st: number[] = [];
+  for (let i = 0; i < nums.length; i++) {
+    while (st.length && nums[st[st.length - 1]] < nums[i]) out[st.pop()!] = nums[i];
+    st.push(i);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Daily temperatures
+**Level:** intermediate · **Topic:** monotonic stack storing indices · **Hint:** The answer is a distance, so the stack holds indices.
+**Function:** `dailyTemperatures(t: number[]): number[]`
+
+For each day, how many days until a warmer temperature (0 if none)?
+`[73,74,75,71,69,72,76,73]` → `[1,1,4,2,1,1,0,0]`.
+
+```tests
+[{"args": [[73, 74, 75, 71, 69, 72, 76, 73]], "expected": [1, 1, 4, 2, 1, 1, 0, 0]},
+ {"args": [[30, 40, 50, 60]], "expected": [1, 1, 1, 0]},
+ {"args": [[30, 20, 10]], "expected": [0, 0, 0]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function dailyTemperatures(t: number[]): number[] {
+  const out = new Array<number>(t.length).fill(0);
+  const st: number[] = [];
+  for (let i = 0; i < t.length; i++) {
+    while (st.length && t[st[st.length - 1]] < t[i]) { const j = st.pop()!; out[j] = i - j; }
+    st.push(i);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Nearest smaller element to the left
+**Level:** intermediate · **Topic:** monotonic increasing stack · **Hint:** Pop everything that is not smaller; what's left on top is the answer.
+**Function:** `prevSmaller(nums: number[]): number[]`
+**Source:** scaler
+
+For each element, the nearest element to its left that is strictly smaller, or `-1`.
+`[4, 5, 2, 10, 8]` → `[-1, 4, -1, 2, 2]`.
+
+```tests
+[{"args": [[4, 5, 2, 10, 8]], "expected": [-1, 4, -1, 2, 2]},
+ {"args": [[3, 2, 1]], "expected": [-1, -1, -1]},
+ {"args": [[1, 3, 0, 2, 5]], "expected": [-1, 1, -1, 0, 2]},
+ {"args": [[2, 2]], "expected": [-1, -1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function prevSmaller(nums: number[]): number[] {
+  const out: number[] = [];
+  const st: number[] = [];
+  for (const x of nums) {
+    while (st.length && st[st.length - 1] >= x) st.pop();
+    out.push(st.length ? st[st.length - 1] : -1);
+    st.push(x);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Largest rectangle in a histogram
+**Level:** senior · **Topic:** monotonic stack with a sentinel bar · **Hint:** When a bar is popped, the current index is its right boundary and the new top its left.
+**Function:** `largestRectangleArea(heights: number[]): number`
+**Core:** true
+
+Bars of width 1; return the area of the largest rectangle that fits under them.
+`[2,1,5,6,2,3]` → `10`.
+
+```tests
+[{"args": [[2, 1, 5, 6, 2, 3]], "expected": 10},
+ {"args": [[2, 4]], "expected": 4},
+ {"args": [[]], "expected": 0},
+ {"args": [[1, 1, 1, 1]], "expected": 4},
+ {"args": [[6, 2, 5, 4, 5, 1, 6]], "expected": 12},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 37) % 1000 + 1)]", "perf": true, "label": "n = 100,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function largestRectangleArea(heights: number[]): number {
+  const st: number[] = [];
+  let best = 0;
+  for (let i = 0; i <= heights.length; i++) {
+    const h = i === heights.length ? 0 : heights[i];            // sentinel flushes the stack
+    while (st.length && heights[st[st.length - 1]] >= h) {
+      const top = st.pop()!;
+      const left = st.length ? st[st.length - 1] + 1 : 0;
+      best = Math.max(best, heights[top] * (i - left));
+    }
+    st.push(i);
+  }
+  return best;
+}
+```
+</details>
+
+### Exercise: Sliding window maximum
+**Level:** senior · **Topic:** monotonic deque of indices · **Hint:** Front holds the window's max; drop smaller values from the back.
+**Function:** `maxSlidingWindow(nums: number[], k: number): number[]`
+**Core:** true
+
+Return the maximum of every window of size `k`, in O(n).
+`[1,3,-1,-3,5,3,6,7], k = 3` → `[3,3,5,5,6,7]`.
+
+```tests
+[{"args": [[1, 3, -1, -3, 5, 3, 6, 7], 3], "expected": [3, 3, 5, 5, 6, 7]},
+ {"args": [[1], 1], "expected": [1]},
+ {"args": [[9, 8, 7], 2], "expected": [9, 8]},
+ {"args": [[1, 2, 3], 3], "expected": [3]},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 7919) % 10007), 1000]", "perf": true, "label": "n = 100,000, k = 1,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function maxSlidingWindow(nums: number[], k: number): number[] {
+  const dq: number[] = [];
+  let head = 0;
+  const out: number[] = [];
+  for (let i = 0; i < nums.length; i++) {
+    if (head < dq.length && dq[head] <= i - k) head++;               // left the window
+    while (dq.length > head && nums[dq[dq.length - 1]] <= nums[i]) dq.pop();
+    dq.push(i);
+    if (i >= k - 1) out.push(nums[dq[head]]);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Basic calculator
+**Level:** senior · **Topic:** stack of signs for parentheses · **Hint:** Track a running result and the sign in effect; push context on '('.
+**Function:** `calculate(s: string): number`
+
+Evaluate a string with non-negative integers, `+`, `-`, parentheses and spaces (unary minus allowed).
+`"1 + 1"` → `2`; `"(1+(4+5+2)-3)+(6+8)"` → `23`.
+
+```tests
+[{"args": ["1 + 1"], "expected": 2},
+ {"args": [" 2-1 + 2 "], "expected": 3},
+ {"args": ["(1+(4+5+2)-3)+(6+8)"], "expected": 23},
+ {"args": ["-(2+3)"], "expected": -5},
+ {"args": ["10-(2-3)"], "expected": 11}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function calculate(s: string): number {
+  let result = 0, sign = 1, num = 0;
+  const st: number[] = [];
+  for (const ch of s) {
+    if (ch >= '0' && ch <= '9') num = num * 10 + (ch.charCodeAt(0) - 48);
+    else if (ch === '+' || ch === '-') { result += sign * num; num = 0; sign = ch === '+' ? 1 : -1; }
+    else if (ch === '(') { st.push(result, sign); result = 0; sign = 1; }
+    else if (ch === ')') {
+      result += sign * num; num = 0;
+      const prevSign = st.pop()!, prev = st.pop()!;
+      result = prev + prevSign * result;
+    }
+  }
+  return result + sign * num;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Stack = LIFO:** matching brackets, undo, evaluating expressions, simulating recursion.
+- **Queue = FIFO:** BFS and scheduling. In JS never `shift()` in a loop — keep a head index.
+- **Monotonic stack:** each element waits until something larger (or smaller) pops it — next greater, daily temperatures, histograms. O(n), because each index is pushed and popped once.
+- **Monotonic deque:** the front is the window's max; drop smaller values from the back, expired indices from the front.
+- **A sentinel value** (a final bar of height 0) flushes the stack so no special case is needed at the end.
+- **Queue from two stacks** is amortised O(1): only pour when the out-stack is empty.
+
+---
+
+## Quiz
+
+### MCQ: Why is a monotonic-stack solution O(n) despite the inner while loop?
+- [ ] The loop runs at most once
+- [x] Each index is pushed once and popped at most once
+- [ ] The stack is bounded by k
+- [ ] It isn't — it's O(n²)
+**Why:** Total pops across the whole run can't exceed total pushes.
+
+### MCQ: For 'next greater element', the stack holds values in which order (bottom → top)?
+- [ ] Increasing
+- [x] Decreasing
+- [ ] Sorted by index only
+- [ ] Random
+**Why:** Anything smaller than the incoming value is popped — what remains is decreasing.
+
+### MCQ: Why does 'daily temperatures' push indices rather than values?
+- [ ] Values can repeat
+- [x] The answer is a distance in days
+- [ ] Indices are smaller
+- [ ] To save memory
+**Why:** You need i − j when a warmer day pops day j.
+
+### MCQ: In the histogram problem, what does a popped bar's rectangle extend between?
+- [ ] 0 and n
+- [x] The new stack top + 1 and the current index − 1
+- [ ] Its neighbours only
+- [ ] The two tallest bars
+**Why:** The current index is the first shorter bar on the right; the new top is the first shorter on the left.
+
+### MCQ: Sliding window maximum: when do you drop the deque's front?
+- [ ] When it's smaller than the new value
+- [x] When its index has left the window
+- [ ] Every step
+- [ ] Never
+**Why:** Smaller values leave from the back; expired indices leave from the front.
+
+### MCQ: Queue using two stacks: what's the cost of a single `pop`?
+- [ ] Always O(1)
+- [x] O(n) worst case, O(1) amortised
+- [ ] O(log n)
+- [ ] O(n) always
+**Why:** A pour moves everything once, but each element is poured at most once over its life.
+
+### MCQ: Why avoid `array.shift()` for a BFS queue in JavaScript?
+- [ ] It's not defined for arrays
+- [x] It's O(n) — it reindexes every element
+- [ ] It reverses the array
+- [ ] It skips elements
+**Why:** Use a head pointer, so dequeuing is O(1).
+
+### MCQ: Min stack: how does `getMin` stay O(1) after pops?
+- [ ] Rescan on each pop
+- [x] Store the running minimum alongside each pushed value
+- [ ] Keep a sorted copy
+- [ ] Use a heap
+**Why:** Each level remembers the minimum as of its push, so popping restores the previous minimum.

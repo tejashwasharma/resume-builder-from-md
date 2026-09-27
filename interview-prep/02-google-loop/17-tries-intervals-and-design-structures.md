@@ -1187,3 +1187,519 @@ because these structures fail on the third call, not the first.
 - **Preference list** — the next K distinct nodes clockwise; where replicas go.
 - **Lazy iterator** — one that computes the next element on demand from an explicit stack.
 - **Amortised O(1)** — constant per operation averaged over a sequence, though a single call may cost more.
+
+---
+
+## Exercises
+
+Design-a-structure problems come with a driver already written: implement the
+class, and `run(...)` replays the operations and collects what each returns
+(`null` for operations that return nothing). Problems marked **core** are the
+must-solve set.
+
+### Exercise: Implement a trie
+**Level:** intermediate · **Topic:** nested maps with an end-of-word flag · **Hint:** search needs the flag; startsWith only needs the path.
+**Function:** `run(ops: string[], args: any[][]): (boolean | null)[]`
+**Core:** true
+
+Implement `Trie` with `insert(word)`, `search(word)` and `startsWith(prefix)`.
+`["insert","search","search","startsWith","insert","search"]` with `[["apple"],["apple"],["app"],["app"],["app"],["app"]]` → `[null,true,false,true,null,true]`.
+
+```starter
+class Trie {
+  insert(word: string): void {}
+  search(word: string): boolean { return false; }
+  startsWith(prefix: string): boolean { return false; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (boolean | null)[] {
+  const obj = new Trie();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["insert", "search", "search", "startsWith", "insert", "search"], [["apple"], ["apple"], ["app"], ["app"], ["app"], ["app"]]], "expected": [null, true, false, true, null, true]},
+ {"args": [["search", "startsWith", "insert", "startsWith"], [["a"], [""], ["a"], ["a"]]], "expected": [false, true, null, true]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class Trie {
+  private root: any = {};
+  insert(w: string): void { let n = this.root; for (const c of w) n = n[c] ??= {}; n.$ = true; }
+  private walk(w: string): any { let n = this.root; for (const c of w) { n = n[c]; if (!n) return null; } return n; }
+  search(w: string): boolean { return !!this.walk(w)?.$; }
+  startsWith(p: string): boolean { return this.walk(p) !== null; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (boolean | null)[] {
+  const obj = new Trie();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Add and search words with '.' wildcards
+**Level:** intermediate · **Topic:** DFS over the trie at a wildcard · **Hint:** At a '.', try every child.
+**Function:** `run(ops: string[], args: any[][]): (boolean | null)[]`
+
+Implement `WordDictionary` with `addWord(w)` and `search(w)`, where `.` in a search matches any letter.
+
+```starter
+class WordDictionary {
+  addWord(word: string): void {}
+  search(word: string): boolean { return false; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (boolean | null)[] {
+  const obj = new WordDictionary();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["addWord", "addWord", "addWord", "search", "search", "search", "search"], [["bad"], ["dad"], ["mad"], ["pad"], ["bad"], [".ad"], ["b.."]]], "expected": [null, null, null, false, true, true, true]},
+ {"args": [["addWord", "search", "search"], [["a"], ["."], [".."]]], "expected": [null, true, false]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class WordDictionary {
+  private root: any = {};
+  addWord(w: string): void { let n = this.root; for (const c of w) n = n[c] ??= {}; n.$ = true; }
+  search(w: string): boolean {
+    const go = (n: any, i: number): boolean => {
+      if (!n) return false;
+      if (i === w.length) return !!n.$;
+      if (w[i] !== '.') return go(n[w[i]], i + 1);
+      return Object.keys(n).some((k) => k !== '$' && go(n[k], i + 1));
+    };
+    return go(this.root, 0);
+  }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (boolean | null)[] {
+  const obj = new WordDictionary();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Word search II
+**Level:** senior · **Topic:** trie of the words + grid DFS with pruning · **Hint:** Walk the grid and the trie together; stop when the trie has no such child.
+**Function:** `findWords(board: string[][], words: string[]): string[]`
+**Compare:** unordered
+
+Return every word from `words` that can be traced in the grid (adjacent cells, each used once per word), in any order.
+
+```tests
+[{"args": [[["o", "a", "a", "n"], ["e", "t", "a", "e"], ["i", "h", "k", "r"], ["i", "f", "l", "v"]], ["oath", "pea", "eat", "rain"]], "expected": ["eat", "oath"]},
+ {"args": [[["a", "b"], ["c", "d"]], ["abcb"]], "expected": []},
+ {"args": [[["a"]], ["a", "b"]], "expected": ["a"]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findWords(board: string[][], words: string[]): string[] {
+  const root: any = {};
+  for (const w of words) { let n = root; for (const c of w) n = n[c] ??= {}; n.$ = w; }
+  const out: string[] = [], R = board.length, C = board[0].length;
+  const dfs = (r: number, c: number, n: any) => {
+    const ch = board[r][c], next = n[ch];
+    if (!next) return;
+    if (next.$) { out.push(next.$); delete next.$; }
+    board[r][c] = '#';
+    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = r + dr, y = c + dc;
+      if (x >= 0 && y >= 0 && x < R && y < C && board[x][y] !== '#') dfs(x, y, next);
+    }
+    board[r][c] = ch;
+  };
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) dfs(r, c, root);
+  return out;
+}
+```
+</details>
+
+### Exercise: Insert interval
+**Level:** intermediate · **Topic:** three-phase linear scan · **Hint:** Copy the ones before, merge the overlapping ones, copy the ones after.
+**Function:** `insert(intervals: number[][], add: number[]): number[][]`
+**Core:** true
+
+`intervals` is sorted and non-overlapping. Insert `add`, merging as needed. `[[1,3],[6,9]], [2,5]` → `[[1,5],[6,9]]`.
+
+```tests
+[{"args": [[[1, 3], [6, 9]], [2, 5]], "expected": [[1, 5], [6, 9]]},
+ {"args": [[[1, 2], [3, 5], [6, 7], [8, 10], [12, 16]], [4, 8]], "expected": [[1, 2], [3, 10], [12, 16]]},
+ {"args": [[], [5, 7]], "expected": [[5, 7]]},
+ {"args": [[[1, 5]], [6, 8]], "expected": [[1, 5], [6, 8]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function insert(intervals: number[][], add: number[]): number[][] {
+  const out: number[][] = [];
+  let [s, e] = add, i = 0;
+  while (i < intervals.length && intervals[i][1] < s) out.push(intervals[i++]);
+  while (i < intervals.length && intervals[i][0] <= e) { s = Math.min(s, intervals[i][0]); e = Math.max(e, intervals[i][1]); i++; }
+  out.push([s, e]);
+  while (i < intervals.length) out.push(intervals[i++]);
+  return out;
+}
+```
+</details>
+
+### Exercise: Non-overlapping intervals
+**Level:** intermediate · **Topic:** greedy by earliest end · **Hint:** Keeping the interval that ends first leaves the most room.
+**Function:** `eraseOverlapIntervals(intervals: number[][]): number`
+
+Minimum intervals to remove so the rest don't overlap (touching is fine). `[[1,2],[2,3],[3,4],[1,3]]` → `1`.
+
+```tests
+[{"args": [[[1, 2], [2, 3], [3, 4], [1, 3]]], "expected": 1},
+ {"args": [[[1, 2], [1, 2], [1, 2]]], "expected": 2},
+ {"args": [[[1, 2], [2, 3]]], "expected": 0},
+ {"args": [[]], "expected": 0}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function eraseOverlapIntervals(intervals: number[][]): number {
+  const s = [...intervals].sort((a, b) => a[1] - b[1]);
+  let end = -Infinity, removed = 0;
+  for (const [a, b] of s) { if (a >= end) end = b; else removed++; }
+  return removed;
+}
+```
+</details>
+
+### Exercise: Can one person attend every meeting?
+**Level:** foundation · **Topic:** sort by start, compare neighbours · **Hint:** After sorting, only adjacent meetings can clash.
+**Function:** `canAttendMeetings(intervals: number[][]): boolean`
+
+Return whether no two meetings overlap (end == next start is fine). `[[0,30],[5,10],[15,20]]` → `false`.
+
+```tests
+[{"args": [[[0, 30], [5, 10], [15, 20]]], "expected": false},
+ {"args": [[[7, 10], [2, 4]]], "expected": true},
+ {"args": [[]], "expected": true},
+ {"args": [[[1, 2], [2, 3]]], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function canAttendMeetings(intervals: number[][]): boolean {
+  const s = [...intervals].sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < s.length; i++) if (s[i][0] < s[i - 1][1]) return false;
+  return true;
+}
+```
+</details>
+
+### Exercise: LRU cache
+**Level:** senior · **Topic:** hash map + recency order (Map insertion order, or a doubly linked list) · **Hint:** A JS Map iterates in insertion order — delete and re-set to move a key to 'most recent'.
+**Function:** `run(cap: number, ops: string[], args: any[][]): (number | null)[]`
+**Core:** true
+
+Implement `LRUCache(capacity)` with `get(key)` (−1 if absent) and `put(key, value)`, both O(1), evicting the least recently used key at capacity.
+
+```starter
+class LRUCache {
+  constructor(capacity: number) {}
+  get(key: number): number { return -1; }
+  put(key: number, value: number): void {}
+}
+
+// Driver — leave as is.
+function run(cap: number, ops: string[], args: any[][]): (number | null)[] {
+  const obj = new LRUCache(cap);
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [2, ["put", "put", "get", "put", "get", "put", "get", "get", "get"], [[1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]], "expected": [null, null, 1, null, -1, null, -1, 3, 4]},
+ {"args": [1, ["put", "put", "get", "get"], [[1, 1], [2, 2], [1], [2]]], "expected": [null, null, -1, 2]},
+ {"args": [2, ["put", "put", "put", "get", "get"], [[1, 1], [1, 5], [2, 2], [1], [2]]], "expected": [null, null, null, 5, 2]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class LRUCache {
+  private m = new Map<number, number>();
+  constructor(private cap: number) {}
+  get(key: number): number {
+    if (!this.m.has(key)) return -1;
+    const v = this.m.get(key)!;
+    this.m.delete(key); this.m.set(key, v);           // move to most recent
+    return v;
+  }
+  put(key: number, value: number): void {
+    this.m.delete(key);
+    this.m.set(key, value);
+    if (this.m.size > this.cap) this.m.delete(this.m.keys().next().value!);
+  }
+}
+
+// Driver — leave as is.
+function run(cap: number, ops: string[], args: any[][]): (number | null)[] {
+  const obj = new LRUCache(cap);
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: LFU cache
+**Level:** senior · **Topic:** frequency buckets + minFreq · **Hint:** Each frequency keeps its own LRU order; track the smallest frequency in use.
+**Function:** `run(cap: number, ops: string[], args: any[][]): (number | null)[]`
+
+Implement `LFUCache(capacity)`: evict the least frequently used key, breaking ties by least recently used. `get` returns −1 if absent.
+
+```starter
+class LFUCache {
+  constructor(capacity: number) {}
+  get(key: number): number { return -1; }
+  put(key: number, value: number): void {}
+}
+
+// Driver — leave as is.
+function run(cap: number, ops: string[], args: any[][]): (number | null)[] {
+  const obj = new LFUCache(cap);
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [2, ["put", "put", "get", "put", "get", "get", "put", "get", "get", "get"], [[1, 1], [2, 2], [1], [3, 3], [2], [3], [4, 4], [1], [3], [4]]], "expected": [null, null, 1, null, -1, 3, null, -1, 3, 4]},
+ {"args": [1, ["put", "get", "put", "get", "get"], [[2, 1], [2], [3, 2], [2], [3]]], "expected": [null, 1, null, -1, 2]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class LFUCache {
+  private val = new Map<number, number>();
+  private freq = new Map<number, number>();
+  private buckets = new Map<number, Set<number>>();
+  private minFreq = 0;
+  constructor(private cap: number) {}
+  private touch(key: number): void {
+    const f = this.freq.get(key)!;
+    this.buckets.get(f)!.delete(key);
+    if (f === this.minFreq && this.buckets.get(f)!.size === 0) this.minFreq++;
+    this.freq.set(key, f + 1);
+    if (!this.buckets.has(f + 1)) this.buckets.set(f + 1, new Set());
+    this.buckets.get(f + 1)!.add(key);
+  }
+  get(key: number): number {
+    if (!this.val.has(key)) return -1;
+    this.touch(key);
+    return this.val.get(key)!;
+  }
+  put(key: number, value: number): void {
+    if (this.cap === 0) return;
+    if (this.val.has(key)) { this.val.set(key, value); this.touch(key); return; }
+    if (this.val.size >= this.cap) {
+      const b = this.buckets.get(this.minFreq)!;
+      const evict = b.values().next().value!;
+      b.delete(evict); this.val.delete(evict); this.freq.delete(evict);
+    }
+    this.val.set(key, value); this.freq.set(key, 1);
+    if (!this.buckets.has(1)) this.buckets.set(1, new Set());
+    this.buckets.get(1)!.add(key);
+    this.minFreq = 1;
+  }
+}
+
+// Driver — leave as is.
+function run(cap: number, ops: string[], args: any[][]): (number | null)[] {
+  const obj = new LFUCache(cap);
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Sliding-window rate limiter
+**Level:** intermediate · **Topic:** per-client log of timestamps, evict the old ones · **Hint:** Drop timestamps older than the window before counting.
+**Function:** `rateLimit(limit: number, windowMs: number, requests: [string, number][]): boolean[]`
+**Core:** true
+
+Each request is `[clientId, timeMs]` in non-decreasing time. Allow it if that client has had fewer than `limit` **allowed** requests in the last `windowMs` (a request at t sees the window `(t − windowMs, t]`). Return allow/deny per request.
+
+```tests
+[{"args": [2, 1000, [["a", 0], ["a", 100], ["a", 200], ["b", 250], ["a", 1001], ["a", 1050], ["a", 1150]]], "expected": [true, true, false, true, true, false, true]},
+ {"args": [1, 10, [["x", 0], ["x", 10], ["x", 11]]], "expected": [true, true, false]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rateLimit(limit: number, windowMs: number, requests: [string, number][]): boolean[] {
+  const logs = new Map<string, number[]>();
+  return requests.map(([id, t]) => {
+    const log = logs.get(id) ?? [];
+    while (log.length && log[0] <= t - windowMs) log.shift();
+    const ok = log.length < limit;
+    if (ok) log.push(t);
+    logs.set(id, log);
+    return ok;
+  });
+}
+```
+</details>
+
+### Exercise: Time-based key-value store
+**Level:** intermediate · **Topic:** append-only log per key + binary search · **Hint:** Timestamps arrive increasing, so each key's list is already sorted.
+**Function:** `run(ops: string[], args: any[][]): (string | null)[]`
+
+Implement `TimeMap` with `set(key, value, t)` and `get(key, t)` → the value with the largest timestamp ≤ t, or `""`. `set` timestamps are strictly increasing.
+
+```starter
+class TimeMap {
+  set(key: string, value: string, timestamp: number): void {}
+  get(key: string, timestamp: number): string { return ''; }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (string | null)[] {
+  const obj = new TimeMap();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+
+```tests
+[{"args": [["set", "get", "get", "set", "get", "get"], [["foo", "bar", 1], ["foo", 1], ["foo", 3], ["foo", "bar2", 4], ["foo", 4], ["foo", 5]]], "expected": [null, "bar", "bar", null, "bar2", "bar2"]},
+ {"args": [["get", "set", "get"], [["k", 1], ["k", "v", 5], ["k", 4]]], "expected": ["", null, ""]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+class TimeMap {
+  private m = new Map<string, [number, string][]>();
+  set(key: string, value: string, t: number): void {
+    if (!this.m.has(key)) this.m.set(key, []);
+    this.m.get(key)!.push([t, value]);
+  }
+  get(key: string, t: number): string {
+    const a = this.m.get(key) ?? [];
+    let lo = 0, hi = a.length - 1, ans = '';
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (a[mid][0] <= t) { ans = a[mid][1]; lo = mid + 1; } else hi = mid - 1; }
+    return ans;
+  }
+}
+
+// Driver — leave as is.
+function run(ops: string[], args: any[][]): (string | null)[] {
+  const obj = new TimeMap();
+  return ops.map((op, i) => (obj as any)[op](...args[i]) ?? null);
+}
+```
+</details>
+
+### Exercise: Flatten a nested list
+**Level:** intermediate · **Topic:** stack of iterators (lazy) or recursion · **Hint:** Recurse into arrays; emit numbers as you meet them.
+**Function:** `flatten(nested: any[]): number[]`
+
+`nested` holds integers and nested arrays of the same. Return all integers in order. `[[1,1],2,[1,1]]` → `[1,1,2,1,1]`.
+
+```tests
+[{"args": [[[1, 1], 2, [1, 1]]], "expected": [1, 1, 2, 1, 1]},
+ {"args": [[1, [4, [6]]]], "expected": [1, 4, 6]},
+ {"args": [[]], "expected": []},
+ {"args": [[[], [[]]]], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function flatten(nested: any[]): number[] {
+  const out: number[] = [];
+  const stack: any[] = [[nested, 0]];
+  while (stack.length) {
+    const top = stack[stack.length - 1];
+    const [arr, i] = top;
+    if (i === arr.length) { stack.pop(); continue; }
+    top[1]++;
+    if (Array.isArray(arr[i])) stack.push([arr[i], 0]); else out.push(arr[i]);
+  }
+  return out;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Trie:** a tree of characters; lookup and prefix queries cost O(length of the word), independent of how many words are stored.
+- **Intervals: sort by start, then sweep** — merge, insert, count rooms. Greedy by **end** for "keep the most non-overlapping".
+- **O(1) design problems combine a hash map with an ordering structure:** LRU = map + recency list (a JS `Map`'s insertion order works), LFU = map + frequency buckets + minFreq.
+- **Rate limiting:** sliding log (exact, memory per request), fixed window (cheap, bursty at edges), token bucket (lazy refill).
+- **Time-based lookups:** append-only per-key logs are sorted by time — binary search them.
+- **Iterators should be lazy:** a stack of positions, not a flattened copy.
+
+---
+
+## Quiz
+
+### MCQ: Why reach for a trie instead of a hash set of words?
+- [ ] It uses less memory always
+- [x] Prefix queries and autocomplete in O(prefix length)
+- [ ] Hash sets can't hold strings
+- [ ] Tries are faster for exact lookups
+**Why:** A set answers exact membership; a trie also answers 'what starts with this'.
+
+### MCQ: Maximising the number of non-overlapping intervals, greedily keep the one that…
+- [ ] Starts first
+- [x] Ends first
+- [ ] Is longest
+- [ ] Is shortest
+**Why:** Ending earliest leaves the most room for the rest.
+
+### MCQ: An O(1) LRU cache needs…
+- [ ] A heap
+- [x] A hash map plus a structure that tracks recency order
+- [ ] A sorted array
+- [ ] Two stacks
+**Why:** The map finds the entry; the list (or Map insertion order) finds the least recent.
+
+### MCQ: In JavaScript, how do you mark a Map key as most recently used?
+- [ ] Map.touch(key)
+- [x] Delete it and set it again
+- [ ] Set it again without deleting
+- [ ] Sort the map
+**Why:** Re-setting an existing key keeps its original position; delete first to move it to the end.
+
+### MCQ: A fixed-window rate limiter's weakness is…
+- [ ] It uses too much memory
+- [x] A burst at the window boundary can allow ~2× the limit
+- [ ] It can't handle many clients
+- [ ] It denies every request
+**Why:** Requests at the end of one window and the start of the next both pass.
+
+### MCQ: LFU cache evicts…
+- [ ] The oldest key
+- [x] The least frequently used key, ties broken by least recently used
+- [ ] A random key
+- [ ] The most frequent key
+**Why:** Frequency buckets, each kept in recency order, plus the current minimum frequency.
+
+### MCQ: Insert interval into a sorted, non-overlapping list runs in…
+- [ ] O(n log n)
+- [x] O(n)
+- [ ] O(log n)
+- [ ] O(n²)
+**Why:** One linear pass: before, overlapping (merged), after.

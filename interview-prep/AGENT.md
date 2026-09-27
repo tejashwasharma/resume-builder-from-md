@@ -159,22 +159,132 @@ whose `site/index.html` doesn't match what's live is worse than one that lags
 behind by a build. Only commit and push once the rebuilt site is republished,
 or once you've confirmed with the user that no content changed.
 
-## The study site
+## The study site — one study flow
 
 `build_site.py` generates `site/index.html` from the Markdown. The Markdown is
 the source of truth; the site is output and is never hand-edited.
 
 ```
-python3 build_site.py            # rebuild after any content change
-python3 build_site.py --check    # parse and report, write nothing
+python3 build_site.py              # rebuild after any content change
+python3 build_site.py --check      # parse, validate, verify; write nothing
+python3 build_site.py --no-verify  # skip running reference solutions (no node)
 ```
 
 Rebuild after adding or editing a guide, then republish the same file path to
 update the artifact in place (same URL).
 
-The build **fails** on a malformed question block, or a diagram with no caption
-or an empty fence, rather than emitting a broken page — that is the enforcement
-behind the format contracts above.
+**The site is one flow, not a set of modes.** The user asked for this
+explicitly: no Book / Drill / Mock / Progress tabs. Two axes:
+
+- **Vertical — Topics → Chapters**, from `curriculum.json`. It is the single
+  source of study order. Every `.md` under `00-`…`08-` must be listed in exactly
+  one topic or in `exclude`; the build fails otherwise. A new chapter means a
+  new line in `curriculum.json`.
+- **Horizontal — stages inside a chapter:** Learn → Workshop → Code → Quiz.
+  Only stages with content appear. Which `##` section lands in which stage is
+  one table, `STAGE_RULES` in `build_site.py`, matched on the heading —
+  chapters are not restructured to fit. Unmatched headings are Learn.
+  - **Learn** — one `##` section per screen. The first screen is the chapter
+    intro plus its `## In brief` section (5–8 bullets). Basic coding topics
+    start *in brief*; advanced topics (auth, distributed, design) teach from
+    zero after the brief. Glossary is always the last screen.
+  - **Workshop** — worked problems, problem banks, "Building it", worked
+    examples, reference stacks, interview Q&A and weak answers, plus any
+    `## Workshop: …` section (use that prefix for side-by-side implementation
+    variants, e.g. OAuth without vs with PKCE). Q&A is think-first-then-reveal:
+    no typing, no AI grading.
+  - **Code** — `## Exercises` (contract below), in a TypeScript editor.
+  - **Quiz** — `## Quiz` MCQs (contract below).
+
+**Navigation is in-memory.** `go()` updates state and renders; it never waits
+on `hashchange`, which the sandboxed claude.ai frame may not fire (that bug
+made chapter links dead). The hash is written with `history.pushState` in a
+`try` as a bonus for Back and deep links. Every chapter is one click away in
+the sidebar (all topics open by default), and each Learn/Workshop stage has a
+**Jump to** menu and a **Show as one page** toggle, so nothing is locked
+behind the one-screen-at-a-time view.
+
+**Progress is chapter-level only** — not started / started / done — plus which
+problems are solved and the best quiz score. No per-section ticks.
+
+### The Exercise contract (Code stage)
+
+````markdown
+## Exercises
+
+### Exercise: Rotate an array right by k
+**Level:** intermediate · **Topic:** three reversals · **Hint:** one line, never the solution
+**Function:** `rotateRight(a: number[], k: number): number[]`
+**Core:** true · **Source:** scaler · **Adapter:** linked-list · **Check:** arg0 · **Compare:** unordered
+
+Short statement with one example.
+
+```tests
+[{"args": [[3,2,1,4,6,9,8], 3], "expected": [6,9,8,3,2,1,4]},
+ {"gen": "[Array.from({length: 1e5}, (_, i) => i), 7]", "perf": true, "label": "n = 100,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rotateRight(a: number[], k: number): number[] { … }
+```
+</details>
+````
+
+- `Level`, `Topic`, `Hint`, `Function` are required; the rest are optional.
+- `Hint` is the level-1 hint the page shows next to `Topic`: a nudge toward the
+  technique, **never** the algorithm.
+- `Adapter: linked-list` turns every array argument into a `ListNode` list and
+  a returned list back into an array; `linked-lists` does it for an array of
+  lists; `tree` reads the first argument as a level-order array
+  (`[3,9,20,null,null,15,7]`) into a `TreeNode`, and `tree-out` only converts a
+  returned tree. A returned list or tree always comes back as an array.
+- A ```starter fence (between the statement and the tests) replaces the
+  generated empty function — design problems use it to hand over a class
+  skeleton plus a `run(ops, args)` driver that replays operations. `Check: arg0` compares the mutated first argument (in-place problems).
+  `Compare: unordered | float` relaxes equality.
+- A `gen` test is a JS expression producing the args; its expected value comes
+  from the reference solution. Mark large inputs `perf: true` — they catch an
+  O(n²) solution by timing out.
+- **The build runs every reference solution against its own tests** under
+  node, through `site/runner.js` — the same runner the page uses in its Web
+  Worker. A wrong expected value is a build error. Solutions must be
+  self-contained (no helpers from another exercise).
+
+### The MCQ contract (Quiz stage)
+
+```markdown
+## Quiz
+
+### MCQ: A public client can't keep a secret. What stops a stolen code being redeemed?
+- [ ] The state parameter
+- [x] PKCE — the code_verifier only the client knows
+**Why:** one line that teaches, not just "B is correct".
+```
+
+Exactly one `[x]` (or `**Multi:** true` with several) and a `**Why:**` line.
+These are not `### Q:` blocks, so `check_coverage.py` and the drill contract
+are unaffected.
+
+### AI in the Code stage — the AI proposes, the page executes
+
+Two AI features, both through the artifact's `sample` capability, both only on
+a button press:
+
+- **New problem (AI)** generates a problem with tests and a hidden reference
+  solution; the page runs the reference against the tests in the worker and
+  keeps only tests it agrees with (≥ 5, or it retries — at most 3 attempts).
+  Saved to `db` under `generated/`.
+- **Check with AI** proposes edge-case inputs for the viewer's code; the page
+  **runs** them through the viewer's code and the reference and shows only real
+  mismatches, plus complexity and line notes. The prompt forbids writing
+  corrected code — keep it that way; **Show solution** is a separate,
+  deliberate button.
+
+Never show a pass/fail that came from the model's opinion rather than an
+execution. The worker is built from a blob per run with no `eval` — the
+artifact's CSP may forbid it.
 
 Mechanisms get a Mermaid flow chart **above** the prose that walks them. The
 diagram is a map; the numbered walkthrough with real requests is still the
@@ -292,16 +402,39 @@ The chat is deliberately cheap, and the pieces work together:
 
 Roughly 600 input tokens per question instead of ~5,250.
 
-Drill grading and mock interviews stay on `modelTier: 'default'` on purpose:
-judging whether an answer would pass at senior level needs more capability than
-a lookup does. Moving those to `quick` would make the feedback worse, which is
-the one thing that would make the tool useless.
+Problem generation and code review stay on `modelTier: 'default'` on purpose:
+writing tests that hold up, and spotting the input that breaks someone's code,
+need more capability than a lookup does.
 
 ## Two progress records
 
 - `progress/log.md` — written by the terminal skills (`drill`, `mock-interview`).
-- The artifact's `db` — written by the site.
+- The artifact's `db` — written by the site: `chapters/{id}` (status),
+  `solved/{exerciseId}`, `quiz/{chapterId}` (best score), `generated/{id}`
+  (AI problems). The old `reading/sections`, `progress/*` and `mocks/*` docs
+  are from the previous site; it migrates `reading/sections` into chapter
+  status once and otherwise leaves them alone.
 
 They are separate by design. `prep-status` should read `progress/log.md` and,
-when the site has been used, also pull the artifact's `db` (Artifact tool,
-`action: "read_db"`, collection `progress`) and reconcile before reporting.
+when the site has been used, also pull the artifact's `db` (the `ArtifactData`
+tool: `list` on `chapters`, `solved`, `quiz`) and reconcile before reporting.
+
+## Pending work — Phases 3 and 4 (deferred, not started)
+
+The study-flow redesign shipped Phases 0–2 (coverage gaps, the platform, coding
+basics and coding core: 186 verified exercises, 149 MCQs). Still to do, when
+the user asks:
+
+- **Phase 3 — theory chapters** (auth `01-auth-identity/*` + `02-google-loop/41`,
+  distributed `20`–`30` + `03-backend/06`, design `31`–`40`, stack modules
+  `03`–`08`): a `## In brief` (5–8 bullets) and a `## Quiz` (8–12 MCQs) per
+  chapter, plus `## Workshop: …` side-by-side variant sections where the
+  contrast is the lesson — OAuth without vs with PKCE, JWT naive verify vs
+  algorithm allowlist, sessions vs tokens, SAML SP- vs IdP-initiated,
+  cache-aside vs write-through, at-most- / at-least- / effectively-once.
+- **Phase 4 — stories** (`00-experience/*`, `02-google-loop/42`): `## In brief`
+  only; Workshop is the existing cross-cutting questions.
+
+The plan of record is `~/.claude/plans/wise-riding-cake.md`. Follow the
+Exercise/MCQ contracts above; `python3 build_site.py --check` must pass, then
+republish the artifact.

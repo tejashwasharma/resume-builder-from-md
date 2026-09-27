@@ -852,3 +852,406 @@ ones with huge weights.
 | **Optimal substructure** | The optimum of a problem contains optima of its subproblems |
 | **Reconstruction** | Walking the table back to recover the answer, not just its value |
 | **Patience sort / tails** | The O(n log n) LIS technique; the array's length is the answer, not its content |
+
+---
+
+## Exercises
+
+For each one, name the state (what `dp[i]` means) and the transition before you
+code — that sentence is most of the solution. Large-input tests catch the
+exponential recursion that forgot to memoise. Problems marked **core** are the
+must-solve set.
+
+### Exercise: Climbing stairs
+**Level:** foundation · **Topic:** dp[i] = dp[i − 1] + dp[i − 2] · **Hint:** The last step was either one stair or two.
+**Function:** `climbStairs(n: number): number`
+**Core:** true
+
+Taking 1 or 2 steps at a time, how many ways are there to climb `n` stairs? `3` → `3`; `45` → `1836311903`.
+
+```tests
+[{"args": [1], "expected": 1},
+ {"args": [2], "expected": 2},
+ {"args": [3], "expected": 3},
+ {"args": [5], "expected": 8},
+ {"args": [45], "expected": 1836311903}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function climbStairs(n: number): number {
+  let a = 1, b = 1;
+  for (let i = 2; i <= n; i++) [a, b] = [b, a + b];
+  return b;
+}
+```
+</details>
+
+### Exercise: House robber
+**Level:** foundation · **Topic:** take/skip: dp[i] = max(dp[i − 1], dp[i − 2] + nums[i]) · **Hint:** Either rob this house (and not the previous) or skip it.
+**Function:** `rob(nums: number[]): number`
+**Core:** true
+
+Maximum sum of non-adjacent elements. `[2,7,9,3,1]` → `12`.
+
+```tests
+[{"args": [[2, 7, 9, 3, 1]], "expected": 12},
+ {"args": [[1, 2, 3, 1]], "expected": 4},
+ {"args": [[]], "expected": 0},
+ {"args": [[5]], "expected": 5},
+ {"args": [[2, 1, 1, 2]], "expected": 4},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 13) % 100)]", "perf": true, "label": "n = 100,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rob(nums: number[]): number {
+  let skip = 0, take = 0;
+  for (const x of nums) [skip, take] = [Math.max(skip, take), skip + x];
+  return Math.max(skip, take);
+}
+```
+</details>
+
+### Exercise: Coin change — fewest coins
+**Level:** intermediate · **Topic:** dp over amounts with an Infinity sentinel · **Hint:** dp[a] = 1 + min over coins of dp[a − coin].
+**Function:** `coinChange(coins: number[], amount: number): number`
+**Core:** true
+
+Fewest coins (unlimited supply) summing to `amount`, or −1. `[1,2,5], 11` → `3`.
+
+```tests
+[{"args": [[1, 2, 5], 11], "expected": 3},
+ {"args": [[2], 3], "expected": -1},
+ {"args": [[1], 0], "expected": 0},
+ {"args": [[186, 419, 83, 408], 6249], "expected": 20},
+ {"args": [[3, 7], 12], "expected": 4}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function coinChange(coins: number[], amount: number): number {
+  const dp = new Array<number>(amount + 1).fill(Infinity);
+  dp[0] = 0;
+  for (let a = 1; a <= amount; a++) for (const c of coins) if (c <= a && dp[a - c] + 1 < dp[a]) dp[a] = dp[a - c] + 1;
+  return dp[amount] === Infinity ? -1 : dp[amount];
+}
+```
+</details>
+
+### Exercise: Coin change II — count the ways
+**Level:** intermediate · **Topic:** coins in the outer loop counts combinations · **Hint:** Looping coins outside amounts counts each combination once, not each ordering.
+**Function:** `change(amount: number, coins: number[]): number`
+
+Number of combinations of coins summing to `amount`. `5, [1,2,5]` → `4`.
+
+```tests
+[{"args": [5, [1, 2, 5]], "expected": 4},
+ {"args": [3, [2]], "expected": 0},
+ {"args": [0, [7]], "expected": 1},
+ {"args": [10, [10]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function change(amount: number, coins: number[]): number {
+  const dp = new Array<number>(amount + 1).fill(0);
+  dp[0] = 1;
+  for (const c of coins) for (let a = c; a <= amount; a++) dp[a] += dp[a - c];
+  return dp[amount];
+}
+```
+</details>
+
+### Exercise: Longest increasing subsequence
+**Level:** intermediate · **Topic:** tails array + binary search (O(n log n)) · **Hint:** tails[k] is the smallest possible tail of an increasing subsequence of length k + 1.
+**Function:** `lengthOfLIS(nums: number[]): number`
+**Core:** true
+
+Length of the longest strictly increasing subsequence. `[10,9,2,5,3,7,101,18]` → `4`.
+
+```tests
+[{"args": [[10, 9, 2, 5, 3, 7, 101, 18]], "expected": 4},
+ {"args": [[0, 1, 0, 3, 2, 3]], "expected": 4},
+ {"args": [[7, 7, 7]], "expected": 1},
+ {"args": [[]], "expected": 0},
+ {"gen": "[Array.from({length: 100000}, (_, i) => (i * 7919) % 100003)]", "perf": true, "label": "n = 100,000 \u2014 O(n\u00b2) won't finish"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function lengthOfLIS(nums: number[]): number {
+  const tails: number[] = [];
+  for (const x of nums) {
+    let lo = 0, hi = tails.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (tails[m] < x) lo = m + 1; else hi = m; }
+    tails[lo] = x;
+  }
+  return tails.length;
+}
+```
+</details>
+
+### Exercise: Longest common subsequence
+**Level:** intermediate · **Topic:** 2-D DP over two prefixes · **Hint:** Matching characters extend the diagonal; otherwise take the better of dropping one.
+**Function:** `longestCommonSubsequence(a: string, b: string): number`
+
+Length of the longest common subsequence. `"abcde", "ace"` → `3`.
+
+```tests
+[{"args": ["abcde", "ace"], "expected": 3},
+ {"args": ["abc", "def"], "expected": 0},
+ {"args": ["", ""], "expected": 0},
+ {"args": ["abc", "abc"], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function longestCommonSubsequence(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  return dp[a.length][b.length];
+}
+```
+</details>
+
+### Exercise: Edit distance
+**Level:** senior · **Topic:** LCS-shaped DP with three moves · **Hint:** Insert, delete or replace: each is one neighbour cell plus one.
+**Function:** `minDistance(a: string, b: string): number`
+**Core:** true
+
+Minimum inserts, deletes and replaces to turn `a` into `b`. `"horse", "ros"` → `3`.
+
+```tests
+[{"args": ["horse", "ros"], "expected": 3},
+ {"args": ["intention", "execution"], "expected": 5},
+ {"args": ["", ""], "expected": 0},
+ {"args": ["abc", ""], "expected": 3},
+ {"args": ["", "ab"], "expected": 2}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function minDistance(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[a.length][b.length];
+}
+```
+</details>
+
+### Exercise: 0/1 knapsack
+**Level:** intermediate · **Topic:** capacity-indexed DP, loop capacity downward · **Hint:** Going downward stops an item from being used twice.
+**Function:** `knapsack(weights: number[], values: number[], capacity: number): number`
+**Core:** true
+
+Each item at most once; maximise value without exceeding `capacity`. `[1,3,4,5], [1,4,5,7], 7` → `9`.
+
+```tests
+[{"args": [[1, 3, 4, 5], [1, 4, 5, 7], 7], "expected": 9},
+ {"args": [[5], [10], 4], "expected": 0},
+ {"args": [[], [], 10], "expected": 0},
+ {"args": [[2, 2, 2], [3, 3, 3], 4], "expected": 6}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function knapsack(weights: number[], values: number[], capacity: number): number {
+  const dp = new Array<number>(capacity + 1).fill(0);
+  for (let i = 0; i < weights.length; i++)
+    for (let c = capacity; c >= weights[i]; c--) dp[c] = Math.max(dp[c], dp[c - weights[i]] + values[i]);
+  return dp[capacity];
+}
+```
+</details>
+
+### Exercise: Word break
+**Level:** intermediate · **Topic:** boolean DP over cut points · **Hint:** dp[i] is true if some j < i has dp[j] and s[j..i) in the dictionary.
+**Function:** `wordBreak(s: string, words: string[]): boolean`
+**Core:** true
+
+Can `s` be split into dictionary words (reuse allowed)? `"leetcode", ["leet","code"]` → `true`.
+
+```tests
+[{"args": ["leetcode", ["leet", "code"]], "expected": true},
+ {"args": ["applepenapple", ["apple", "pen"]], "expected": true},
+ {"args": ["catsandog", ["cats", "dog", "sand", "and", "cat"]], "expected": false},
+ {"args": ["", ["a"]], "expected": true},
+ {"args": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab", ["a", "aa", "aaa"]], "expected": false, "label": "exponential without memoisation"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function wordBreak(s: string, words: string[]): boolean {
+  const dict = new Set(words);
+  const dp = new Array<boolean>(s.length + 1).fill(false);
+  dp[0] = true;
+  for (let i = 1; i <= s.length; i++)
+    for (let j = 0; j < i && !dp[i]; j++) if (dp[j] && dict.has(s.slice(j, i))) dp[i] = true;
+  return dp[s.length];
+}
+```
+</details>
+
+### Exercise: Unique paths with obstacles
+**Level:** intermediate · **Topic:** grid DP compressed to one row · **Hint:** Paths into a cell come from above or from the left; an obstacle has zero.
+**Function:** `uniquePathsWithObstacles(grid: number[][]): number`
+
+Moving only right or down, count paths from top-left to bottom-right avoiding `1` cells. `[[0,0,0],[0,1,0],[0,0,0]]` → `2`.
+
+```tests
+[{"args": [[[0, 0, 0], [0, 1, 0], [0, 0, 0]]], "expected": 2},
+ {"args": [[[0, 1], [0, 0]]], "expected": 1},
+ {"args": [[[1]]], "expected": 0},
+ {"args": [[[0]]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function uniquePathsWithObstacles(grid: number[][]): number {
+  const m = grid[0].length, row = new Array<number>(m).fill(0);
+  row[0] = 1;
+  for (const r of grid) for (let j = 0; j < m; j++) {
+    if (r[j]) row[j] = 0;
+    else if (j > 0) row[j] += row[j - 1];
+  }
+  return row[m - 1];
+}
+```
+</details>
+
+### Exercise: Stock with cooldown
+**Level:** senior · **Topic:** state-machine DP: hold / sold / rest · **Hint:** Track the best profit in each state after every day.
+**Function:** `maxProfitCooldown(prices: number[]): number`
+
+Buy and sell any number of times, one share at a time, with a one-day cooldown after each sale. `[1,2,3,0,2]` → `3`.
+
+```tests
+[{"args": [[1, 2, 3, 0, 2]], "expected": 3},
+ {"args": [[1]], "expected": 0},
+ {"args": [[]], "expected": 0},
+ {"args": [[5, 4, 3]], "expected": 0},
+ {"args": [[1, 2, 4]], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function maxProfitCooldown(prices: number[]): number {
+  let hold = -Infinity, sold = 0, rest = 0;
+  for (const p of prices) [hold, sold, rest] = [Math.max(hold, rest - p), hold + p, Math.max(rest, sold)];
+  return Math.max(sold, rest);
+}
+```
+</details>
+
+### Exercise: Longest palindromic subsequence
+**Level:** senior · **Topic:** interval DP on one string · **Hint:** dp[i][j] over s[i..j]: equal ends add 2, otherwise drop one end.
+**Function:** `longestPalindromeSubseq(s: string): number`
+
+Length of the longest palindromic subsequence. `"bbbab"` → `4`; `"cbbd"` → `2`.
+
+```tests
+[{"args": ["bbbab"], "expected": 4},
+ {"args": ["cbbd"], "expected": 2},
+ {"args": ["a"], "expected": 1},
+ {"args": ["abcba"], "expected": 5}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function longestPalindromeSubseq(s: string): number {
+  const n = s.length, dp = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    dp[i][i] = 1;
+    for (let j = i + 1; j < n; j++) dp[i][j] = s[i] === s[j] ? dp[i + 1][j - 1] + 2 : Math.max(dp[i + 1][j], dp[i][j - 1]);
+  }
+  return n ? dp[0][n - 1] : 0;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **DP = recursion + memo:** overlapping subproblems and optimal substructure.
+- **Name the state in one sentence** — "dp[i] is the best answer for the first i items" — then the transition, then the base case.
+- **Top-down (memo) is easier to get right; bottom-up (table) is easier to space-optimise.**
+- **1-D shapes:** climbing stairs, house robber, coin change, LIS. **2-D:** two strings (LCS, edit distance), grids, intervals.
+- **Knapsack:** loop capacity downward for 0/1 items, upward for unlimited items.
+- **Coin change II:** coins in the outer loop counts combinations; amounts outer counts orderings.
+- **Pseudo-polynomial:** O(n · W) depends on the *value* W, not its size in bits.
+
+---
+
+## Quiz
+
+### MCQ: Two properties a problem needs for DP:
+- [ ] Sorted input and small n
+- [x] Overlapping subproblems and optimal substructure
+- [ ] A graph and weights
+- [ ] Greedy choice and a heap
+**Why:** The same subproblems recur, and the best answer is built from best sub-answers.
+
+### MCQ: House robber: dp[i] =
+- [ ] dp[i − 1] + nums[i]
+- [x] max(dp[i − 1], dp[i − 2] + nums[i])
+- [ ] dp[i − 2] + dp[i − 1]
+- [ ] max(nums)
+**Why:** Either skip house i or rob it and skip i − 1.
+
+### MCQ: 0/1 knapsack in a 1-D array: why loop capacity downward?
+- [ ] It's faster
+- [x] So each item is used at most once
+- [ ] To handle negative weights
+- [ ] Order doesn't matter
+**Why:** Upward would let dp[c − w] already include this item.
+
+### MCQ: Coin change II counts combinations when…
+- [ ] Amounts are the outer loop
+- [x] Coins are the outer loop
+- [ ] Both loops run backward
+- [ ] Coins are sorted
+**Why:** Fixing coin order means {1,2} and {2,1} are counted once.
+
+### MCQ: LIS in O(n log n) uses…
+- [ ] A 2-D table
+- [x] A tails array with binary search
+- [ ] A heap
+- [ ] Sorting the input
+**Why:** tails[k] = smallest possible tail of an increasing subsequence of length k + 1.
+
+### MCQ: Edit distance: when s[i] ≠ t[j], dp[i][j] =
+- [ ] dp[i−1][j−1]
+- [x] 1 + min(insert, delete, replace neighbours)
+- [ ] max of neighbours
+- [ ] 0
+**Why:** Each of the three operations moves from one neighbouring cell at cost 1.
+
+### MCQ: Knapsack's O(n · W) is called pseudo-polynomial because…
+- [ ] It's actually exponential in n
+- [x] It's polynomial in the value W, which is exponential in W's bit length
+- [ ] It uses recursion
+- [ ] It's approximate
+**Why:** Each extra bit in W doubles W, so the running time grows exponentially in the number of bits needed to write W down.
+
+### MCQ: Word break without memoisation on "aaaa…ab" is slow because…
+- [ ] Strings are immutable
+- [x] The same suffixes are re-solved exponentially many times
+- [ ] The dictionary is too big
+- [ ] It isn't slow
+**Why:** Memoise on the start index (or build dp over cut points).

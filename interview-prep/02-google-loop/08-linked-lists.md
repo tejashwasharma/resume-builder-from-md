@@ -677,6 +677,306 @@ know the trick; senior candidates can prove it in three sentences.
 ---
 
 
+## Problem bank — linked-list fundamentals
+
+The worked problems above assume the basics are automatic. This bank covers the
+basics from the Scaler track, so they are: building a list, traversing it,
+searching it, inserting and deleting at every position, and printing it
+backwards. Every harder list problem is made of these moves.
+
+| Group | Problems |
+| --- | --- |
+| Build and walk | node class, build from an array, print, length, search |
+| Insert | at the head, at the tail, at position k |
+| Delete | the head, the tail, at position k, the first node with a value |
+| Recursion on lists | print in reverse without modifying the list |
+
+All code uses this node:
+
+```ts
+class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
+}
+```
+
+**The rule behind every bug here:** before you write `x.next`, know that `x`
+isn't `null`. The head is `null` for an empty list, and the tail's `next` is
+`null` — so the empty list, a single node, and "position k is past the end"
+are the three tests for every function below.
+
+---
+
+### Build and walk
+
+### Q: Build a linked list from an array, print it, find its length, and search it for k
+**Level:** foundation · **Tags:** google-coding, linked-list, traversal, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `[10, 20, 30, 40, 50]` → `10 → 20 → 30 → 40 → 50 → null`.
+`search(head, 40)` → true; `search(head, 60)` → false.
+
+**The insight.** Every traversal is the same loop: a `temp` pointer starts at
+`head` and follows `next` until `null`. **Never move `head` itself** — you
+lose the list.
+
+**Algorithm (build).** A dummy node removes the "is this the first node?"
+special case: append after `tail`, then return `dummy.next`.
+
+```ts
+function fromArray(a: number[]): ListNode | null {
+  const dummy = new ListNode(0);
+  let tail = dummy;
+  for (const x of a) {
+    tail.next = new ListNode(x);
+    tail = tail.next;
+  }
+  return dummy.next;
+}
+
+function print(head: ListNode | null): string {
+  const parts: number[] = [];
+  for (let t = head; t !== null; t = t.next) parts.push(t.val);
+  return parts.join(' -> ');
+}
+
+function length(head: ListNode | null): number {
+  let n = 0;
+  for (let t = head; t !== null; t = t.next) n++;
+  return n;
+}
+
+function search(head: ListNode | null, k: number): boolean {
+  for (let t = head; t !== null; t = t.next) if (t.val === k) return true;
+  return false;
+}
+```
+
+**Complexity.** Each is O(n) time, O(1) extra space (the build allocates n
+nodes, which is the output).
+
+**Test it.** Empty array → `null`; `print(null)` → `""`; `length(null)` → 0.
+
+</details>
+
+**Follow-ups:**
+1. Q: Why is `head.next.next.val` risky?
+   <details><summary>Answer</summary>
+
+   Each `.next` may be `null`. With fewer than three nodes it throws
+   `TypeError: Cannot read properties of null`. Guard every dereference or
+   loop with `t !== null` as the condition.
+
+   </details>
+2. Q: Array vs linked list — why does a list lose on search even though both are O(n)?
+   <details><summary>Answer</summary>
+
+   Nodes are scattered in memory, so every hop is a likely cache miss; an
+   array scan is sequential and prefetched. Same big-O, several times slower in
+   practice. Lists win only on O(1) insert/delete at a node you already hold.
+
+   </details>
+
+---
+
+### Insert
+
+### Q: Insert a value at the head, at the tail, and at position k
+**Level:** foundation · **Tags:** google-coding, linked-list, insertion, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** Positions are 0-based: inserting at `k = 0` makes the new node
+the head; `k = length` appends. `10 → 20 → 30`, insert 60 at k = 2 →
+`10 → 20 → 60 → 30`.
+
+**The insight.** To insert at position `k`, walk to the node at `k − 1` (the
+predecessor). Then **wire the new node first, and cut the old link second** —
+`node.next = prev.next` before `prev.next = node`. Reversed, you lose the rest
+of the list.
+
+```ts
+function insertAtHead(head: ListNode | null, val: number): ListNode {
+  return new ListNode(val, head);            // O(1): new node points at old head
+}
+
+function insertAtTail(head: ListNode | null, val: number): ListNode {
+  const node = new ListNode(val);
+  if (head === null) return node;            // empty list: the node IS the list
+  let t = head;
+  while (t.next !== null) t = t.next;        // stop ON the last node
+  t.next = node;
+  return head;
+}
+
+function insertAt(head: ListNode | null, val: number, k: number): ListNode | null {
+  if (k === 0) return insertAtHead(head, val);   // new head: nothing precedes it
+  let prev = head;
+  for (let i = 0; i < k - 1 && prev !== null; i++) prev = prev.next;
+  if (prev === null) return head;                // k > length: ignore (or throw)
+  const node = new ListNode(val, prev.next);     // 1. new node → rest of list
+  prev.next = node;                              // 2. predecessor → new node
+  return head;
+}
+```
+
+Every function **returns the head**, because inserting at position 0 changes it.
+Forgetting to return and reassign the head is the most common bug in this whole
+topic.
+
+**Complexity.** Head O(1); tail and position k O(n) / O(k). O(1) space.
+
+**Test it.** Insert into `null` at 0; insert at `k = length` (append);
+`k = length + 1` (out of range).
+
+</details>
+
+**Follow-ups:**
+1. Q: Make tail insertion O(1).
+   <details><summary>Answer</summary>
+
+   Keep a `tail` pointer alongside `head` (a list object with both fields),
+   updated on every append. That's how a queue is built on a list.
+
+   </details>
+2. Q: How does a dummy head simplify `insertAt`?
+   <details><summary>Answer</summary>
+
+   With `dummy.next = head`, position 0's predecessor is `dummy`, so the `k === 0`
+   branch disappears: walk k steps from `dummy`, splice, return `dummy.next`.
+
+   </details>
+
+---
+
+### Delete
+
+### Q: Delete the head, the tail, the node at position k, and the first node with value x
+**Level:** foundation · **Tags:** google-coding, linked-list, deletion, dummy-head, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `10 → 20 → 30 → 40`: delete head → `20 → 30 → 40`; delete tail →
+`10 → 20 → 30`; delete k = 1 → `10 → 30 → 40`; delete value 30 →
+`10 → 20 → 40`.
+
+**The insight.** To delete a node you need its **predecessor**, because you
+skip it with `prev.next = prev.next.next`. For the tail, that means stopping at
+the **second-to-last** node: loop while `t.next.next !== null`. A dummy head
+gives the real head a predecessor, removing every special case.
+
+```ts
+function deleteHead(head: ListNode | null): ListNode | null {
+  return head === null ? null : head.next;
+}
+
+function deleteTail(head: ListNode | null): ListNode | null {
+  if (head === null || head.next === null) return null;   // 0 or 1 node
+  let t = head;
+  while (t.next!.next !== null) t = t.next!;              // stop at second-to-last
+  t.next = null;
+  return head;
+}
+
+function deleteAt(head: ListNode | null, k: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  let prev: ListNode | null = dummy;
+  for (let i = 0; i < k && prev !== null; i++) prev = prev.next;  // predecessor of k
+  if (prev !== null && prev.next !== null) prev.next = prev.next.next;
+  return dummy.next;                                       // head may have changed
+}
+
+function deleteValue(head: ListNode | null, x: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  for (let prev = dummy; prev.next !== null; prev = prev.next) {
+    if (prev.next.val === x) { prev.next = prev.next.next; break; }
+  }
+  return dummy.next;
+}
+```
+
+**Complexity.** Head O(1); the rest O(n). O(1) space. In JS the skipped node
+is garbage-collected; in C/C++ you must `free`/`delete` it — say so if the
+interviewer's language is C++.
+
+**Test it.** Empty list, single node (deleting it returns `null`), `k = 0`,
+`k ≥ length`, value not present.
+
+</details>
+
+**Follow-ups:**
+1. Q: Delete **every** node with value x.
+   <details><summary>Answer</summary>
+
+   Same dummy-head loop, but don't `break`, and only advance `prev` when you
+   *didn't* delete — otherwise two adjacent matches leave the second one in:
+   `if (prev.next.val === x) prev.next = prev.next.next; else prev = prev.next;`
+
+   </details>
+2. Q: You're given only a pointer to the node to delete (not the tail), no head. How?
+   <details><summary>Answer</summary>
+
+   Copy the next node's value into this node, then skip the next node:
+   `node.val = node.next.val; node.next = node.next.next;`. It can't work for
+   the tail — there's no next node to copy.
+
+   </details>
+
+---
+
+### Recursion on lists
+
+### Q: Print a linked list in reverse without modifying it
+**Level:** foundation · **Tags:** google-coding, linked-list, recursion, stack, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `10 → 20 → 30 → 40 → 50` prints `50 40 30 20 10`; the list is
+unchanged afterwards.
+
+**The insight.** Recursion defers work until the call returns. "Print the rest
+of the list in reverse, **then** print me" — the base case is `null`. The call
+stack is doing the reversing for you.
+
+```ts
+function printReverse(head: ListNode | null, out: number[] = []): number[] {
+  if (head === null) return out;       // base case: nothing left
+  printReverse(head.next, out);        // 1. everything after me first
+  out.push(head.val);                  // 2. then me
+  return out;
+}
+```
+
+Swap lines 1 and 2 and it prints in normal order — that single swap is the
+difference between pre-order and post-order work, and the reason recursion
+order matters.
+
+**Complexity.** O(n) time, O(n) space — one stack frame per node.
+
+</details>
+
+**Follow-ups:**
+1. Q: The list has 10⁶ nodes. What breaks, and what do you do?
+   <details><summary>Answer</summary>
+
+   The recursion is 10⁶ frames deep, past V8's default stack (~10⁴–10⁵ frames):
+   `RangeError: Maximum call stack size exceeded`. Use an explicit array as a
+   stack (push while walking, then pop), which is the same O(n) space on the
+   heap. Or, if modification is allowed, reverse the list in place (O(1)
+   space), print, and reverse it back.
+
+   </details>
+2. Q: Reverse the list itself instead of just printing it.
+   <details><summary>Answer</summary>
+
+   The three-pointer reversal (`prev`, `cur`, `next`) — covered in
+   [the four idioms](#3-reversal-the-three-pointer-dance) and the interview
+   question at the end of this chapter.
+
+   </details>
+
+---
+
 ## Interview Q&A
 
 ### Q: Reverse a linked list. Then explain why the order of operations matters.
@@ -833,3 +1133,507 @@ both and let the constraint decide.
 - **Three-pointer reversal** — save, flip, advance, advance.
 - **Splice** — moving nodes between structures by rewiring rather than copying.
 - **Intrusive list** — the list pointers live inside the payload object, avoiding a wrapper allocation.
+
+---
+
+## Exercises
+
+`ListNode` is predefined in the editor (`val`, `next`). Tests write lists as
+arrays — `[1, 2, 3]` is `1 → 2 → 3` and `[]` is `null` — and a list you return
+is read back the same way. Problems marked **core** are the must-solve set.
+
+### Exercise: Length of a list
+**Level:** foundation · **Topic:** traversal · **Hint:** Walk a pointer until null; never move head.
+**Function:** `listLength(head: ListNode | null): number`
+**Source:** scaler · **Adapter:** linked-list
+
+Return the number of nodes. `[10, 20, 30]` → `3`.
+
+```tests
+[{"args": [[10, 20, 30]], "expected": 3},
+ {"args": [[]], "expected": 0},
+ {"args": [[1]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function listLength(head: ListNode | null): number {
+  let n = 0;
+  for (let t = head; t !== null; t = t.next) n++;
+  return n;
+}
+```
+</details>
+
+### Exercise: Search a list
+**Level:** foundation · **Topic:** traversal · **Hint:** Stop as soon as you find it.
+**Function:** `searchList(head: ListNode | null, k: number): boolean`
+**Source:** scaler · **Adapter:** linked-list
+
+Return `true` if some node holds `k`. `[10, 20, 30, 40], 40` → `true`.
+
+```tests
+[{"args": [[10, 20, 30, 40], 40], "expected": true},
+ {"args": [[10, 20, 30, 40], 60], "expected": false},
+ {"args": [[], 1], "expected": false},
+ {"args": [[5], 5], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function searchList(head: ListNode | null, k: number): boolean {
+  for (let t = head; t !== null; t = t.next) if (t.val === k) return true;
+  return false;
+}
+```
+</details>
+
+### Exercise: Insert at the head
+**Level:** foundation · **Topic:** insertion · **Hint:** The new node points at the old head.
+**Function:** `insertAtHead(head: ListNode | null, val: number): ListNode`
+**Source:** scaler · **Adapter:** linked-list
+
+Insert `val` at the front and return the new head. `[20, 30], 10` → `[10, 20, 30]`.
+
+```tests
+[{"args": [[20, 30], 10], "expected": [10, 20, 30]},
+ {"args": [[], 1], "expected": [1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function insertAtHead(head: ListNode | null, val: number): ListNode {
+  return new ListNode(val, head);
+}
+```
+</details>
+
+### Exercise: Insert at the tail
+**Level:** foundation · **Topic:** insertion · **Hint:** Stop on the last node, not past it.
+**Function:** `insertAtTail(head: ListNode | null, val: number): ListNode`
+**Source:** scaler · **Adapter:** linked-list
+
+Append `val` and return the head. `[10, 20], 30` → `[10, 20, 30]`; an empty list becomes `[val]`.
+
+```tests
+[{"args": [[10, 20], 30], "expected": [10, 20, 30]},
+ {"args": [[], 5], "expected": [5]},
+ {"args": [[1], 2], "expected": [1, 2]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function insertAtTail(head: ListNode | null, val: number): ListNode {
+  const node = new ListNode(val);
+  if (head === null) return node;
+  let t = head;
+  while (t.next !== null) t = t.next;
+  t.next = node;
+  return head;
+}
+```
+</details>
+
+### Exercise: Insert at position k
+**Level:** foundation · **Topic:** insertion via the predecessor · **Hint:** Wire the new node to the rest first, then link the predecessor to it.
+**Function:** `insertAt(head: ListNode | null, val: number, k: number): ListNode | null`
+**Core:** true · **Source:** scaler · **Adapter:** linked-list
+
+Insert `val` so it ends up at 0-based position `k` (k = length appends). If `k` is past the end, return the list unchanged.
+`[10, 20, 30], 60, 2` → `[10, 20, 60, 30]`.
+
+```tests
+[{"args": [[10, 20, 30], 60, 2], "expected": [10, 20, 60, 30]},
+ {"args": [[], 1, 0], "expected": [1]},
+ {"args": [[1, 2], 3, 2], "expected": [1, 2, 3]},
+ {"args": [[1, 2], 3, 5], "expected": [1, 2]},
+ {"args": [[1, 2], 0, 0], "expected": [0, 1, 2]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function insertAt(head: ListNode | null, val: number, k: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  let prev: ListNode | null = dummy;
+  for (let i = 0; i < k && prev !== null; i++) prev = prev.next;
+  if (prev === null) return head;
+  prev.next = new ListNode(val, prev.next);
+  return dummy.next;
+}
+```
+</details>
+
+### Exercise: Delete the head
+**Level:** foundation · **Topic:** deletion · **Hint:** The second node becomes the head.
+**Function:** `deleteHead(head: ListNode | null): ListNode | null`
+**Source:** scaler · **Adapter:** linked-list
+
+Remove the first node. `[10, 20, 30]` → `[20, 30]`; `[]` → `[]`.
+
+```tests
+[{"args": [[10, 20, 30]], "expected": [20, 30]},
+ {"args": [[1]], "expected": []},
+ {"args": [[]], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function deleteHead(head: ListNode | null): ListNode | null {
+  return head === null ? null : head.next;
+}
+```
+</details>
+
+### Exercise: Delete the tail
+**Level:** foundation · **Topic:** stop at the second-to-last node · **Hint:** You need the node before the tail.
+**Function:** `deleteTail(head: ListNode | null): ListNode | null`
+**Source:** scaler · **Adapter:** linked-list
+
+Remove the last node. `[10, 20, 30]` → `[10, 20]`.
+
+```tests
+[{"args": [[10, 20, 30]], "expected": [10, 20]},
+ {"args": [[1]], "expected": []},
+ {"args": [[]], "expected": []},
+ {"args": [[1, 2]], "expected": [1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function deleteTail(head: ListNode | null): ListNode | null {
+  if (head === null || head.next === null) return null;
+  let t = head;
+  while (t.next!.next !== null) t = t.next!;
+  t.next = null;
+  return head;
+}
+```
+</details>
+
+### Exercise: Delete at position k
+**Level:** foundation · **Topic:** dummy head + predecessor · **Hint:** A dummy node gives the real head a predecessor too.
+**Function:** `deleteAt(head: ListNode | null, k: number): ListNode | null`
+**Core:** true · **Source:** scaler · **Adapter:** linked-list
+
+Remove the node at 0-based position `k`; if there is none, return the list unchanged.
+`[10, 20, 30, 40], 1` → `[10, 30, 40]`.
+
+```tests
+[{"args": [[10, 20, 30, 40], 1], "expected": [10, 30, 40]},
+ {"args": [[10, 20], 0], "expected": [20]},
+ {"args": [[10, 20], 5], "expected": [10, 20]},
+ {"args": [[1], 0], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function deleteAt(head: ListNode | null, k: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  let prev: ListNode | null = dummy;
+  for (let i = 0; i < k && prev !== null; i++) prev = prev.next;
+  if (prev !== null && prev.next !== null) prev.next = prev.next.next;
+  return dummy.next;
+}
+```
+</details>
+
+### Exercise: Delete every node with value x
+**Level:** foundation · **Topic:** dummy head; advance only when you keep · **Hint:** Two adjacent matches are the trap.
+**Function:** `removeAll(head: ListNode | null, x: number): ListNode | null`
+**Core:** true · **Source:** scaler · **Adapter:** linked-list
+
+Remove every node whose value is `x`. `[1, 2, 2, 3, 2], 2` → `[1, 3]`.
+
+```tests
+[{"args": [[1, 2, 2, 3, 2], 2], "expected": [1, 3]},
+ {"args": [[2, 2], 2], "expected": []},
+ {"args": [[1, 3], 2], "expected": [1, 3]},
+ {"args": [[], 1], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function removeAll(head: ListNode | null, x: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  let prev = dummy;
+  while (prev.next !== null) {
+    if (prev.next.val === x) prev.next = prev.next.next;
+    else prev = prev.next;
+  }
+  return dummy.next;
+}
+```
+</details>
+
+### Exercise: Values in reverse order
+**Level:** foundation · **Topic:** recursion (post-order) or a stack · **Hint:** Handle the rest of the list first, then this node.
+**Function:** `printReverse(head: ListNode | null): number[]`
+**Source:** scaler · **Adapter:** linked-list
+
+Return the values from last to first, without modifying the list. `[10, 20, 30]` → `[30, 20, 10]`.
+
+```tests
+[{"args": [[10, 20, 30]], "expected": [30, 20, 10]},
+ {"args": [[]], "expected": []},
+ {"args": [[1]], "expected": [1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function printReverse(head: ListNode | null): number[] {
+  const out: number[] = [];
+  const go = (n: ListNode | null) => { if (n === null) return; go(n.next); out.push(n.val); };
+  go(head);
+  return out;
+}
+```
+</details>
+
+### Exercise: Reverse a linked list
+**Level:** intermediate · **Topic:** three pointers: prev, cur, next · **Hint:** Save next before you redirect cur.next.
+**Function:** `reverseList(head: ListNode | null): ListNode | null`
+**Core:** true · **Adapter:** linked-list
+
+Reverse the list in place and return the new head. `[1, 2, 3, 4]` → `[4, 3, 2, 1]`.
+
+```tests
+[{"args": [[1, 2, 3, 4]], "expected": [4, 3, 2, 1]},
+ {"args": [[]], "expected": []},
+ {"args": [[1]], "expected": [1]},
+ {"args": [[1, 2]], "expected": [2, 1]},
+ {"gen": "[Array.from({length: 100000}, (_, i) => i)]", "perf": true, "label": "n = 100,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function reverseList(head: ListNode | null): ListNode | null {
+  let prev: ListNode | null = null, cur = head;
+  while (cur !== null) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev;
+}
+```
+</details>
+
+### Exercise: Middle of the list
+**Level:** foundation · **Topic:** fast and slow pointers · **Hint:** When the fast pointer reaches the end, the slow one is halfway.
+**Function:** `middleNode(head: ListNode | null): ListNode | null`
+**Core:** true · **Adapter:** linked-list
+
+Return the middle node (the second middle for even lengths) — the returned list is read from that node.
+`[1, 2, 3, 4, 5]` → `[3, 4, 5]`; `[1, 2, 3, 4]` → `[3, 4]`.
+
+```tests
+[{"args": [[1, 2, 3, 4, 5]], "expected": [3, 4, 5]},
+ {"args": [[1, 2, 3, 4]], "expected": [3, 4]},
+ {"args": [[1]], "expected": [1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function middleNode(head: ListNode | null): ListNode | null {
+  let slow = head, fast = head;
+  while (fast !== null && fast.next !== null) { slow = slow!.next; fast = fast.next.next; }
+  return slow;
+}
+```
+</details>
+
+### Exercise: Merge two sorted lists
+**Level:** foundation · **Topic:** dummy head + splice the smaller · **Hint:** Always attach the smaller head, then advance that list.
+**Function:** `mergeTwoLists(a: ListNode | null, b: ListNode | null): ListNode | null`
+**Core:** true · **Adapter:** linked-list
+
+Merge two sorted lists into one sorted list. `[1, 2, 4], [1, 3, 4]` → `[1, 1, 2, 3, 4, 4]`.
+
+```tests
+[{"args": [[1, 2, 4], [1, 3, 4]], "expected": [1, 1, 2, 3, 4, 4]},
+ {"args": [[], []], "expected": []},
+ {"args": [[], [0]], "expected": [0]},
+ {"args": [[5], [1, 2]], "expected": [1, 2, 5]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function mergeTwoLists(a: ListNode | null, b: ListNode | null): ListNode | null {
+  const dummy = new ListNode(0);
+  let t = dummy;
+  while (a !== null && b !== null) {
+    if (a.val <= b.val) { t.next = a; a = a.next; } else { t.next = b; b = b.next; }
+    t = t.next;
+  }
+  t.next = a ?? b;
+  return dummy.next;
+}
+```
+</details>
+
+### Exercise: Reverse nodes in k-groups
+**Level:** senior · **Topic:** reverse a block, reconnect, repeat · **Hint:** Check that k nodes remain before reversing a block.
+**Function:** `reverseKGroup(head: ListNode | null, k: number): ListNode | null`
+**Adapter:** linked-list
+
+Reverse every consecutive block of `k` nodes; a short tail stays as it is.
+`[1, 2, 3, 4, 5], 2` → `[2, 1, 4, 3, 5]`; with `k = 3` → `[3, 2, 1, 4, 5]`.
+
+```tests
+[{"args": [[1, 2, 3, 4, 5], 2], "expected": [2, 1, 4, 3, 5]},
+ {"args": [[1, 2, 3, 4, 5], 3], "expected": [3, 2, 1, 4, 5]},
+ {"args": [[1, 2], 3], "expected": [1, 2]},
+ {"args": [[1, 2, 3], 1], "expected": [1, 2, 3]},
+ {"args": [[], 2], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function reverseKGroup(head: ListNode | null, k: number): ListNode | null {
+  const dummy = new ListNode(0, head);
+  let groupPrev = dummy;
+  while (true) {
+    let kth: ListNode | null = groupPrev;
+    for (let i = 0; i < k && kth !== null; i++) kth = kth.next;
+    if (kth === null) break;
+    const groupNext = kth.next;
+    let prev: ListNode | null = groupNext, cur = groupPrev.next;
+    while (cur !== groupNext) {
+      const next: ListNode | null = cur!.next;
+      cur!.next = prev;
+      prev = cur;
+      cur = next;
+    }
+    const first = groupPrev.next!;
+    groupPrev.next = kth;
+    groupPrev = first;
+  }
+  return dummy.next;
+}
+```
+</details>
+
+### Exercise: Merge k sorted lists
+**Level:** senior · **Topic:** divide and conquer (or a min-heap) · **Hint:** Merge pairs of lists, halving the count each round.
+**Function:** `mergeKLists(lists: (ListNode | null)[]): ListNode | null`
+**Adapter:** linked-lists
+
+Merge `k` sorted lists into one sorted list. `[[1,4,5],[1,3,4],[2,6]]` → `[1,1,2,3,4,4,5,6]`.
+
+```tests
+[{"args": [[[1, 4, 5], [1, 3, 4], [2, 6]]], "expected": [1, 1, 2, 3, 4, 4, 5, 6]},
+ {"args": [[]], "expected": []},
+ {"args": [[[]]], "expected": []},
+ {"args": [[[2], [], [1]]], "expected": [1, 2]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function mergeKLists(lists: (ListNode | null)[]): ListNode | null {
+  const merge2 = (a: ListNode | null, b: ListNode | null): ListNode | null => {
+    const dummy = new ListNode(0);
+    let t = dummy;
+    while (a !== null && b !== null) {
+      if (a.val <= b.val) { t.next = a; a = a.next; } else { t.next = b; b = b.next; }
+      t = t.next;
+    }
+    t.next = a ?? b;
+    return dummy.next;
+  };
+  if (lists.length === 0) return null;
+  let cur = lists;
+  while (cur.length > 1) {
+    const next: (ListNode | null)[] = [];
+    for (let i = 0; i < cur.length; i += 2) next.push(i + 1 < cur.length ? merge2(cur[i], cur[i + 1]) : cur[i]);
+    cur = next;
+  }
+  return cur[0];
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Nodes scattered in memory:** O(1) insert/delete at a node you hold, O(n) to find anything.
+- **Never move `head` while traversing** — walk a separate pointer until it's null.
+- **To insert or delete you need the predecessor**; a dummy head gives the real head one and removes the special case.
+- **Wire first, cut second:** `node.next = prev.next` before `prev.next = node`.
+- **Fast/slow pointers** find the middle and detect cycles.
+- **Reversal is three pointers** — save next before redirecting.
+- **Every function that can change the head must return it.**
+
+## Quiz
+
+### MCQ: Why does a dummy head node simplify insert and delete?
+- [ ] It makes the list faster
+- [x] It gives the real head a predecessor, removing the head special case
+- [ ] It stores the length
+- [ ] It prevents cycles
+**Why:** Operations work through the predecessor; the dummy provides one for position 0.
+
+### MCQ: Inserting `node` after `prev` — which order is correct?
+- [ ] prev.next = node; node.next = prev.next
+- [x] node.next = prev.next; prev.next = node
+- [ ] Either order
+- [ ] node.next = prev; prev.next = node
+**Why:** Cut first and you lose the rest of the list.
+
+### MCQ: To delete the tail you must stop at…
+- [ ] The tail
+- [x] The second-to-last node
+- [ ] The head
+- [ ] null
+**Why:** You need the node whose next is the tail, so you can set its next to null.
+
+### MCQ: Printing a list in reverse recursively costs how much extra space?
+- [ ] O(1)
+- [ ] O(log n)
+- [x] O(n) for the call stack
+- [ ] O(n²)
+**Why:** One frame per node; for 10⁶ nodes use an explicit stack or reverse in place.
+
+### MCQ: Fast/slow pointers: when fast reaches the end, slow is…
+- [ ] At the head
+- [x] At the middle
+- [ ] At the tail
+- [ ] One behind fast
+**Why:** Fast moves two steps per slow step.
+
+### MCQ: Deleting every node equal to x, the pointer should advance…
+- [ ] Every iteration
+- [x] Only when the next node is kept
+- [ ] Only after a deletion
+- [ ] Twice per iteration
+**Why:** Advancing after a deletion skips the new next node — two adjacent matches survive.
+
+### MCQ: Given only a pointer to a node (not the tail) and no head, how do you delete it?
+- [ ] Impossible
+- [x] Copy the next node's value in, then skip the next node
+- [ ] Set it to null
+- [ ] Walk back to the head
+**Why:** You can't reach the predecessor, so make this node become its successor.
+
+### MCQ: Array vs linked list: why does list traversal run slower despite the same O(n)?
+- [ ] Lists have more nodes
+- [x] Each hop is a likely cache miss; arrays scan sequentially
+- [ ] Lists use more CPU instructions per element by design
+- [ ] It doesn't
+**Why:** Contiguous memory is prefetched; scattered nodes aren't.

@@ -952,3 +952,547 @@ record the best path that turns at this node.
 - **AVL / red-black tree** — self-balancing BSTs; strict versus loose balance.
 - **B+ tree** — high-branching, shallow tree used for database indexes.
 - **Serialisation** — encoding a tree as a sequence, with explicit nulls so it can be decoded.
+
+---
+
+## Exercises
+
+`TreeNode` is predefined (`val`, `left`, `right`). Tests write trees in level
+order with `null` for a missing child — `[3, 9, 20, null, null, 15, 7]` — the
+LeetCode convention; a tree you return is read back the same way. Problems
+marked **core** are the must-solve set.
+
+### Exercise: Maximum depth
+**Level:** foundation · **Topic:** recursion: 1 + max(left, right) · **Hint:** An empty tree has depth 0.
+**Function:** `maxDepth(root: TreeNode | null): number`
+**Core:** true · **Adapter:** tree
+
+Return the number of nodes on the longest root-to-leaf path. `[3,9,20,null,null,15,7]` → `3`.
+
+```tests
+[{"args": [[3, 9, 20, null, null, 15, 7]], "expected": 3},
+ {"args": [[]], "expected": 0},
+ {"args": [[1, null, 2]], "expected": 2},
+ {"args": [[1]], "expected": 1},
+ {"gen": "[Array.from({length: 100000}, (_, i) => i)]", "perf": true, "label": "n = 100,000, complete tree"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function maxDepth(root: TreeNode | null): number {
+  return root === null ? 0 : 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
+}
+```
+</details>
+
+### Exercise: Preorder, inorder and postorder
+**Level:** foundation · **Topic:** where the node goes relative to its children · **Hint:** Same recursion three times — only the position of the visit changes.
+**Function:** `traversals(root: TreeNode | null): number[][]`
+**Core:** true · **Adapter:** tree
+
+Return `[preorder, inorder, postorder]`. `[1,2,3,4,5]` → `[[1,2,4,5,3],[4,2,5,1,3],[4,5,2,3,1]]`.
+
+```tests
+[{"args": [[1, 2, 3, 4, 5]], "expected": [[1, 2, 4, 5, 3], [4, 2, 5, 1, 3], [4, 5, 2, 3, 1]]},
+ {"args": [[]], "expected": [[], [], []]},
+ {"args": [[1, null, 2, 3]], "expected": [[1, 2, 3], [1, 3, 2], [3, 2, 1]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function traversals(root: TreeNode | null): number[][] {
+  const pre: number[] = [], ino: number[] = [], post: number[] = [];
+  const go = (n: TreeNode | null) => {
+    if (!n) return;
+    pre.push(n.val); go(n.left); ino.push(n.val); go(n.right); post.push(n.val);
+  };
+  go(root);
+  return [pre, ino, post];
+}
+```
+</details>
+
+### Exercise: Level order traversal
+**Level:** foundation · **Topic:** BFS with a queue, one level per batch · **Hint:** Record the queue's length before draining a level.
+**Function:** `levelOrder(root: TreeNode | null): number[][]`
+**Core:** true · **Adapter:** tree
+
+Return the values level by level. `[3,9,20,null,null,15,7]` → `[[3],[9,20],[15,7]]`.
+
+```tests
+[{"args": [[3, 9, 20, null, null, 15, 7]], "expected": [[3], [9, 20], [15, 7]]},
+ {"args": [[]], "expected": []},
+ {"args": [[1]], "expected": [[1]]},
+ {"args": [[1, 2, 3, 4, null, null, 5]], "expected": [[1], [2, 3], [4, 5]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function levelOrder(root: TreeNode | null): number[][] {
+  const out: number[][] = [];
+  let level = root ? [root] : [];
+  while (level.length) {
+    out.push(level.map((n) => n.val));
+    level = level.flatMap((n) => [n.left, n.right]).filter((n): n is TreeNode => n !== null);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Zigzag level order
+**Level:** intermediate · **Topic:** level order with alternating reversal · **Hint:** Reverse every other level before recording it.
+**Function:** `zigzagLevelOrder(root: TreeNode | null): number[][]`
+**Adapter:** tree
+
+Level order, but alternate left→right and right→left. `[3,9,20,null,null,15,7]` → `[[3],[20,9],[15,7]]`.
+
+```tests
+[{"args": [[3, 9, 20, null, null, 15, 7]], "expected": [[3], [20, 9], [15, 7]]},
+ {"args": [[]], "expected": []},
+ {"args": [[1, 2, 3, 4, 5, 6, 7]], "expected": [[1], [3, 2], [4, 5, 6, 7]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function zigzagLevelOrder(root: TreeNode | null): number[][] {
+  const out: number[][] = [];
+  let level = root ? [root] : [], ltr = true;
+  while (level.length) {
+    const vals = level.map((n) => n.val);
+    out.push(ltr ? vals : vals.reverse());
+    ltr = !ltr;
+    level = level.flatMap((n) => [n.left, n.right]).filter((n): n is TreeNode => n !== null);
+  }
+  return out;
+}
+```
+</details>
+
+### Exercise: Symmetric tree
+**Level:** foundation · **Topic:** recurse on mirrored pairs · **Hint:** Compare left.left with right.right and left.right with right.left.
+**Function:** `isSymmetric(root: TreeNode | null): boolean`
+**Adapter:** tree
+
+Is the tree a mirror of itself? `[1,2,2,3,4,4,3]` → `true`; `[1,2,2,null,3,null,3]` → `false`.
+
+```tests
+[{"args": [[1, 2, 2, 3, 4, 4, 3]], "expected": true},
+ {"args": [[1, 2, 2, null, 3, null, 3]], "expected": false},
+ {"args": [[]], "expected": true},
+ {"args": [[1]], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isSymmetric(root: TreeNode | null): boolean {
+  const mirror = (a: TreeNode | null, b: TreeNode | null): boolean =>
+    a === null || b === null ? a === b : a.val === b.val && mirror(a.left, b.right) && mirror(a.right, b.left);
+  return root === null || mirror(root.left, root.right);
+}
+```
+</details>
+
+### Exercise: Invert a binary tree
+**Level:** foundation · **Topic:** swap children, recurse · **Hint:** Every node's left and right trade places.
+**Function:** `invertTree(root: TreeNode | null): TreeNode | null`
+**Adapter:** tree
+
+Mirror the tree and return its root. `[4,2,7,1,3,6,9]` → `[4,7,2,9,6,3,1]`.
+
+```tests
+[{"args": [[4, 2, 7, 1, 3, 6, 9]], "expected": [4, 7, 2, 9, 6, 3, 1]},
+ {"args": [[]], "expected": []},
+ {"args": [[2, 1]], "expected": [2, null, 1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function invertTree(root: TreeNode | null): TreeNode | null {
+  if (root) [root.left, root.right] = [invertTree(root.right), invertTree(root.left)];
+  return root;
+}
+```
+</details>
+
+### Exercise: Balanced binary tree
+**Level:** intermediate · **Topic:** return height, or −1 for unbalanced · **Hint:** One pass: each call returns its height, or a sentinel meaning 'already unbalanced'.
+**Function:** `isBalanced(root: TreeNode | null): boolean`
+**Adapter:** tree
+
+Balanced means every node's subtrees differ in height by at most 1. `[3,9,20,null,null,15,7]` → `true`; `[1,2,2,3,3,null,null,4,4]` → `false`.
+
+```tests
+[{"args": [[3, 9, 20, null, null, 15, 7]], "expected": true},
+ {"args": [[1, 2, 2, 3, 3, null, null, 4, 4]], "expected": false},
+ {"args": [[]], "expected": true},
+ {"args": [[1, null, 2, null, 3]], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isBalanced(root: TreeNode | null): boolean {
+  const h = (n: TreeNode | null): number => {
+    if (!n) return 0;
+    const l = h(n.left); if (l < 0) return -1;
+    const r = h(n.right); if (r < 0) return -1;
+    return Math.abs(l - r) > 1 ? -1 : 1 + Math.max(l, r);
+  };
+  return h(root) >= 0;
+}
+```
+</details>
+
+### Exercise: Diameter of a binary tree
+**Level:** intermediate · **Topic:** return height, record the best path · **Hint:** The path through a node is left height + right height.
+**Function:** `diameterOfBinaryTree(root: TreeNode | null): number`
+**Core:** true · **Adapter:** tree
+
+Return the number of **edges** on the longest path between any two nodes. `[1,2,3,4,5]` → `3`.
+
+```tests
+[{"args": [[1, 2, 3, 4, 5]], "expected": 3},
+ {"args": [[1, 2]], "expected": 1},
+ {"args": [[]], "expected": 0},
+ {"args": [[1, 2, null, 3, 4, 5, null, null, 6]], "expected": 4}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let best = 0;
+  const h = (n: TreeNode | null): number => {
+    if (!n) return 0;
+    const l = h(n.left), r = h(n.right);
+    best = Math.max(best, l + r);
+    return 1 + Math.max(l, r);
+  };
+  h(root);
+  return best;
+}
+```
+</details>
+
+### Exercise: Validate a BST
+**Level:** intermediate · **Topic:** pass the allowed (low, high) range down · **Hint:** Checking only a node against its children misses violations further down.
+**Function:** `isValidBST(root: TreeNode | null): boolean`
+**Core:** true · **Adapter:** tree
+
+Every node's left subtree holds smaller values and right subtree larger (strictly). `[2,1,3]` → `true`; `[5,1,4,null,null,3,6]` → `false`.
+
+```tests
+[{"args": [[2, 1, 3]], "expected": true},
+ {"args": [[5, 1, 4, null, null, 3, 6]], "expected": false},
+ {"args": [[5, 4, 6, null, null, 3, 7]], "expected": false, "label": "the 3 is deep in the right subtree"},
+ {"args": [[]], "expected": true},
+ {"args": [[1, 1]], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isValidBST(root: TreeNode | null): boolean {
+  const ok = (n: TreeNode | null, lo: number, hi: number): boolean =>
+    n === null || (n.val > lo && n.val < hi && ok(n.left, lo, n.val) && ok(n.right, n.val, hi));
+  return ok(root, -Infinity, Infinity);
+}
+```
+</details>
+
+### Exercise: K-th smallest in a BST
+**Level:** intermediate · **Topic:** inorder is sorted; stop early · **Hint:** Walk inorder and count.
+**Function:** `kthSmallest(root: TreeNode | null, k: number): number`
+**Adapter:** tree
+
+Return the k-th smallest value (1-indexed). `[3,1,4,null,2], 1` → `1`; `[5,3,6,2,4,null,null,1], 3` → `3`.
+
+```tests
+[{"args": [[3, 1, 4, null, 2], 1], "expected": 1},
+ {"args": [[5, 3, 6, 2, 4, null, null, 1], 3], "expected": 3},
+ {"args": [[1], 1], "expected": 1},
+ {"args": [[2, 1, 3], 3], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function kthSmallest(root: TreeNode | null, k: number): number {
+  const st: TreeNode[] = [];
+  let cur = root;
+  while (cur || st.length) {
+    while (cur) { st.push(cur); cur = cur.left; }
+    cur = st.pop()!;
+    if (--k === 0) return cur.val;
+    cur = cur.right;
+  }
+  return -1;
+}
+```
+</details>
+
+### Exercise: Lowest common ancestor
+**Level:** intermediate · **Topic:** postorder: return what each subtree found · **Hint:** If p and q come back from different sides, this node is the answer.
+**Function:** `lowestCommonAncestor(root: TreeNode | null, p: number, q: number): number`
+**Core:** true · **Adapter:** tree
+
+Values are unique and both `p` and `q` exist. Return the **value** of their lowest common ancestor.
+`[3,5,1,6,2,0,8,null,null,7,4], 5, 1` → `3`; with `5, 4` → `5`.
+
+```tests
+[{"args": [[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], 5, 1], "expected": 3},
+ {"args": [[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], 5, 4], "expected": 5},
+ {"args": [[1, 2], 1, 2], "expected": 1},
+ {"args": [[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], 7, 8], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function lowestCommonAncestor(root: TreeNode | null, p: number, q: number): number {
+  const go = (n: TreeNode | null): TreeNode | null => {
+    if (!n || n.val === p || n.val === q) return n;
+    const l = go(n.left), r = go(n.right);
+    return l && r ? n : l ?? r;
+  };
+  return go(root)!.val;
+}
+```
+</details>
+
+### Exercise: Build a tree from preorder and inorder
+**Level:** senior · **Topic:** index map into inorder; recurse on ranges · **Hint:** Preorder's first value is the root; its position in inorder splits the subtrees.
+**Function:** `buildTree(preorder: number[], inorder: number[]): TreeNode | null`
+**Adapter:** tree-out
+
+Values are unique. Rebuild the tree. `[3,9,20,15,7], [9,3,15,20,7]` → `[3,9,20,null,null,15,7]`.
+
+```tests
+[{"args": [[3, 9, 20, 15, 7], [9, 3, 15, 20, 7]], "expected": [3, 9, 20, null, null, 15, 7]},
+ {"args": [[-1], [-1]], "expected": [-1]},
+ {"args": [[], []], "expected": []},
+ {"args": [[1, 2, 3], [3, 2, 1]], "expected": [1, 2, null, 3]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function buildTree(preorder: number[], inorder: number[]): TreeNode | null {
+  const at = new Map(inorder.map((v, i) => [v, i] as const));
+  let p = 0;
+  const go = (lo: number, hi: number): TreeNode | null => {
+    if (lo > hi) return null;
+    const val = preorder[p++];
+    const node = new TreeNode(val);
+    node.left = go(lo, at.get(val)! - 1);
+    node.right = go(at.get(val)! + 1, hi);
+    return node;
+  };
+  return go(0, inorder.length - 1);
+}
+```
+</details>
+
+### Exercise: Path sum II — every root-to-leaf path
+**Level:** intermediate · **Topic:** backtracking on a tree; copy the path · **Hint:** Push on the way down, pop on the way up, copy when you reach a matching leaf.
+**Function:** `pathSum(root: TreeNode | null, target: number): number[][]`
+**Adapter:** tree
+
+Return every root-to-leaf path whose values sum to `target`, left paths first.
+`[5,4,8,11,null,13,4,7,2,null,null,5,1], 22` → `[[5,4,11,2],[5,8,4,5]]`.
+
+```tests
+[{"args": [[5, 4, 8, 11, null, 13, 4, 7, 2, null, null, 5, 1], 22], "expected": [[5, 4, 11, 2], [5, 8, 4, 5]]},
+ {"args": [[1, 2, 3], 5], "expected": []},
+ {"args": [[1, 2], 1], "expected": []},
+ {"args": [[], 0], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function pathSum(root: TreeNode | null, target: number): number[][] {
+  const out: number[][] = [], path: number[] = [];
+  const go = (n: TreeNode | null, left: number) => {
+    if (!n) return;
+    path.push(n.val);
+    if (!n.left && !n.right && left === n.val) out.push([...path]);
+    go(n.left, left - n.val);
+    go(n.right, left - n.val);
+    path.pop();
+  };
+  go(root, target);
+  return out;
+}
+```
+</details>
+
+### Exercise: Binary tree maximum path sum
+**Level:** senior · **Topic:** return the best one-sided path, record the best bent path · **Hint:** A negative branch contributes 0 — you can always leave it out.
+**Function:** `maxPathSum(root: TreeNode | null): number`
+**Core:** true · **Adapter:** tree
+
+A path is any sequence of connected nodes (at least one). Return the largest sum. `[-10,9,20,null,null,15,7]` → `42`.
+
+```tests
+[{"args": [[-10, 9, 20, null, null, 15, 7]], "expected": 42},
+ {"args": [[1, 2, 3]], "expected": 6},
+ {"args": [[-3]], "expected": -3},
+ {"args": [[2, -1]], "expected": 2},
+ {"args": [[-2, -1]], "expected": -1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function maxPathSum(root: TreeNode | null): number {
+  let best = -Infinity;
+  const gain = (n: TreeNode | null): number => {
+    if (!n) return 0;
+    const l = Math.max(0, gain(n.left)), r = Math.max(0, gain(n.right));
+    best = Math.max(best, n.val + l + r);
+    return n.val + Math.max(l, r);
+  };
+  gain(root);
+  return best;
+}
+```
+</details>
+
+### Exercise: Serialize and deserialize
+**Level:** senior · **Topic:** preorder with null markers · **Hint:** Write a marker for every null child; read back in the same order.
+**Function:** `roundTrip(root: TreeNode | null): TreeNode | null`
+**Adapter:** tree
+
+Write `serialize(root): string` and `deserialize(s): TreeNode | null` so that `deserialize(serialize(root))` rebuilds the identical tree. `roundTrip` calls both; the test checks the rebuilt tree.
+
+```starter
+function serialize(root: TreeNode | null): string {
+  return '';
+}
+
+function deserialize(s: string): TreeNode | null {
+  return null;
+}
+
+// Test hook — leave as is.
+function roundTrip(root: TreeNode | null): TreeNode | null {
+  return deserialize(serialize(root));
+}
+```
+
+```tests
+[{"args": [[1, 2, 3, null, null, 4, 5]], "expected": [1, 2, 3, null, null, 4, 5]},
+ {"args": [[]], "expected": []},
+ {"args": [[1, null, 2, null, 3]], "expected": [1, null, 2, null, 3]},
+ {"args": [[-7, 0, 100]], "expected": [-7, 0, 100]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function serialize(root: TreeNode | null): string {
+  const out: string[] = [];
+  const go = (n: TreeNode | null) => { if (!n) { out.push('#'); return; } out.push(String(n.val)); go(n.left); go(n.right); };
+  go(root);
+  return out.join(',');
+}
+
+function deserialize(s: string): TreeNode | null {
+  const parts = s.split(',');
+  let i = 0;
+  const go = (): TreeNode | null => {
+    const v = parts[i++];
+    if (v === '#') return null;
+    const n = new TreeNode(Number(v));
+    n.left = go();
+    n.right = go();
+    return n;
+  };
+  return go();
+}
+
+function roundTrip(root: TreeNode | null): TreeNode | null {
+  return deserialize(serialize(root));
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Almost every tree problem is one recursion:** solve left, solve right, combine at the node.
+- **Pre / in / post-order** is only where you visit the node; **level order** is BFS with a per-level batch.
+- **Return vs record:** return what the parent needs (a height), record the global answer (a diameter) on the side.
+- **BST:** inorder is sorted; validate by passing a (low, high) range down, not by comparing with children.
+- **Recursion depth = tree height:** O(log n) balanced, O(n) for a skewed tree — mention the stack risk.
+- **LCA:** post-order; if p and q come back from different sides, you're at the answer.
+- **Serialize with null markers** so the structure is unambiguous.
+
+---
+
+## Quiz
+
+### MCQ: Which traversal of a BST yields the values in sorted order?
+- [ ] Preorder
+- [x] Inorder
+- [ ] Postorder
+- [ ] Level order
+**Why:** Left subtree (smaller), node, right subtree (larger).
+
+### MCQ: Validating a BST by checking only `left.val < node.val < right.val` fails because…
+- [ ] It's too slow
+- [x] A deeper node can violate an ancestor's bound
+- [ ] It can't handle null
+- [ ] It only works for balanced trees
+**Why:** e.g. a 3 deep in the right subtree of 5; pass the allowed range down instead.
+
+### MCQ: Diameter of a binary tree: what does the recursive helper return?
+- [ ] The diameter so far
+- [x] The height of the subtree
+- [ ] The number of leaves
+- [ ] A boolean
+**Why:** Return height to the parent; record left + right height as a candidate diameter.
+
+### MCQ: Space complexity of recursive DFS on a skewed tree with n nodes?
+- [ ] O(1)
+- [ ] O(log n)
+- [x] O(n)
+- [ ] O(n²)
+**Why:** Recursion depth equals height, which is n for a chain.
+
+### MCQ: Level-order traversal naturally uses…
+- [ ] A stack
+- [x] A queue
+- [ ] A heap
+- [ ] Recursion only
+**Why:** BFS by levels: record the queue's size before draining each level.
+
+### MCQ: In LCA, a subtree returns non-null from both left and right. The current node is…
+- [ ] Not an ancestor
+- [x] The lowest common ancestor
+- [ ] One of p or q
+- [ ] The root
+**Why:** p is in one subtree and q in the other, so this is the deepest node containing both.
+
+### MCQ: Why does serialization need null markers?
+- [ ] To compress the output
+- [x] Without them, different trees can give the same string
+- [ ] JSON requires them
+- [ ] They're optional
+**Why:** Preorder values alone can't tell a left child from a right child.
+
+### MCQ: Max path sum: why take `max(0, childGain)`?
+- [ ] To avoid overflow
+- [x] A negative branch is better left out of the path
+- [ ] Children are always positive
+- [ ] To handle null
+**Why:** A path can stop at any node, so a negative contribution is dropped.

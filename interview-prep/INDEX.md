@@ -55,21 +55,22 @@ design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 | Topic / keyword | File |
 | --- | --- |
 | the 45-minute shape, speaking script, what gets written down, L5 downgrades, JS in a plain doc, mock transcript | ✅ [the coding round](02-google-loop/03-coding-round-how-google-runs-it.md) |
-| patterns, complexity, auth-flavoured problems | ✅ [patterns and complexity](02-google-loop/04-patterns-and-complexity.md) |
+| patterns, complexity, auth-flavoured problems, counting loop iterations, Big-O rules, TLE from constraints, space complexity, overflow, count factors, prime check, sieve, integer sqrt, AP/GP sums, modular arithmetic, N! mod p, number mod p, divisibility rules | ✅ [patterns and complexity](02-google-loop/04-patterns-and-complexity.md) |
 | how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](02-google-loop/05-choosing-the-approach.md) |
-| arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals | ✅ [arrays and two pointers](02-google-loop/06-arrays-and-two-pointers.md) |
-| strings, hashing, frequency counts, longest substring without repeats, minimum window, group anagrams, palindromes | ✅ [strings and hashing](02-google-loop/07-strings-and-hashing.md) |
-| linked lists, dummy head, fast/slow pointers, reverse in k-groups, merge k lists, random pointer copy, cycle start | ✅ [linked lists](02-google-loop/08-linked-lists.md) |
+| arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals, reverse/rotate array, range-sum queries, equilibrium index, special index, leaders, carry forward, contribution technique, sum of all subarray sums, min swaps, frequency queries, distinct in window, zero-sum subarray, equal 0s and 1s, noble integers, elements removal, comparator sort, majority element (Boyer–Moore), max consecutive ones, increasing triplets | ✅ [arrays and two pointers](02-google-loop/06-arrays-and-two-pointers.md) |
+| strings, hashing, frequency counts, longest substring without repeats, minimum window, group anagrams, palindromes, toggle case, reverse words, counting sort, count 'ag' pairs, count palindromic substrings, HashMap vs HashSet | ✅ [strings and hashing](02-google-loop/07-strings-and-hashing.md) |
+| linked lists, dummy head, fast/slow pointers, reverse in k-groups, merge k lists, random pointer copy, cycle start, build/traverse/search, insert at head/tail/k, delete head/tail/k/value, print in reverse | ✅ [linked lists](02-google-loop/08-linked-lists.md) |
 | stacks, queues, monotonic stack/deque, largest rectangle, sliding window maximum, min stack, calculator | ✅ [stacks, queues, monotonic](02-google-loop/09-stacks-queues-monotonic.md) |
 | trees, BST, traversals, LCA, serialize/deserialize, validate BST, max path sum | ✅ [trees and BST](02-google-loop/10-trees-and-bst.md) |
 | heaps, priority queues, MinHeap from scratch, kth largest in stream, top-k frequent, median from stream, meeting rooms II | ✅ [heaps and top-k](02-google-loop/11-heaps-and-top-k.md) |
 | graphs, BFS vs DFS, topological sort, course schedule, union-find, word ladder, Dijkstra, network delay | ✅ [graphs](02-google-loop/12-graphs.md) |
-| matrices, grids, multi-source BFS, rotten oranges, rotate image, search 2-D matrix, grid DP | ✅ [matrices and grids](02-google-loop/13-matrices-and-grids.md) |
-| recursion, backtracking, subsets, permutations, combination sum, N-Queens, generate parentheses | ✅ [recursion and backtracking](02-google-loop/14-recursion-and-backtracking.md) |
+| matrices, grids, multi-source BFS, rotten oranges, rotate image, search 2-D matrix, grid DP, row/column sums, diagonals, anti-diagonals, transpose, rotate anticlockwise, boundary, spiral order | ✅ [matrices and grids](02-google-loop/13-matrices-and-grids.md) |
+| recursion, backtracking, subsets, permutations, combination sum, N-Queens, generate parentheses, the three steps of recursion, sum/factorial/Fibonacci, recursion complexity, fast power, a^n mod m, Josephus, subarray vs subsequence vs subset, count subsequences with sum K, bitmask enumeration | ✅ [recursion and backtracking](02-google-loop/14-recursion-and-backtracking.md) |
 | dynamic programming, memoisation vs tabulation, house robber, coin change, LIS, LCS, edit distance, knapsack, word break | ✅ [dynamic programming](02-google-loop/15-dynamic-programming.md) |
-| binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR | ✅ [binary search and bits](02-google-loop/16-binary-search-and-bits.md) |
+| binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR, decimal↔binary, add binary, bitwise operators, check/set/unset/toggle i-th bit, count set bits, two's complement | ✅ [binary search and bits](02-google-loop/16-binary-search-and-bits.md) |
 | trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-google-loop/17-tries-intervals-and-design-structures.md) |
 | IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-google-loop/18-security-flavoured-problems.md) |
+| drill, the pattern problem banks: every problem type from the Scaler DSA track, with algorithm + TypeScript, tagged `scaler` for coding practice | ✅ `## Problem bank` sections in [04](02-google-loop/04-patterns-and-complexity.md), [06](02-google-loop/06-arrays-and-two-pointers.md), [07](02-google-loop/07-strings-and-hashing.md), [08](02-google-loop/08-linked-lists.md), [13](02-google-loop/13-matrices-and-grids.md), [14](02-google-loop/14-recursion-and-backtracking.md), [16](02-google-loop/16-binary-search-and-bits.md) |
 | what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-google-loop/19-the-drill-plan.md) |
 
 ### C. Distributed-systems foundations
@@ -120,6 +121,7 @@ design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 | Golang, goroutines, channels ⚠️ RISK AREA | ✅ [golang](03-backend/03-golang.md) |
 | REST, GraphQL, gRPC, Protobuf, WebSockets, Socket.io | ✅ [api styles](03-backend/04-api-styles.md) |
 | microservices, boundaries, service mesh | ✅ [microservices](03-backend/05-microservices.md) |
+| Kafka, RabbitMQ, SQS, SNS, EventBridge, partitions, consumer groups, offsets, idempotent producer, exchanges, prefetch, DLX, visibility timeout, redrive/DLQ, fan-out, outbox | ✅ [messaging in practice](03-backend/06-messaging-in-practice.md) |
 
 ## 04 — Data & Cache *(all written)*
 
@@ -152,6 +154,7 @@ design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 | Claude Code, Copilot, AGENT.md/SKILLS.md, navigation index, playbooks | ✅ [ai engineering](07-ai-tooling/01-ai-engineering.md) |
 | context engineering, prompt caching, model routing | ✅ [ai engineering](07-ai-tooling/01-ai-engineering.md) |
 | AI code review, test generation, debugging, RCA, security analysis, GPT | ✅ [ai across the sdlc](07-ai-tooling/02-ai-across-the-sdlc.md) |
+| RAG, retrieval-augmented generation, embeddings, chunking, hybrid search, reranking, vector store, pgvector, permission-aware retrieval, prompt injection, golden set, Slack support bot | ✅ [RAG and LLM-backed bots](07-ai-tooling/03-rag-and-llm-bots.md) |
 
 ## 08 — Frontend *(all written)*
 

@@ -773,6 +773,342 @@ signed. Reciting the trick without the derivation is the weak version.
 
 ---
 
+## Problem bank — bit manipulation fundamentals
+
+The trick table and single-number above assume you can already reason about
+individual bits. This bank covers that groundwork from the Scaler track:
+binary conversion, the operators and their properties, and the four
+single-bit operations every bit problem is built from.
+
+| Group | Problems |
+| --- | --- |
+| Number systems | decimal ↔ binary, add two binary strings |
+| Operators | AND / OR / XOR / NOT / shifts and their properties, even or odd without `%` |
+| Single-bit operations | check, set, unset and toggle the i-th bit; count set bits |
+| Negative numbers | two's complement and the int32 range |
+
+**JS/TS warning, once:** bitwise operators convert their operands to
+**signed 32-bit integers**. `2 ** 31 | 0` is `-2147483648`, and
+`(1 << 31)` is negative. For values past 2³¹ use `BigInt` (`1n << 40n`) or
+arithmetic instead of bit operators.
+
+---
+
+### Number systems
+
+### Q: Convert decimal to binary and binary to decimal
+**Level:** foundation · **Tags:** google-coding, bits, binary, number-systems, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `45` → `"101101"`; `"101101"` → `45`.
+
+**The insight.** Base 2 is base 10 with a different base.
+- **Decimal → binary.** Repeatedly take `n % 2` (the lowest bit) and divide by
+  2; the remainders, read in reverse, are the bits.
+- **Binary → decimal.** Horner's rule: for each bit from the left,
+  `value = value × 2 + bit`. Equivalent to Σ bitᵢ · 2ⁱ.
+
+`45`: 45→1, 22→0, 11→1, 5→1, 2→0, 1→1 → reversed `101101`.
+Check: 32 + 8 + 4 + 1 = 45.
+
+```ts
+function toBinary(n: number): string {
+  if (n === 0) return '0';
+  const bits: number[] = [];
+  while (n > 0) {
+    bits.push(n % 2);          // lowest bit
+    n = Math.floor(n / 2);     // drop it
+  }
+  return bits.reverse().join('');
+}
+
+function fromBinary(s: string): number {
+  let v = 0;
+  for (const ch of s) v = v * 2 + (ch === '1' ? 1 : 0);   // shift left, add bit
+  return v;
+}
+```
+
+Built-ins exist — `n.toString(2)` and `parseInt(s, 2)` — and you should
+mention them, but the interviewer is asking whether you know what they do.
+
+**Complexity.** O(log n) time — one step per bit.
+
+</details>
+
+**Follow-ups:**
+1. Q: Generalise to any base b.
+   <details><summary>Answer</summary>
+
+   Replace 2 with b in both loops; for b > 10 map digits 10..35 to `a..z`.
+   A decimal number in base b has ⌊log_b n⌋ + 1 digits.
+
+   </details>
+
+### Q: Add two binary numbers given as strings
+**Level:** foundation · **Tags:** google-coding, bits, binary, strings, carry, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `"1011" + "111"` → `"10010"` (11 + 7 = 18).
+
+**The insight.** School addition, base 2. Walk both strings from the right with
+a carry; each column's digit is `sum % 2` and the new carry is
+`Math.floor(sum / 2)`. Keep going while either string has digits **or** the
+carry is 1.
+
+```ts
+function addBinary(a: string, b: string): string {
+  const out: number[] = [];
+  let i = a.length - 1, j = b.length - 1, carry = 0;
+  while (i >= 0 || j >= 0 || carry) {
+    const sum = (i >= 0 ? +a[i--] : 0) + (j >= 0 ? +b[j--] : 0) + carry;
+    out.push(sum % 2);
+    carry = sum >> 1;
+  }
+  return out.reverse().join('');
+}
+```
+
+**Complexity.** O(max(|a|, |b|)) time and space.
+
+**Why not `parseInt` + `toString(2)`?** Strings of 100 bits overflow a double.
+The digit-by-digit version works for any length.
+
+</details>
+
+**Follow-ups:**
+1. Q: Add two integers without using `+`.
+   <details><summary>Answer</summary>
+
+   `a ^ b` is the sum without carries; `(a & b) << 1` is the carries. Repeat
+   `[a, b] = [a ^ b, (a & b) << 1]` until `b === 0`. In JS this works within
+   32-bit signed integers.
+
+   </details>
+
+---
+
+### Operators
+
+### Q: What do AND, OR, XOR, NOT and the shifts do, and which properties make XOR useful?
+**Level:** foundation · **Tags:** google-coding, bits, xor, operators, scaler
+
+<details><summary>Model answer</summary>
+
+| a | b | a & b | a \| b | a ^ b |
+| --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 1 | 0 | 1 | 1 |
+| 1 | 0 | 0 | 1 | 1 |
+| 1 | 1 | 1 | 1 | 0 |
+
+- **AND** keeps a bit only where both have it — used to **test** or **clear**
+  bits.
+- **OR** sets a bit where either has it — used to **set** bits.
+- **XOR** is 1 where the bits differ — used to **toggle** bits and cancel
+  pairs.
+- **NOT** `~x` flips every bit; in two's complement `~x === −x − 1`.
+- **Left shift** `x << k` multiplies by 2ᵏ (until it overflows 32 bits).
+- **Right shift** `x >> k` divides by 2ᵏ, rounding toward −∞ (sign-extending);
+  `>>>` fills with zeros, treating the value as unsigned.
+
+**XOR's properties** — the reason half of bit problems are XOR problems:
+
+| Property | Meaning |
+| --- | --- |
+| `x ^ 0 = x` | 0 is the identity |
+| `x ^ x = 0` | Everything cancels itself |
+| Commutative, associative | Order doesn't matter: `a ^ b ^ a = b` |
+
+So XOR-ing a whole array cancels every value that appears an even number of
+times — which is the entire solution to single-number (worked above).
+
+</details>
+
+**Follow-ups:**
+1. Q: Swap two integers without a temporary variable.
+   <details><summary>Answer</summary>
+
+   `a ^= b; b ^= a; a ^= b;`. It breaks if `a` and `b` are the same memory
+   location (e.g. `arr[i]` and `arr[j]` with `i === j`) — both become 0. In
+   production code, just use a temp or destructuring.
+
+   </details>
+
+### Q: Check whether a number is even or odd without `%` or `/`
+**Level:** foundation · **Tags:** google-coding, bits, scaler
+
+<details><summary>Model answer</summary>
+
+**The insight.** Every bit except the lowest is worth an even amount (2, 4,
+8, …), so parity is decided by bit 0 alone. `n & 1` is 1 for odd, 0 for even.
+
+```ts
+const isOdd = (n: number): boolean => (n & 1) === 1;
+```
+
+It works for negative numbers too: in two's complement, `-3` is
+`…11111101`, whose low bit is 1.
+
+**Complexity.** O(1).
+
+</details>
+
+**Follow-ups:**
+1. Q: Why is `n % 2 === 1` wrong in JS for negatives?
+   <details><summary>Answer</summary>
+
+   `%` takes the sign of the dividend, so `-3 % 2 === -1`. Use `n % 2 !== 0`
+   or the bit test.
+
+   </details>
+
+---
+
+### Single-bit operations
+
+Bits are numbered from 0 at the right. `1 << i` is a **mask** with only bit
+`i` set. Every single-bit operation is one operator with that mask.
+
+### Q: Check, set, unset and toggle the i-th bit of n
+**Level:** foundation · **Tags:** google-coding, bits, bitmask, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `n = 45 = 101101₂`.
+- check bit 2 → set (true); check bit 1 → false
+- set bit 1 → `101111₂` = 47
+- unset bit 0 → `101100₂` = 44
+- toggle bit 5 → `001101₂` = 13
+
+| Operation | Expression | Why |
+| --- | --- | --- |
+| Check | `(n >> i) & 1` or `(n & (1 << i)) !== 0` | AND with the mask leaves only that bit |
+| Set | `n \| (1 << i)` | OR with 1 forces it to 1 |
+| Unset | `n & ~(1 << i)` | The inverted mask is 1 everywhere except bit i |
+| Toggle | `n ^ (1 << i)` | XOR with 1 flips it |
+
+```ts
+const checkBit  = (n: number, i: number) => ((n >> i) & 1) === 1;
+const setBit    = (n: number, i: number) => n | (1 << i);
+const unsetBit  = (n: number, i: number) => n & ~(1 << i);
+const toggleBit = (n: number, i: number) => n ^ (1 << i);
+```
+
+**The classic bug:** `n & (1 << i) === 1`. Two problems — `===` binds tighter
+than `&` in JS, and even parenthesised, `n & (1 << i)` is `2ⁱ`, not 1, when
+the bit is set. Compare with `!== 0` or shift down first.
+
+**Complexity.** O(1) each.
+
+</details>
+
+**Follow-ups:**
+1. Q: Unset the i-th bit using only check and toggle.
+   <details><summary>Answer</summary>
+
+   `checkBit(n, i) ? toggleBit(n, i) : n` — the lecture's version. The
+   `& ~mask` form does it branch-free.
+
+   </details>
+
+### Q: Count the set bits of n
+**Level:** foundation · **Tags:** google-coding, bits, popcount, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `45 = 101101₂` → 4. `12 = 1100₂` → 2.
+
+**Three versions.**
+1. Check each of the 32 bits: O(32) = O(1) for a fixed-width int, but O(log n)
+   in general.
+2. Shift until zero: `count += n & 1; n >>>= 1` — O(number of bits up to the
+   highest set one).
+3. **Brian Kernighan:** `n & (n − 1)` clears the lowest set bit, so loop until
+   `n === 0`: **O(number of set bits)**.
+
+```ts
+function countSetBits(n: number): number {
+  let c = 0;
+  while (n !== 0) {
+    n &= n - 1;     // drop the lowest set bit
+    c++;
+  }
+  return c;
+}
+```
+
+Why `n & (n − 1)` works: subtracting 1 flips the lowest set bit to 0 and all
+the zeros below it to 1. AND-ing with the original clears exactly those
+positions.
+
+**Complexity.** O(k) where k = set bits; O(1) space.
+
+**Test it.** 0 → 0. `2³¹ − 1` → 31. Negative numbers: `-1` has 32 set bits;
+with `n &= n − 1` in JS that terminates because the value stays a 32-bit int
+after the first `&` — but use `>>>` in the shifting version, or `>>` loops
+forever on negatives.
+
+</details>
+
+**Follow-ups:**
+1. Q: Count set bits for every number 0..n in O(n).
+   <details><summary>Answer</summary>
+
+   DP: `bits[i] = bits[i >> 1] + (i & 1)` — i has the same bits as i/2, plus
+   its own low bit. Or `bits[i] = bits[i & (i − 1)] + 1`.
+
+   </details>
+2. Q: Is n a power of two?
+   <details><summary>Answer</summary>
+
+   `n > 0 && (n & (n − 1)) === 0` — a power of two has exactly one set bit.
+
+   </details>
+
+---
+
+### Negative numbers
+
+### Q: How are negative integers stored, and what is the range of a 32-bit signed int?
+**Level:** foundation · **Tags:** google-coding, bits, twos-complement, overflow, scaler
+
+<details><summary>Model answer</summary>
+
+**Two's complement.** For an 8-bit example, the top bit is worth **−2⁷ =
+−128** instead of +128; the rest are positive as usual. So `10000000` = −128,
+`11111111` = −128 + 127 = −1, and `01111111` = 127.
+
+**How to negate:** invert every bit (one's complement) and add 1.
+`5 = 00000101` → invert `11111010` → add 1 → `11111011` = −128 + 123 = −5 ✓.
+
+**Why it's used.** Addition works the same for signed and unsigned — the CPU
+needs one adder — and there is only one zero.
+
+**Range with N bits:** `−2ᴺ⁻¹ … 2ᴺ⁻¹ − 1`. For 32 bits:
+`−2,147,483,648 … 2,147,483,647` (about ±2.1·10⁹). For 64 bits: about
+±9.2·10¹⁸.
+
+**What this means in the round.** A problem with values up to 10⁹ and n up to
+10⁵ has sums up to 10¹⁴ — past int32, so Java/C++ need `long`. JS numbers are
+doubles and exact up to 2⁵³ ≈ 9·10¹⁵, so that sum is fine in JS; a product of
+two 10⁹ values (10¹⁸) is **not**, and needs `BigInt`.
+
+</details>
+
+**Follow-ups:**
+1. Q: What is `~5` and why?
+   <details><summary>Answer</summary>
+
+   −6. Inverting all bits is `−x − 1` in two's complement, since
+   `x + ~x = −1` (all ones).
+
+   </details>
+
+---
+
 ## Interview Q&A
 
 ### Q: What can and can't binary search be applied to?
@@ -873,3 +1209,550 @@ bag of bits I want `>>>`; when I'm halving a signed number I want `>>`.
 - **Popcount** — the number of set bits.
 - **Submask enumeration** — `s = (s - 1) & m` to walk every subset of mask `m`.
 - **`>>` vs `>>>`** — arithmetic (sign-preserving) vs logical (zero-fill) right shift.
+
+---
+
+## Exercises
+
+Bitwise operators work on 32-bit signed integers in TypeScript — keep inputs in
+that range or reach for `BigInt`. Problems marked **core** are the must-solve set.
+
+### Exercise: Decimal to binary
+**Level:** foundation · **Topic:** repeated division by 2 · **Hint:** The remainders, read in reverse, are the bits.
+**Function:** `toBinary(n: number): string`
+**Source:** scaler
+
+Return the binary representation of a non-negative integer, without `toString(2)`. `45` → `"101101"`.
+
+```tests
+[{"args": [45], "expected": "101101"},
+ {"args": [0], "expected": "0"},
+ {"args": [1], "expected": "1"},
+ {"args": [8], "expected": "1000"},
+ {"args": [1023], "expected": "1111111111"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function toBinary(n: number): string {
+  if (n === 0) return '0';
+  const bits: number[] = [];
+  while (n > 0) { bits.push(n % 2); n = Math.floor(n / 2); }
+  return bits.reverse().join('');
+}
+```
+</details>
+
+### Exercise: Binary to decimal
+**Level:** foundation · **Topic:** Horner's rule: value = value × 2 + bit · **Hint:** Read the bits left to right, doubling as you go.
+**Function:** `fromBinary(s: string): number`
+**Source:** scaler
+
+Return the value of a binary string, without `parseInt`. `"101101"` → `45`.
+
+```tests
+[{"args": ["101101"], "expected": 45},
+ {"args": ["0"], "expected": 0},
+ {"args": ["1"], "expected": 1},
+ {"args": ["11111111"], "expected": 255}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function fromBinary(s: string): number {
+  let v = 0;
+  for (const ch of s) v = v * 2 + (ch === '1' ? 1 : 0);
+  return v;
+}
+```
+</details>
+
+### Exercise: Add two binary strings
+**Level:** foundation · **Topic:** column addition with a carry · **Hint:** Keep going while either string has digits or the carry is 1.
+**Function:** `addBinary(a: string, b: string): string`
+**Core:** true · **Source:** scaler
+
+Add two binary strings of any length. `"1011" + "111"` → `"10010"`.
+
+```tests
+[{"args": ["1011", "111"], "expected": "10010"},
+ {"args": ["0", "0"], "expected": "0"},
+ {"args": ["1", "1"], "expected": "10"},
+ {"args": ["1111", "1"], "expected": "10000"},
+ {"args": ["100000000000000000000000000000000000000000000000000000000000000000000000000000000", "1"], "expected": "100000000000000000000000000000000000000000000000000000000000000000000000000000001", "label": "an 81-bit number"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function addBinary(a: string, b: string): string {
+  const out: number[] = [];
+  let i = a.length - 1, j = b.length - 1, carry = 0;
+  while (i >= 0 || j >= 0 || carry) {
+    const sum = (i >= 0 ? +a[i--] : 0) + (j >= 0 ? +b[j--] : 0) + carry;
+    out.push(sum % 2);
+    carry = sum >> 1;
+  }
+  return out.reverse().join('');
+}
+```
+</details>
+
+### Exercise: Even or odd without % or /
+**Level:** foundation · **Topic:** the lowest bit · **Hint:** Every bit but bit 0 is worth an even amount.
+**Function:** `isOdd(n: number): boolean`
+**Source:** scaler
+
+Return whether `n` is odd using only bit operations. Works for negatives. `-3` → `true`.
+
+```tests
+[{"args": [7], "expected": true},
+ {"args": [4], "expected": false},
+ {"args": [-3], "expected": true},
+ {"args": [0], "expected": false},
+ {"args": [-8], "expected": false}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isOdd(n: number): boolean {
+  return (n & 1) === 1;
+}
+```
+</details>
+
+### Exercise: Check, set, unset and toggle bit i
+**Level:** foundation · **Topic:** one mask: 1 << i · **Hint:** AND tests, OR sets, AND-NOT clears, XOR flips.
+**Function:** `bitOps(n: number, i: number): { check: boolean; set: number; unset: number; toggle: number }`
+**Core:** true · **Source:** scaler
+
+Return all four single-bit operations on bit `i` of `n`.
+`(45, 1)` → `{ check: false, set: 47, unset: 45, toggle: 47 }`.
+
+```tests
+[{"args": [45, 1], "expected": {"check": false, "set": 47, "unset": 45, "toggle": 47}},
+ {"args": [45, 0], "expected": {"check": true, "set": 45, "unset": 44, "toggle": 44}},
+ {"args": [45, 5], "expected": {"check": true, "set": 45, "unset": 13, "toggle": 13}},
+ {"args": [0, 3], "expected": {"check": false, "set": 8, "unset": 0, "toggle": 8}}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function bitOps(n: number, i: number): { check: boolean; set: number; unset: number; toggle: number } {
+  const mask = 1 << i;
+  return { check: (n & mask) !== 0, set: n | mask, unset: n & ~mask, toggle: n ^ mask };
+}
+```
+</details>
+
+### Exercise: Count set bits
+**Level:** foundation · **Topic:** n & (n − 1) clears the lowest set bit · **Hint:** Loop once per set bit, not once per bit.
+**Function:** `countSetBits(n: number): number`
+**Core:** true · **Source:** scaler
+
+Return the number of 1 bits in a 32-bit integer (negatives in two's complement). `45` → `4`; `-1` → `32`.
+
+```tests
+[{"args": [45], "expected": 4},
+ {"args": [12], "expected": 2},
+ {"args": [0], "expected": 0},
+ {"args": [-1], "expected": 32},
+ {"args": [2147483647], "expected": 31}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countSetBits(n: number): number {
+  let c = 0;
+  while (n !== 0) { n &= n - 1; c++; }
+  return c;
+}
+```
+</details>
+
+### Exercise: Is n a power of two?
+**Level:** foundation · **Topic:** exactly one set bit · **Hint:** What does n & (n − 1) do to a power of two?
+**Function:** `isPowerOfTwo(n: number): boolean`
+
+Return whether `n` is a power of two. `16` → `true`, `0` → `false`, `6` → `false`.
+
+```tests
+[{"args": [16], "expected": true},
+ {"args": [1], "expected": true},
+ {"args": [0], "expected": false},
+ {"args": [6], "expected": false},
+ {"args": [-8], "expected": false},
+ {"args": [1073741824], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function isPowerOfTwo(n: number): boolean {
+  return n > 0 && (n & (n - 1)) === 0;
+}
+```
+</details>
+
+### Exercise: Single number
+**Level:** foundation · **Topic:** XOR cancels pairs · **Hint:** x ^ x = 0 and x ^ 0 = x, in any order.
+**Function:** `singleNumber(nums: number[]): number`
+**Core:** true · **Source:** scaler
+
+Every element appears twice except one. Return it in O(n) time and O(1) space. `[4, 1, 2, 1, 2]` → `4`.
+
+```tests
+[{"args": [[4, 1, 2, 1, 2]], "expected": 4},
+ {"args": [[1]], "expected": 1},
+ {"args": [[-1, -1, -2]], "expected": -2},
+ {"args": [[5, 3, 5]], "expected": 3}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function singleNumber(nums: number[]): number {
+  return nums.reduce((x, y) => x ^ y, 0);
+}
+```
+</details>
+
+### Exercise: Counting bits for 0..n
+**Level:** intermediate · **Topic:** DP: bits[i] = bits[i >> 1] + (i & 1) · **Hint:** i has the same bits as i / 2, plus its own lowest bit.
+**Function:** `countBits(n: number): number[]`
+
+Return `ans` where `ans[i]` is the number of set bits in `i`, for 0 ≤ i ≤ n, in O(n). `5` → `[0,1,1,2,1,2]`.
+
+```tests
+[{"args": [5], "expected": [0, 1, 1, 2, 1, 2]},
+ {"args": [0], "expected": [0]},
+ {"args": [2], "expected": [0, 1, 1]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countBits(n: number): number[] {
+  const bits = new Array<number>(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) bits[i] = bits[i >> 1] + (i & 1);
+  return bits;
+}
+```
+</details>
+
+### Exercise: Search in a rotated sorted array
+**Level:** intermediate · **Topic:** binary search: one half is always sorted · **Hint:** Decide which half is sorted, then whether the target lies in it.
+**Function:** `searchRotated(nums: number[], target: number): number`
+**Core:** true
+
+`nums` is a sorted array of distinct values rotated at an unknown pivot. Return the target's index or `-1`, in O(log n).
+`[4,5,6,7,0,1,2], 0` → `4`.
+
+```tests
+[{"args": [[4, 5, 6, 7, 0, 1, 2], 0], "expected": 4},
+ {"args": [[4, 5, 6, 7, 0, 1, 2], 3], "expected": -1},
+ {"args": [[1], 0], "expected": -1},
+ {"args": [[1], 1], "expected": 0},
+ {"args": [[3, 1], 1], "expected": 1},
+ {"args": [[5, 1, 3], 5], "expected": 0}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function searchRotated(nums: number[], target: number): number {
+  let lo = 0, hi = nums.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (nums[mid] === target) return mid;
+    if (nums[lo] <= nums[mid]) {
+      if (nums[lo] <= target && target < nums[mid]) hi = mid - 1; else lo = mid + 1;
+    } else {
+      if (nums[mid] < target && target <= nums[hi]) lo = mid + 1; else hi = mid - 1;
+    }
+  }
+  return -1;
+}
+```
+</details>
+
+### Exercise: First and last position
+**Level:** intermediate · **Topic:** two boundary binary searches · **Hint:** Search for the first index ≥ target, and the first index > target.
+**Function:** `searchRange(nums: number[], target: number): number[]`
+**Core:** true
+
+In a sorted array, return `[first, last]` indices of `target`, or `[-1, -1]`, in O(log n).
+`[5,7,7,8,8,10], 8` → `[3, 4]`.
+
+```tests
+[{"args": [[5, 7, 7, 8, 8, 10], 8], "expected": [3, 4]},
+ {"args": [[5, 7, 7, 8, 8, 10], 6], "expected": [-1, -1]},
+ {"args": [[], 0], "expected": [-1, -1]},
+ {"args": [[2, 2], 2], "expected": [0, 1]},
+ {"args": [[1], 1], "expected": [0, 0]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function searchRange(nums: number[], target: number): number[] {
+  const lower = (x: number) => {
+    let lo = 0, hi = nums.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (nums[mid] < x) lo = mid + 1; else hi = mid; }
+    return lo;
+  };
+  const first = lower(target);
+  if (first === nums.length || nums[first] !== target) return [-1, -1];
+  return [first, lower(target + 1) - 1];
+}
+```
+</details>
+
+### Exercise: Koko eating bananas
+**Level:** intermediate · **Topic:** binary search on the answer · **Hint:** If speed k works, every faster speed works too.
+**Function:** `minEatingSpeed(piles: number[], h: number): number`
+**Core:** true
+
+Koko eats up to `k` bananas per hour from one pile per hour. Return the minimum `k` to finish all piles within `h` hours.
+`[3, 6, 7, 11], 8` → `4`.
+
+```tests
+[{"args": [[3, 6, 7, 11], 8], "expected": 4},
+ {"args": [[30, 11, 23, 4, 20], 5], "expected": 30},
+ {"args": [[30, 11, 23, 4, 20], 6], "expected": 23},
+ {"args": [[1], 1], "expected": 1},
+ {"args": [[1000000000], 2], "expected": 500000000}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function minEatingSpeed(piles: number[], h: number): number {
+  let lo = 1, hi = Math.max(...piles);
+  const hours = (k: number) => piles.reduce((s, p) => s + Math.ceil(p / k), 0);
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (hours(mid) <= h) hi = mid; else lo = mid + 1;
+  }
+  return lo;
+}
+```
+</details>
+
+### Exercise: Median of two sorted arrays
+**Level:** senior · **Topic:** binary search on the partition · **Hint:** Partition the shorter array so the left halves together hold half the elements.
+**Function:** `findMedianSortedArrays(a: number[], b: number[]): number`
+**Compare:** float
+
+Return the median of the two sorted arrays combined, in O(log(min(m, n))). `[1, 3], [2]` → `2`; `[1, 2], [3, 4]` → `2.5`.
+
+```tests
+[{"args": [[1, 3], [2]], "expected": 2},
+ {"args": [[1, 2], [3, 4]], "expected": 2.5},
+ {"args": [[], [1]], "expected": 1},
+ {"args": [[2], []], "expected": 2},
+ {"args": [[1, 2, 3], [4, 5, 6, 7]], "expected": 4}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findMedianSortedArrays(a: number[], b: number[]): number {
+  if (a.length > b.length) [a, b] = [b, a];
+  const m = a.length, n = b.length, half = Math.floor((m + n + 1) / 2);
+  let lo = 0, hi = m;
+  while (lo <= hi) {
+    const i = Math.floor((lo + hi) / 2), j = half - i;
+    const aL = i > 0 ? a[i - 1] : -Infinity, aR = i < m ? a[i] : Infinity;
+    const bL = j > 0 ? b[j - 1] : -Infinity, bR = j < n ? b[j] : Infinity;
+    if (aL <= bR && bL <= aR) {
+      return (m + n) % 2 ? Math.max(aL, bL) : (Math.max(aL, bL) + Math.min(aR, bR)) / 2;
+    }
+    if (aL > bR) hi = i - 1; else lo = i + 1;
+  }
+  return 0;
+}
+```
+</details>
+
+---
+
+### Exercise: Single number II
+**Level:** intermediate · **Topic:** counting set bits mod 3 · **Hint:** XOR cancels pairs, not triples — count each bit position across the array instead.
+**Function:** `singleNumberII(nums: number[]): number`
+**Core:** true · **Source:** scaler
+
+Every element appears exactly three times except one, which appears once. Find it in O(N) time, O(1) space — XOR alone doesn't work here (`x ^ x ^ x = x`, it doesn't cancel). For each of the 32 bit positions, count how many numbers have that bit set: if the count isn't a multiple of 3, the lone element has that bit set.
+`[2, 2, 3, 2]` → `3`.
+
+```tests
+[{"args": [[2, 2, 3, 2]], "expected": 3},
+ {"args": [[0, 1, 0, 1, 0, 1, 99]], "expected": 99},
+ {"args": [[5, 5, 5, 9]], "expected": 9},
+ {"args": [[30, 30, 30, 7]], "expected": 7},
+ {"gen": "(() => { const a = []; for (let i = 0; i < 3000; i++) { a.push(i); a.push(i); a.push(i); } a.push(123456); return [a]; })()", "perf": true, "label": "9,001 elements"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function singleNumberII(nums: number[]): number {
+  let ans = 0;
+  for (let bit = 0; bit < 32; bit++) {
+    let cnt = 0;
+    for (const x of nums) if ((x >>> bit) & 1) cnt++;
+    if (cnt % 3 !== 0) ans |= (1 << bit);
+  }
+  return ans >>> 0;
+}
+```
+</details>
+
+---
+
+### Exercise: Two single numbers
+**Level:** intermediate · **Topic:** XOR + partition by a set bit · **Hint:** XOR the whole array first — that leaves you with (unique1 XOR unique2), and any set bit in it tells them apart.
+**Function:** `twoSingleNumbers(nums: number[]): number[]`
+**Core:** true · **Source:** scaler
+
+Every element appears exactly twice except two, which appear once each. Return those two, ascending. XOR-ing the whole array cancels every pair and leaves `u1 ^ u2` — call it `diff`. Any bit set in `diff` must differ between `u1` and `u2` (both can't have it, or that bit would cancel too), so splitting the array on that one bit puts `u1` and every one of its pairs on one side, `u2` and its pairs on the other; XOR each side separately.
+`[3, 4, 6, 4, 3, 8]` → `[6, 8]`.
+
+```tests
+[{"args": [[3, 4, 6, 4, 3, 8]], "expected": [6, 8]},
+ {"args": [[1, 2, 1, 3, 2, 5]], "expected": [3, 5]},
+ {"args": [[1, 0]], "expected": [0, 1]},
+ {"args": [[7, 100, 7, 15, 100, 15, 200, 9]], "expected": [9, 200]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function twoSingleNumbers(nums: number[]): number[] {
+  let xorAll = 0;
+  for (const x of nums) xorAll ^= x;
+  const diffBit = xorAll & (-xorAll); // lowest set bit
+  let x1 = 0, x2 = 0;
+  for (const v of nums) {
+    if (v & diffBit) x1 ^= v; else x2 ^= v;
+  }
+  return x1 < x2 ? [x1, x2] : [x2, x1];
+}
+```
+</details>
+
+---
+
+### Exercise: Maximum AND of a pair
+**Level:** foundation · **Topic:** bitwise AND · **Hint:** A bit survives AND only when both numbers have it — that's the whole exercise.
+**Function:** `maxAndPair(nums: number[]): number`
+**Core:** true · **Source:** scaler
+
+Return the maximum value of `nums[i] & nums[j]` over every pair `i ≠ j`. `nums.length` is small enough that checking every pair is the intended solution — this is a warm-up for the bit-by-bit greedy version (build the answer from the highest bit down, keeping only numbers that could still share it) that shows up once N gets large.
+`[27, 18, 20]` → `18` (`27 & 18 = 18`).
+
+```tests
+[{"args": [[27, 18, 20]], "expected": 18},
+ {"args": [[4, 8, 12]], "expected": 8},
+ {"args": [[1, 2, 3]], "expected": 2},
+ {"args": [[0, 0]], "expected": 0},
+ {"args": [[15, 15, 15]], "expected": 15},
+ {"gen": "[Array.from({length: 2000}, () => Math.floor(Math.random() * (1 << 20)))]", "perf": true, "label": "N = 2,000"}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function maxAndPair(nums: number[]): number {
+  let best = 0;
+  for (let i = 0; i < nums.length; i++) {
+    for (let j = i + 1; j < nums.length; j++) {
+      best = Math.max(best, nums[i] & nums[j]);
+    }
+  }
+  return best;
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Binary search needs a monotonic predicate,** not necessarily a sorted array: false…false, true…true.
+- **Search on the answer** when "if k works, anything bigger works" — Koko, capacity, square root.
+- **Rotated arrays:** one half is always sorted; decide which, then whether the target lies in it.
+- **Bits are numbered from 0 on the right;** `1 << i` is the mask for bit i.
+- **AND tests or clears, OR sets, XOR toggles;** `n & (n − 1)` drops the lowest set bit.
+- **XOR cancels pairs:** x ^ x = 0, x ^ 0 = x, in any order.
+- **JS bit operators work on signed 32-bit integers** — past 2³¹ use BigInt; two's complement makes −x = ~x + 1.
+
+## Quiz
+
+### MCQ: Which expression checks whether bit i of n is set?
+- [ ] n & (1 << i) === 1
+- [x] (n >> i) & 1
+- [ ] n | (1 << i)
+- [ ] n ^ (1 << i)
+**Why:** Shift the bit down and mask it. The first option is doubly wrong: precedence, and the masked value is 2ⁱ, not 1.
+
+### MCQ: What does `n & (n - 1)` do?
+- [ ] Doubles n
+- [x] Clears the lowest set bit
+- [ ] Sets the lowest bit
+- [ ] Toggles every bit
+**Why:** Subtracting 1 flips the lowest set bit and every zero below it; AND clears exactly those.
+
+### MCQ: XOR of every element in [4, 1, 2, 1, 2] is…
+- [ ] 0
+- [x] 4
+- [ ] 10
+- [ ] 1
+**Why:** Pairs cancel (x ^ x = 0) regardless of order.
+
+### MCQ: In two's complement, ~5 equals…
+- [ ] -5
+- [x] -6
+- [ ] 4
+- [ ] 5
+**Why:** ~x = −x − 1, because x + ~x is all ones (−1).
+
+### MCQ: `(1 << 31)` in JavaScript is…
+- [ ] 2147483648
+- [x] -2147483648
+- [ ] 0
+- [ ] Infinity
+**Why:** Bitwise ops produce signed 32-bit results; bit 31 is the sign bit.
+
+### MCQ: Which problems suit binary search on the answer?
+- [ ] Any unsorted array search
+- [x] Minimum speed/capacity where feasibility is monotonic
+- [ ] Counting distinct elements
+- [ ] Reversing a list
+**Why:** If speed k works, every faster speed works — so search the smallest feasible k.
+
+### MCQ: In a rotated sorted array, `nums[lo] <= nums[mid]` tells you…
+- [ ] The array isn't rotated
+- [x] The left half [lo..mid] is sorted
+- [ ] The target is on the right
+- [ ] mid is the pivot
+**Why:** At least one half is always sorted; this comparison says it's the left.
+
+### MCQ: Why is `(-3) % 2 === 1` a bug for testing oddness in JS?
+- [ ] It's true for evens
+- [x] JS % returns -1 for -3 % 2
+- [ ] % doesn't work on negatives
+- [ ] It's correct
+**Why:** Use (n & 1) === 1 or n % 2 !== 0.
+
+### MCQ: Dividing 6 by 2 repeatedly gives the remainders 0, 1, 1 (in that order). What is 6 in binary?
+- [ ] 011
+- [x] 110
+- [ ] 101
+- [ ] 100
+**Why:** Remainders come out lowest bit first, so read them in reverse: 110 = 4 + 2.

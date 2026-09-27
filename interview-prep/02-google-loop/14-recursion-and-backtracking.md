@@ -681,6 +681,444 @@ per row rather than searching cells.
 
 ---
 
+## Problem bank — recursion fundamentals
+
+Backtracking (above) is recursion with undo. This bank is the recursion
+underneath it, from the Scaler track: how to write a recursive function at all,
+how to cost one, fast exponentiation, the Josephus problem, and enumerating
+subsequences and subsets.
+
+| Group | Problems |
+| --- | --- |
+| Writing recursion | sum of 1..N, factorial, Nth Fibonacci, print 1..N and N..1 |
+| Costing recursion | time and space complexity of recursive code |
+| Power | aⁿ in O(n) and O(log n), aⁿ mod m |
+| Classic | Josephus problem |
+| Subsequences and subsets | subarray vs subsequence vs subset, count subsequences with sum K |
+
+**The three steps — say them before writing any recursive function.**
+
+1. **Assumption.** Decide what the function *does*, in one sentence, and trust
+   it for smaller inputs. `sum(n)` returns 1 + 2 + … + n.
+2. **Main logic.** Solve the problem using the answer for a smaller instance.
+   `sum(n) = n + sum(n − 1)`.
+3. **Base case.** The smallest input you can answer directly, which stops the
+   recursion. `sum(1) = 1` (or `sum(0) = 0`).
+
+Missing step 3 is a stack overflow. A step 2 that doesn't shrink the input is
+also a stack overflow.
+
+---
+
+### Writing recursion
+
+### Q: Sum of 1..N and N! recursively
+**Level:** foundation · **Tags:** google-coding, recursion, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `sum(5)` → 15. `factorial(4)` → 24.
+
+**Applying the three steps.** Assumption: `f(n)` returns the answer for n.
+Main logic: `sum(n) = n + sum(n − 1)`, `fact(n) = n × fact(n − 1)`. Base case:
+`sum(0) = 0`, `fact(0) = 1` (the empty product).
+
+```ts
+function sum(n: number): number {
+  if (n === 0) return 0;          // base case
+  return n + sum(n - 1);          // main logic on a smaller instance
+}
+
+function factorial(n: number): number {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
+}
+```
+
+**Tracing `sum(3)`.** `sum(3)` waits on `sum(2)`, which waits on `sum(1)`,
+which waits on `sum(0) = 0`. Then the stack unwinds: `1 + 0 = 1`, `2 + 1 = 3`,
+`3 + 3 = 6`. Being able to draw this stack on the whiteboard is the skill the
+question is testing.
+
+**Complexity.** O(n) time (n calls, O(1) each), O(n) space (n frames on the
+stack at the deepest point).
+
+</details>
+
+**Follow-ups:**
+1. Q: `factorial(25)` returns `1.5511210043330986e+25`. What's wrong?
+   <details><summary>Answer</summary>
+
+   Past 18! (~6.4·10¹⁵) the result exceeds `Number.MAX_SAFE_INTEGER`, so it's
+   an approximation. Use `BigInt` for exact values, or compute it modulo a
+   prime if the problem asks — see the modular arithmetic bank in
+   [chapter 04](04-patterns-and-complexity.md).
+
+   </details>
+
+### Q: The Nth Fibonacci number, recursively — and why the naive version is exponential
+**Level:** foundation · **Tags:** google-coding, recursion, fibonacci, memoisation, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `fib(0) = 0, fib(1) = 1, fib(n) = fib(n−1) + fib(n−2)`.
+`0 1 1 2 3 5 8 13 21 34 55` → `fib(10) = 55`.
+
+```ts
+function fib(n: number): number {
+  if (n <= 1) return n;                  // two base cases: 0 and 1
+  return fib(n - 1) + fib(n - 2);
+}
+
+function fibMemo(n: number, memo = new Map<number, number>()): number {
+  if (n <= 1) return n;
+  if (memo.has(n)) return memo.get(n)!;
+  const v = fibMemo(n - 1, memo) + fibMemo(n - 2, memo);
+  memo.set(n, v);
+  return v;
+}
+```
+
+**Complexity.** Naive: every call makes two more, so about 2ⁿ calls (more
+precisely φⁿ ≈ 1.618ⁿ) — O(2ⁿ) time. Space is O(n), because only one branch
+is on the stack at a time: space = **max depth**, not number of calls. With
+memoisation each `n` is computed once: O(n) time, O(n) space. Iteratively with
+two variables: O(n) time, O(1) space.
+
+</details>
+
+**Follow-ups:**
+1. Q: Why is the space O(n) when there are 2ⁿ calls?
+   <details><summary>Answer</summary>
+
+   Space counts frames alive **at the same time**. `fib(n − 2)` is only called
+   after `fib(n − 1)` has fully returned and its frames are gone. The deepest
+   chain is `n → n−1 → … → 1`, so n frames.
+
+   </details>
+2. Q: Can you beat O(n)?
+   <details><summary>Answer</summary>
+
+   Yes — `[[1,1],[1,0]]ⁿ` contains `fib(n)`, and matrix fast exponentiation
+   computes it in O(log n) multiplications. Same idea as fast power below.
+
+   </details>
+
+### Q: Print 1..N in increasing order and N..1 in decreasing order using recursion
+**Level:** foundation · **Tags:** google-coding, recursion, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `n = 4` → `1 2 3 4` and `4 3 2 1`.
+
+**The insight.** Both are "handle n, recurse on n − 1". The only difference is
+**whether you print before or after the recursive call**. Print after → the
+smaller numbers come out first (increasing). Print before → decreasing.
+
+```ts
+function increasing(n: number, out: number[] = []): number[] {
+  if (n === 0) return out;
+  increasing(n - 1, out);     // print 1..n-1 first
+  out.push(n);                // then n
+  return out;
+}
+
+function decreasing(n: number, out: number[] = []): number[] {
+  if (n === 0) return out;
+  out.push(n);                // n first
+  decreasing(n - 1, out);     // then n-1..1
+  return out;
+}
+```
+
+**Complexity.** O(n) time, O(n) stack space.
+
+</details>
+
+**Follow-ups:**
+1. Q: What's the general lesson?
+   <details><summary>Answer</summary>
+
+   Work before the recursive call happens on the way **down** (pre-order);
+   work after happens on the way **up** (post-order). The same distinction
+   drives tree traversals and printing a linked list in reverse.
+
+   </details>
+
+---
+
+### Costing recursion
+
+### Q: How do you find the time and space complexity of a recursive function?
+**Level:** intermediate · **Tags:** google-coding, recursion, complexity, recurrence, scaler
+
+<details><summary>Model answer</summary>
+
+**Time = (number of calls) × (work per call, excluding the recursive calls).**
+**Space = (maximum depth of the call stack) × (space per frame).**
+
+Two ways to get the number of calls:
+
+1. **Draw the recursion tree.** Count nodes. `sum(n)`: a chain of n nodes →
+   O(n). `fib(n)`: a binary tree of depth n → O(2ⁿ).
+2. **Write the recurrence and expand it.** `T(n) = T(n−1) + 1` → `T(n) = n`.
+   `T(n) = 2T(n−1) + 1` → `2ⁿ`. `T(n) = T(n/2) + 1` → `log n`.
+   `T(n) = 2T(n/2) + n` (merge sort) → `n log n`.
+
+| Function | Recurrence | Time | Space |
+| --- | --- | --- | --- |
+| `sum(n)`, `factorial(n)` | T(n) = T(n−1) + 1 | O(n) | O(n) |
+| `fib(n)` naive | T(n) = T(n−1) + T(n−2) + 1 | O(2ⁿ) | O(n) |
+| `pow(a, n)` via `pow(a, n−1)` | T(n) = T(n−1) + 1 | O(n) | O(n) |
+| `pow` calling `pow(a, n/2)` **twice** | T(n) = 2T(n/2) + 1 | O(n) | O(log n) |
+| `pow` calling `pow(a, n/2)` **once** | T(n) = T(n/2) + 1 | O(log n) | O(log n) |
+| Merge sort | T(n) = 2T(n/2) + n | O(n log n) | O(n) |
+
+</details>
+
+**Follow-ups:**
+1. Q: Why does calling `pow(a, n/2)` twice make it O(n) even though n halves?
+   <details><summary>Answer</summary>
+
+   Each level doubles the number of calls while n halves: 1 + 2 + 4 + … + n
+   ≈ 2n calls. Halving the input only helps if the number of calls doesn't
+   double to match. Store the half result in a variable and use it twice.
+
+   </details>
+
+---
+
+### Power
+
+### Q: Compute aⁿ recursively — O(n), then O(log n)
+**Level:** intermediate · **Tags:** google-coding, recursion, fast-power, divide-and-conquer, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `pow(2, 10)` → 1024 without `Math.pow` or `**`.
+
+**Naive.** `aⁿ = a × aⁿ⁻¹`, base case `a⁰ = 1`. O(n) time, O(n) stack.
+
+**The insight.** `aⁿ = (aⁿᐟ²)²` when n is even, and `a × (a⌊ⁿᐟ²⌋)²` when n is
+odd. Compute the half **once**, store it, square it.
+
+```ts
+function powNaive(a: number, n: number): number {
+  if (n === 0) return 1;
+  return a * powNaive(a, n - 1);
+}
+
+function powFast(a: number, n: number): number {
+  if (n === 0) return 1;
+  const half = powFast(a, Math.floor(n / 2));  // ONE recursive call
+  return n % 2 === 0 ? half * half : half * half * a;
+}
+```
+
+The trap the lecture calls "fake smart power": writing
+`powFast(a, n/2) * powFast(a, n/2)` looks logarithmic but makes two calls per
+level — O(n) again.
+
+**Complexity.** O(log n) time, O(log n) stack space.
+
+**Test it.** `n = 0` → 1. `n = 1` → a. `a = 0, n = 0` → 1 by convention (ask).
+`pow(2, 10)` → 1024. Negative n: return `1 / powFast(a, −n)` if allowed.
+
+</details>
+
+**Follow-ups:**
+1. Q: Do it iteratively in O(1) space.
+   <details><summary>Answer</summary>
+
+   Walk the bits of n: `result = 1; while (n > 0) { if (n & 1) result *= a; a *= a; n >>= 1; }`.
+   Each bit of n decides whether the current `a^(2^k)` is multiplied in.
+
+   </details>
+
+### Q: Compute aⁿ mod m, with a, m up to 10⁹ and n up to 10⁹
+**Level:** intermediate · **Tags:** google-coding, recursion, fast-power, modular-arithmetic, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `a = 2, n = 10, m = 1000` → `24`. Negative `a` must give a
+non-negative answer.
+
+**The insight.** Fast power, reducing mod m after **every** multiplication:
+`(x·y) mod m = ((x mod m)·(y mod m)) mod m`. But in JS, `half * half` can be
+up to (10⁹)² = 10¹⁸ — past 2⁵³, so the `%` is computed on an already-rounded
+number and is **silently wrong**. Use `BigInt` for the multiplication.
+
+```ts
+function powMod(a: number, n: number, m: number): number {
+  const M = BigInt(m);
+  const go = (base: bigint, e: number): bigint => {
+    if (e === 0) return 1n % M;                        // m = 1 → 0
+    const half = go(base, Math.floor(e / 2));
+    const sq = (half * half) % M;                      // exact: BigInt has no overflow
+    return e % 2 === 0 ? sq : (sq * base) % M;
+  };
+  const base = ((BigInt(a) % M) + M) % M;              // normalise negative a
+  return Number(go(base, n));
+}
+```
+
+**Complexity.** O(log n) multiplications, O(log n) stack.
+
+**Test it.** `powMod(2, 10, 1000)` → 24. `powMod(-2, 3, 5)` → `(-8 mod 5)` = 2.
+`powMod(5, 0, 1)` → 0.
+
+</details>
+
+**Follow-ups:**
+1. Q: In Java/C++ what's the equivalent pitfall?
+   <details><summary>Answer</summary>
+
+   `int × int` overflows 32 bits before the `%`. Cast to `long` before
+   multiplying: `(long) half * half % m`. With m ≤ ~3·10⁹ the product fits in a
+   signed 64-bit long.
+
+   </details>
+
+---
+
+### Classic
+
+### Q: The Josephus problem — n people in a circle, each kills the next and passes the knife; who survives?
+**Level:** intermediate · **Tags:** google-coding, recursion, josephus, bits, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** People 1..n stand in a circle. Person 1 holds the knife, kills
+the next living person clockwise, and passes the knife to the one after that.
+Repeat until one remains. `n = 5` → `3`; `n = 8` → `1`.
+
+**Brute force.** Simulate with an array or a circular list: O(n²) or O(n).
+
+**The insight (k = 2).** When n is a power of two, every round kills exactly
+half and the knife returns to whoever held it at the start — so **the starter
+survives**. For any other n, kill people until the number alive is the largest
+power of two `p ≤ n`. That takes `n − p` kills, after which the knife is held
+by person `2(n − p) + 1` — and they are now the starter of a power-of-two
+circle, so they survive.
+
+```ts
+function josephus2(n: number): number {
+  let p = 1;
+  while (p * 2 <= n) p *= 2;          // largest power of two ≤ n
+  return 2 * (n - p) + 1;
+}
+```
+
+Check: n = 5, p = 4 → 2·1 + 1 = 3 ✓. n = 8 → 1 ✓. n = 6 → 5.
+
+**General k (every k-th person dies).** Recurrence, 0-indexed:
+`J(1) = 0`, `J(n) = (J(n − 1) + k) mod n`. After the first death the circle
+has n − 1 people, renumbered starting just past the victim — shift the
+smaller answer back by k.
+
+```ts
+function josephus(n: number, k: number): number {   // 1-indexed answer
+  let pos = 0;                                      // J(1) = 0
+  for (let size = 2; size <= n; size++) pos = (pos + k) % size;
+  return pos + 1;
+}
+```
+
+**Complexity.** k = 2 closed form: O(log n). General: O(n) time, O(1) space
+(the iterative form of the recursion).
+
+</details>
+
+**Follow-ups:**
+1. Q: Express the k = 2 answer with bits.
+   <details><summary>Answer</summary>
+
+   Take n's binary representation and rotate the leading 1 to the end:
+   n = 5 = `101` → `011` = 3. That's the same as `2(n − p) + 1`, since
+   `n − p` drops the top bit and `×2 + 1` shifts left and appends a 1.
+
+   </details>
+
+---
+
+### Subsequences and subsets
+
+| | Subarray | Subsequence | Subset |
+| --- | --- | --- | --- |
+| Contiguous? | Yes | No | No |
+| Order kept? | Yes | Yes | Doesn't matter |
+| Count for n elements | n(n + 1)/2 | 2ⁿ (incl. empty) | 2ⁿ (incl. empty) |
+| Can you sort first? | No — changes which are contiguous | No — changes order | **Yes** — order doesn't matter |
+
+Every subarray is a subsequence; not every subsequence is a subarray. For
+problems that depend only on *which* elements are chosen (a sum, a max),
+subsequences and subsets are interchangeable — and then sorting is allowed.
+
+### Q: Count the subsequences whose sum equals K
+**Level:** intermediate · **Tags:** google-coding, subsequences, bitmask, recursion, scaler
+
+<details><summary>Model answer</summary>
+
+**Problem.** `a = [1, 4, 6, 7, 3], K = 10` → `3` (`{4, 6}`, `{7, 3}`,
+`{1, 6, 3}`). n ≤ 20.
+
+**The insight.** n ≤ 20 means 2²⁰ ≈ 10⁶ subsequences — enumerating all of
+them is the intended solution. Two equivalent ways:
+
+1. **Bitmask.** Every integer `mask` in `[0, 2ⁿ)` is a subsequence: bit `j`
+   set ⇔ `a[j]` is chosen.
+2. **Include / exclude recursion.** At index i, either take `a[i]` or don't.
+
+```ts
+function countSubseqSumBitmask(a: number[], K: number): number {
+  const n = a.length;
+  let count = 0;
+  for (let mask = 1; mask < (1 << n); mask++) {       // skip mask 0 = empty
+    let s = 0;
+    for (let j = 0; j < n; j++) if (mask & (1 << j)) s += a[j];
+    if (s === K) count++;
+  }
+  return count;
+}
+
+function countSubseqSumRec(a: number[], K: number): number {
+  const go = (i: number, sum: number, taken: boolean): number => {
+    if (i === a.length) return sum === K && taken ? 1 : 0;
+    return go(i + 1, sum + a[i], true)    // include a[i]
+         + go(i + 1, sum, taken);         // exclude a[i]
+  };
+  return go(0, 0, false);
+}
+```
+
+**Complexity.** Bitmask O(n·2ⁿ) time, O(1) space. Recursion O(2ⁿ) time,
+O(n) stack.
+
+**Test it.** `K = 0` — does the empty subsequence count? Ask. Both versions
+above exclude it.
+
+</details>
+
+**Follow-ups:**
+1. Q: n is 1000 and values are small non-negative integers. Now what?
+   <details><summary>Answer</summary>
+
+   2¹⁰⁰⁰ is impossible; it's subset-sum counting DP:
+   `dp[s] += dp[s − x]` iterating s downwards for each x. O(n·K) time, O(K)
+   space. See [chapter 15](15-dynamic-programming.md).
+
+   </details>
+2. Q: n = 40?
+   <details><summary>Answer</summary>
+
+   Meet in the middle: enumerate the 2²⁰ sums of each half, sort one list, and
+   for every sum s in the other count occurrences of `K − s` by binary search
+   (or a hash map). O(2ⁿᐟ² · n).
+
+   </details>
+
+---
+
 ## Interview Q&A
 
 ### Q: How do you decide between backtracking and dynamic programming for a problem?
@@ -781,3 +1219,502 @@ example and wrong on the follow-up.
 | **Catalan number** | Count of well-formed bracket strings with n pairs; ≈ 4ⁿ / n^1.5 |
 | **Mark and restore** | Visiting a grid cell by overwriting it, then putting the value back |
 | **Memoisation** | Caching recursive results — the bridge from backtracking to DP |
+
+---
+
+## Exercises
+
+Before each one, say the three steps out loud: what the function returns, how the
+answer uses a smaller call, and the base case. Problems marked **core** are the
+must-solve set. Where the order of results doesn't matter, the tests accept any order.
+
+### Exercise: Sum of 1..N, recursively
+**Level:** foundation · **Topic:** recursion: n + sum(n − 1) · **Hint:** Base case first: what is the sum up to 0?
+**Function:** `sumTo(n: number): number`
+**Source:** scaler
+
+Return 1 + 2 + … + n using recursion (n ≥ 0). `5` → `15`.
+
+```tests
+[{"args": [5], "expected": 15},
+ {"args": [0], "expected": 0},
+ {"args": [1], "expected": 1},
+ {"args": [100], "expected": 5050}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function sumTo(n: number): number {
+  if (n === 0) return 0;
+  return n + sumTo(n - 1);
+}
+```
+</details>
+
+### Exercise: Factorial
+**Level:** foundation · **Topic:** recursion: n × fact(n − 1) · **Hint:** 0! = 1 — the empty product.
+**Function:** `factorial(n: number): number`
+**Source:** scaler
+
+Return n! for 0 ≤ n ≤ 18 (every answer is exact in a JS number). `4` → `24`.
+
+```tests
+[{"args": [4], "expected": 24},
+ {"args": [0], "expected": 1},
+ {"args": [1], "expected": 1},
+ {"args": [10], "expected": 3628800},
+ {"args": [18], "expected": 6402373705728000}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function factorial(n: number): number {
+  return n <= 1 ? 1 : n * factorial(n - 1);
+}
+```
+</details>
+
+### Exercise: Nth Fibonacci number
+**Level:** foundation · **Topic:** recursion + memoisation · **Hint:** Naive recursion is O(2ⁿ): remember what you've computed.
+**Function:** `fib(n: number): number`
+**Core:** true · **Source:** scaler
+
+`fib(0) = 0`, `fib(1) = 1`, `fib(n) = fib(n−1) + fib(n−2)`. Return `fib(n)` for n ≤ 70 — fast.
+`10` → `55`.
+
+```tests
+[{"args": [10], "expected": 55},
+ {"args": [0], "expected": 0},
+ {"args": [1], "expected": 1},
+ {"args": [2], "expected": 1},
+ {"args": [50], "expected": 12586269025},
+ {"args": [70], "expected": 190392490709135}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function fib(n: number, memo: Map<number, number> = new Map()): number {
+  if (n <= 1) return n;
+  if (memo.has(n)) return memo.get(n)!;
+  const v = fib(n - 1, memo) + fib(n - 2, memo);
+  memo.set(n, v);
+  return v;
+}
+```
+</details>
+
+### Exercise: 1..N and N..1
+**Level:** foundation · **Topic:** work before vs after the recursive call · **Hint:** Pushing after the call gives increasing order; before gives decreasing.
+**Function:** `incDec(n: number): number[][]`
+**Source:** scaler
+
+Return `[increasing, decreasing]`: `[1..n]` and `[n..1]`, both built recursively. `3` → `[[1,2,3],[3,2,1]]`.
+
+```tests
+[{"args": [3], "expected": [[1, 2, 3], [3, 2, 1]]},
+ {"args": [1], "expected": [[1], [1]]},
+ {"args": [0], "expected": [[], []]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function incDec(n: number): number[][] {
+  const inc: number[] = [], dec: number[] = [];
+  const up = (k: number) => { if (k === 0) return; up(k - 1); inc.push(k); };
+  const down = (k: number) => { if (k === 0) return; dec.push(k); down(k - 1); };
+  up(n);
+  down(n);
+  return [inc, dec];
+}
+```
+</details>
+
+### Exercise: Fast power
+**Level:** intermediate · **Topic:** divide and conquer on the exponent · **Hint:** Compute the half power once, then square it.
+**Function:** `power(a: number, n: number): number`
+**Core:** true · **Source:** scaler
+
+Return aⁿ for integer n ≥ 0 in O(log n) multiplications, without `**` or `Math.pow`. Answers stay within exact integers.
+`(2, 10)` → `1024`.
+
+```tests
+[{"args": [2, 10], "expected": 1024},
+ {"args": [3, 0], "expected": 1},
+ {"args": [3, 5], "expected": 243},
+ {"args": [-2, 3], "expected": -8},
+ {"args": [1, 1000000000], "expected": 1},
+ {"args": [0, 0], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function power(a: number, n: number): number {
+  if (n === 0) return 1;
+  const half = power(a, Math.floor(n / 2));
+  return n % 2 === 0 ? half * half : half * half * a;
+}
+```
+</details>
+
+### Exercise: Power mod m
+**Level:** intermediate · **Topic:** fast power + BigInt multiplication · **Hint:** (10⁹)² doesn't fit exactly in a double — multiply in BigInt.
+**Function:** `powMod(a: number, n: number, m: number): number`
+**Core:** true · **Source:** scaler
+
+Return `aⁿ mod m` as a non-negative number, with a, n, m up to 10⁹ and a possibly negative.
+`(2, 10, 1000)` → `24`; `(-2, 3, 5)` → `2`.
+
+```tests
+[{"args": [2, 10, 1000], "expected": 24},
+ {"args": [-2, 3, 5], "expected": 2},
+ {"args": [5, 0, 1], "expected": 0},
+ {"args": [123456789, 987654321, 1000000007], "expected": 652541198},
+ {"args": [7, 1, 13], "expected": 7}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function powMod(a: number, n: number, m: number): number {
+  const M = BigInt(m);
+  let base = ((BigInt(a) % M) + M) % M;
+  let result = 1n % M, e = n;
+  while (e > 0) {
+    if (e % 2 === 1) result = (result * base) % M;
+    base = (base * base) % M;
+    e = Math.floor(e / 2);
+  }
+  return Number(result);
+}
+```
+</details>
+
+### Exercise: Josephus problem
+**Level:** intermediate · **Topic:** recurrence J(n) = (J(n − 1) + k) mod n · **Hint:** After one death the circle is the same problem, renumbered.
+**Function:** `josephus(n: number, k: number): number`
+**Source:** scaler
+
+People 1..n stand in a circle; counting from person 1, every k-th person is removed. Return the survivor (1-based).
+`(5, 2)` → `3`; `(7, 3)` → `4`.
+
+```tests
+[{"args": [5, 2], "expected": 3},
+ {"args": [7, 3], "expected": 4},
+ {"args": [1, 5], "expected": 1},
+ {"args": [6, 2], "expected": 5},
+ {"args": [8, 2], "expected": 1},
+ {"args": [40, 7], "expected": 24}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function josephus(n: number, k: number): number {
+  let pos = 0;
+  for (let size = 2; size <= n; size++) pos = (pos + k) % size;
+  return pos + 1;
+}
+```
+</details>
+
+### Exercise: Count subsequences with sum K
+**Level:** intermediate · **Topic:** include / exclude recursion (or bitmasks) · **Hint:** Each element is either in or out — that's a binary tree of choices.
+**Function:** `countSubseqSum(a: number[], K: number): number`
+**Core:** true · **Source:** scaler
+
+Count the non-empty subsequences of `a` (n ≤ 20) whose sum is `K`.
+`[1, 4, 6, 7, 3], K = 10` → `3`.
+
+```tests
+[{"args": [[1, 4, 6, 7, 3], 10], "expected": 3},
+ {"args": [[1, 1, 1], 2], "expected": 3},
+ {"args": [[5], 5], "expected": 1},
+ {"args": [[], 0], "expected": 0},
+ {"args": [[2, -2], 0], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function countSubseqSum(a: number[], K: number): number {
+  const go = (i: number, sum: number, taken: boolean): number => {
+    if (i === a.length) return taken && sum === K ? 1 : 0;
+    return go(i + 1, sum + a[i], true) + go(i + 1, sum, taken);
+  };
+  return go(0, 0, false);
+}
+```
+</details>
+
+### Exercise: Subsets
+**Level:** intermediate · **Topic:** backtracking: include / exclude · **Hint:** At each index, branch on taking it or not.
+**Function:** `subsets(nums: number[]): number[][]`
+**Core:** true · **Compare:** unordered
+
+Return every subset of distinct integers, each subset in the input's order. Subsets may come in any order.
+`[1, 2, 3]` → `[[],[1],[1,2],[1,2,3],[1,3],[2],[2,3],[3]]`.
+
+```tests
+[{"args": [[1, 2, 3]], "expected": [[], [1], [1, 2], [1, 2, 3], [1, 3], [2], [2, 3], [3]]},
+ {"args": [[]], "expected": [[]]},
+ {"args": [[5]], "expected": [[], [5]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function subsets(nums: number[]): number[][] {
+  const out: number[][] = [], cur: number[] = [];
+  const go = (i: number) => {
+    if (i === nums.length) { out.push([...cur]); return; }
+    cur.push(nums[i]); go(i + 1); cur.pop();
+    go(i + 1);
+  };
+  go(0);
+  return out;
+}
+```
+</details>
+
+### Exercise: Permutations
+**Level:** intermediate · **Topic:** backtracking with a used set · **Hint:** Choose any unused element for the next slot, then undo.
+**Function:** `permute(nums: number[]): number[][]`
+**Core:** true · **Compare:** unordered
+
+Return every ordering of distinct integers, in any order. `[1, 2, 3]` → 6 permutations.
+
+```tests
+[{"args": [[1, 2, 3]], "expected": [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]},
+ {"args": [[1]], "expected": [[1]]},
+ {"args": [[0, 1]], "expected": [[0, 1], [1, 0]]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function permute(nums: number[]): number[][] {
+  const out: number[][] = [], cur: number[] = [], used = new Array<boolean>(nums.length).fill(false);
+  const go = () => {
+    if (cur.length === nums.length) { out.push([...cur]); return; }
+    for (let i = 0; i < nums.length; i++) {
+      if (used[i]) continue;
+      used[i] = true; cur.push(nums[i]);
+      go();
+      cur.pop(); used[i] = false;
+    }
+  };
+  go();
+  return out;
+}
+```
+</details>
+
+### Exercise: Combination sum
+**Level:** intermediate · **Topic:** backtracking with a start index · **Hint:** Pass the same index again to allow reuse; never go backwards.
+**Function:** `combinationSum(candidates: number[], target: number): number[][]`
+**Compare:** unordered
+
+Distinct positive candidates, each usable any number of times. Return every combination summing to `target`, each in non-decreasing order; combinations in any order.
+`[2, 3, 6, 7], 7` → `[[2,2,3],[7]]`.
+
+```tests
+[{"args": [[2, 3, 6, 7], 7], "expected": [[2, 2, 3], [7]]},
+ {"args": [[2, 3, 5], 8], "expected": [[2, 2, 2, 2], [2, 3, 3], [3, 5]]},
+ {"args": [[2], 1], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function combinationSum(candidates: number[], target: number): number[][] {
+  const c = [...candidates].sort((a, b) => a - b), out: number[][] = [], cur: number[] = [];
+  const go = (start: number, left: number) => {
+    if (left === 0) { out.push([...cur]); return; }
+    for (let i = start; i < c.length && c[i] <= left; i++) {
+      cur.push(c[i]); go(i, left - c[i]); cur.pop();
+    }
+  };
+  go(0, target);
+  return out;
+}
+```
+</details>
+
+### Exercise: Generate parentheses
+**Level:** intermediate · **Topic:** backtracking with open/close counts · **Hint:** Add '(' while opens remain; add ')' only when it wouldn't unbalance.
+**Function:** `generateParenthesis(n: number): string[]`
+**Compare:** unordered
+
+Return every well-formed string of `n` pairs of parentheses, in any order. `3` → 5 strings.
+
+```tests
+[{"args": [3], "expected": ["((()))", "(()())", "(())()", "()(())", "()()()"]},
+ {"args": [1], "expected": ["()"]},
+ {"args": [0], "expected": [""]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function generateParenthesis(n: number): string[] {
+  const out: string[] = [];
+  const go = (s: string, open: number, close: number) => {
+    if (s.length === 2 * n) { out.push(s); return; }
+    if (open < n) go(s + '(', open + 1, close);
+    if (close < open) go(s + ')', open, close + 1);
+  };
+  go('', 0, 0);
+  return out;
+}
+```
+</details>
+
+### Exercise: Word search
+**Level:** intermediate · **Topic:** grid DFS with in-place marking · **Hint:** Mark a cell as used on the way down; restore it on the way back.
+**Function:** `exist(board: string[][], word: string): boolean`
+
+Return whether `word` can be traced through horizontally/vertically adjacent cells, using each cell at most once.
+
+```tests
+[{"args": [[["A", "B", "C", "E"], ["S", "F", "C", "S"], ["A", "D", "E", "E"]], "ABCCED"], "expected": true},
+ {"args": [[["A", "B", "C", "E"], ["S", "F", "C", "S"], ["A", "D", "E", "E"]], "SEE"], "expected": true},
+ {"args": [[["A", "B", "C", "E"], ["S", "F", "C", "S"], ["A", "D", "E", "E"]], "ABCB"], "expected": false},
+ {"args": [[["a"]], "a"], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function exist(board: string[][], word: string): boolean {
+  const n = board.length, m = board[0].length;
+  const dfs = (i: number, j: number, k: number): boolean => {
+    if (k === word.length) return true;
+    if (i < 0 || j < 0 || i >= n || j >= m || board[i][j] !== word[k]) return false;
+    const ch = board[i][j];
+    board[i][j] = '#';
+    const found = dfs(i + 1, j, k + 1) || dfs(i - 1, j, k + 1) || dfs(i, j + 1, k + 1) || dfs(i, j - 1, k + 1);
+    board[i][j] = ch;
+    return found;
+  };
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) if (dfs(i, j, 0)) return true;
+  return false;
+}
+```
+</details>
+
+### Exercise: N-Queens (count)
+**Level:** senior · **Topic:** backtracking with column and diagonal sets · **Hint:** Place one queen per row; track used columns and both diagonals.
+**Function:** `totalNQueens(n: number): number`
+
+Return the number of ways to place `n` queens on an n×n board so none attack each other. `4` → `2`, `8` → `92`.
+
+```tests
+[{"args": [4], "expected": 2},
+ {"args": [1], "expected": 1},
+ {"args": [2], "expected": 0},
+ {"args": [8], "expected": 92},
+ {"args": [6], "expected": 4}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function totalNQueens(n: number): number {
+  const cols = new Set<number>(), d1 = new Set<number>(), d2 = new Set<number>();
+  const go = (r: number): number => {
+    if (r === n) return 1;
+    let count = 0;
+    for (let c = 0; c < n; c++) {
+      if (cols.has(c) || d1.has(r - c) || d2.has(r + c)) continue;
+      cols.add(c); d1.add(r - c); d2.add(r + c);
+      count += go(r + 1);
+      cols.delete(c); d1.delete(r - c); d2.delete(r + c);
+    }
+    return count;
+  };
+  return go(0);
+}
+```
+</details>
+
+---
+
+## In brief
+
+- **Three steps:** decide what the function returns, solve n using a smaller call, write the base case that stops it.
+- **Time = number of calls × work per call; space = maximum stack depth** — not the number of calls.
+- **Naive Fibonacci is O(2ⁿ);** memoise and it's O(n).
+- **Fast power:** compute the half once and square it — O(log n). Calling the half twice is O(n) again.
+- **Work before the recursive call happens on the way down; after it, on the way up.**
+- **Backtracking = choose, recurse, undo.** Subsets (include/exclude), permutations (used set), combinations (start index).
+- **Subarray vs subsequence vs subset:** contiguous / ordered / neither — n(n+1)/2 vs 2ⁿ vs 2ⁿ.
+
+## Quiz
+
+### MCQ: What is the space complexity of naive recursive fib(n)?
+- [ ] O(2ⁿ)
+- [x] O(n)
+- [ ] O(1)
+- [ ] O(log n)
+**Why:** Space is the deepest chain of frames alive at once (n), not the total number of calls.
+
+### MCQ: `pow(a, n) = pow(a, n/2) * pow(a, n/2)` (two calls) runs in…
+- [ ] O(log n)
+- [x] O(n)
+- [ ] O(n log n)
+- [ ] O(1)
+**Why:** Calls double as n halves: 1 + 2 + 4 + … + n ≈ 2n. Store the half and square it.
+
+### MCQ: T(n) = T(n/2) + 1 solves to…
+- [ ] O(n)
+- [x] O(log n)
+- [ ] O(n log n)
+- [ ] O(1)
+**Why:** The problem halves each step: log₂ n levels of constant work.
+
+### MCQ: A recursive function has no base case. What happens?
+- [ ] It returns undefined
+- [x] It loops until a stack overflow (RangeError)
+- [ ] It runs once
+- [ ] The compiler adds one
+**Why:** Each call makes another; the stack runs out.
+
+### MCQ: Printing 1..n increasingly with `f(n)`: where does the print go?
+- [ ] Before calling f(n − 1)
+- [x] After calling f(n − 1)
+- [ ] Either place
+- [ ] In the base case only
+**Why:** Printing after the smaller call means 1..n−1 print first.
+
+### MCQ: How many subsequences (including empty) does an array of n elements have?
+- [ ] n
+- [ ] n(n+1)/2
+- [x] 2ⁿ
+- [ ] n!
+**Why:** Each element is independently in or out.
+
+### MCQ: Which of these may you sort first without changing the answer?
+- [ ] Count of subarrays with sum k
+- [ ] Longest increasing subsequence
+- [x] Count of subsets with sum k
+- [ ] Max subarray sum
+**Why:** Subsets ignore order; subarrays and subsequences depend on it.
+
+### MCQ: Josephus with k = 2 and n a power of two — who survives?
+- [ ] The last person
+- [x] The person holding the knife at the start
+- [ ] Person n / 2
+- [ ] It depends on n
+**Why:** Each round removes exactly half and returns the knife to the starter.
+
+### MCQ: In backtracking, why undo the choice after the recursive call?
+- [ ] To save memory
+- [x] So the shared state is correct for the next sibling choice
+- [ ] To make it iterative
+- [ ] It's optional style
+**Why:** The same `cur` array is reused across branches; leave it as you found it.
