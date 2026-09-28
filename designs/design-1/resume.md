@@ -15,20 +15,20 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 
 ## Profile Summary
 
-- **Senior Software Engineer** with **over 7 years of experience** architecting and delivering enterprise SaaS platforms, distributed systems, and high-scale backend infrastructure across product environments.
-- **Backend & Distributed Systems expert** with strong hands-on proficiency in Node.js, NestJS, Golang, GraphQL, gRPC, microservices, MongoDB, PostgreSQL, Redis, and AWS; engineered platform infrastructure supporting **2–3B daily requests** with high availability and performance.
-- **Platform Architecture specialist** with expertise in RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, JWT, SSO, OPA, and Rego; modernized a core platform capability into a scalable, multi-product framework with granular, policy-based controls consumed by 9+ product teams.
-- **Production Engineering leader** experienced in driving platform-wide initiatives, architecture modernization, observability, reliability, compliance, and SLA excellence; delivered solutions that cleared third-party audits with **zero findings**, accelerated incident resolution by **3x**, and reduced resolution time by **~30%**.
+- **Senior Software Engineering professional** with **over 7 years of experience** in architecting and delivering enterprise SaaS platforms, identity and access management solutions, and distributed systems across high-scale product environments.
+- **IAM & Security Architecture specialist** with expertise in RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, JWT, SSO, OPA, and Rego; modernized authorization architecture into a scalable, multi-product RBAC framework with granular, policy-based access controls.
+- **Backend Engineering expert** with strong hands-on proficiency in Node.js, NestJS, Golang, GraphQL, gRPC, microservices, MongoDB, PostgreSQL, Redis, and AWS; engineered authentication infrastructure supporting **2–3B daily requests** with high availability and performance.
+- **Technology & Production Engineering leader** experienced in driving security-critical enterprise initiatives, architecture modernization, observability, reliability, compliance, and SLA excellence; delivered solutions that cleared third-party audits with **zero findings**, accelerated incident resolution by **3x**, and reduced resolution time by **~30%**.
 - **AI-augmented engineering professional** leveraging Claude Code, GPT, and GitHub Copilot across the SDLC to improve development velocity, code quality, testing, debugging, RCA, and security analysis; contributed to **2–3x higher PR throughput and 85%+ test coverage**, complemented by expertise in React.js, TypeScript, CI/CD, Docker, Jenkins, and modern engineering practices.
 
 ## Core Competencies
 
-- Platform Engineering & Distributed Systems | Backend & Microservices Architecture | API & gRPC Platform Design | Identity & Access Management (IAM) | Authentication, Authorization & SSO | RBAC & Policy-Based Access Control | Application Security & Compliance | Performance Engineering & Observability | DevOps, CI/CD & Agile Delivery | AI-Augmented Software Engineering | Software Quality, Testing & Reliability
+- Identity & Access Management (IAM) | Authentication, Authorization & SSO | RBAC & Policy-Based Access Control | Backend & Distributed Systems Engineering | Enterprise SaaS & Platform Engineering | API & Microservices Architecture | Application Security & Compliance | Performance Engineering & Observability | DevOps, CI/CD & Agile Delivery | AI-Augmented Software Engineering | Software Quality, Testing & Reliability
 
 ## Technical Skills
 
-- **Platform & Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ
-- **Identity & Access Platform:** RBAC | OAuth 2.0 | SAML 2.0 | OIDC | SSO | SCIM | JWT | MFA/TOTP | Zero Trust Architecture | Passport.js | OPA | Rego | Okta | Microsoft Entra ID | Ping Identity
+- **Identity & Access Management:** RBAC | OAuth 2.0 | SAML 2.0 | OIDC | SSO | SCIM | JWT | MFA/TOTP | Zero Trust Architecture | Passport.js | OPA | Rego | Okta | Microsoft Entra ID | Ping Identity
+- **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ
 - **Frontend Engineering:** React.js | TypeScript | JavaScript | Redux | Redux Thunk/Saga | AngularJS | SCSS | Styled Components | Micro-Frontends
 - **Databases & Caching:** MongoDB | PostgreSQL | SQL | Redis | ioredis | Mongoose | Sequelize | Firebase (Authentication, Firestore, Storage, Hosting)
 - **Cloud & Infrastructure:** AWS EC2 | S3 | Lambda | API Gateway | CloudFront | CloudWatch | Route 53 | IAM | Nginx | Docker
@@ -61,7 +61,7 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 
 **Software Engineer II** | Nov 2022 – Jul 2024 | Promoted
 
-**Platform & Authorization Engineering:**
+**Identity, Access & Authorization:**
 
 - Transformed the platform from two fixed roles into an **unlimited, multi-product RBAC framework** with granular permission controls, strengthening customer governance and reducing support escalations while becoming a recurring differentiator in enterprise sales.
 - **Architected and delivered** the multi-org invitation and onboarding workflow for a multi-tenant model where users belong to several organizations, assigning permissions at invitation time and supporting **two product teams** through end-to-end RBAC adoption using **OPA/Rego policy enforcement.**
