@@ -9,15 +9,15 @@ Senior Software Engineer
 
 ## Summary
 
-- **Senior Software Engineer, 7+ years**, architecting and delivering enterprise SaaS, distributed systems, and platform infrastructure.
-- **Backend & Platform engineer** (Node.js, NestJS, Golang, GraphQL, gRPC, MongoDB, PostgreSQL, Redis, AWS) — built platform infrastructure supporting **2–3B daily requests**.
-- **Platform Architecture specialist** (RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, OPA/Rego) — architected a **multi‑product RBAC framework** used platform-wide, consumed by 9+ product teams.
-- Drove platform-wide initiatives to **zero audit findings** and **3x faster** incident resolution; built a **RAG-based Slack support bot** answering auth/RBAC/SSO questions, live with the internal support team.
+- **Senior Software Engineer, 7+ years**, architecting and delivering enterprise SaaS, IAM, and distributed systems platforms.
+- **IAM & Security Architecture specialist** (RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, OPA/Rego) — architected a **multi‑product RBAC framework** used platform-wide.
+- **Backend engineer** (Node.js, NestJS, Golang, GraphQL, gRPC, MongoDB, PostgreSQL, Redis, AWS) — built auth infrastructure supporting **2–3B daily requests**.
+- Drove security-critical initiatives to **zero audit findings** and **3x faster** incident resolution; built a **RAG-based Slack support bot** answering auth/RBAC/SSO questions, live with the internal support team.
 
 ## Core Skills
 
-- **Platform & Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ
-- **Identity & Access Platform:** RBAC, OAuth 2.0, SAML 2.0, OIDC, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
+- **Identity & Access Management:** RBAC, OAuth 2.0, SAML 2.0, OIDC, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
+- **Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ
 - **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
 - **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, Firebase (Auth, Firestore, Storage, Hosting)
 - **Cloud & Infrastructure:** AWS EC2, S3, Lambda, API Gateway, CloudFront, CloudWatch, Route 53, IAM, Nginx, Docker
@@ -32,7 +32,7 @@ Senior Software Engineer
 
 **Software Engineer II** · Nov 2022 – Jul 2024 — promoted to Senior Software Engineer
 
-**Platform & Authorization Engineering:**
+**Identity, Access & Authorization:**
 - Architected the RBAC system design for Contentstack's multi-tenant platform, transforming two fixed roles into an **unlimited, multi‑product** framework with granular permission controls, now a recurring differentiator in enterprise sales.
 - Extended RBAC into SSO onboarding, SCIM onboarding, and the role-update flow via OPA/Rego policy enforcement, shipping 2–3 default roles per product alongside custom role creation.
 - Built a unified authentication layer spanning multi-tenant OAuth 2.0, SAML-based enterprise SSO, and SCIM provisioning, partnering with **Okta and Microsoft Entra ID** engineering to ship native marketplace apps.
