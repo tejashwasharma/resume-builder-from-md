@@ -8,6 +8,33 @@ Spec: [RFC 7644 (Protocol)](https://www.rfc-editor.org/info/rfc7644/) ·
 
 ---
 
+## In brief
+
+- SSO decides who may log in *right now*; SCIM decides who *exists* and what
+  they're entitled to, continuously — creation, updates, and critically
+  deprovisioning.
+- The roles invert from what people expect: **the IdP is the SCIM client, your
+  app is the SCIM server.** You implement the endpoints; Okta and Entra call
+  them.
+- The security argument to lead with: a nightly CSV sync leaves a terminated
+  employee with up to 24 hours of access. SCIM pushes deactivation the moment
+  it happens in the IdP.
+- **The request that actually deprovisions someone is `PATCH` with
+  `active: false` — not `DELETE`.** An app that only implements `DELETE`
+  passes testing and then silently fails to offboard anyone in production.
+- **Deactivate, never hard delete.** Content loses its owner or cascades away,
+  and audit trails ("who published this?") must outlive the user. Deactivation
+  must also **revoke every live session and API token immediately** — the
+  step most implementations skip, and the one that actually ends access.
+- `filter` support (`userName eq "x"`) isn't optional: it's how the IdP checks
+  existence before creating, and skipping it produces duplicate users on
+  every sync.
+- Map IdP groups to roles via **explicit per-tenant configuration**, never by
+  inferring from group names — a customer's group called "admins" must not
+  grant admin by accident.
+
+---
+
 ## Foundations
 
 **System for Cross-domain Identity Management** — a REST API with a defined
@@ -423,6 +450,80 @@ have access."
 - **Deactivating without revoking sessions.** The user is still logged in. This
   is the most common real-world gap.
 - **Auto-mapping group names to roles.** The customer controls those strings.
+
+---
+
+## Quiz
+
+### MCQ: What does SCIM give you that SSO alone doesn't?
+- [ ] Faster login
+- [ ] Multi-factor authentication
+- [x] Continuous account lifecycle management, including deprovisioning
+- [ ] Token refresh
+**Why:** SSO controls authentication at login time; SCIM keeps the account itself — creation, updates, and critically deactivation — in step with the IdP.
+
+### MCQ: In a SCIM integration, which side is the "client"?
+- [ ] Your application
+- [x] The identity provider (Okta, Entra ID)
+- [ ] The end user's browser
+- [ ] Neither — it's peer-to-peer
+**Why:** The roles invert from what people expect: the IdP calls your API. You implement and host the SCIM server; the IdP is the client.
+
+### MCQ: Okta sends a request to deprovision a user. Which HTTP call actually does it in practice?
+- [ ] `DELETE /Users/{id}`
+- [x] `PATCH /Users/{id}` with `active: false`
+- [ ] `PUT /Users/{id}` with an empty body
+- [ ] `POST /Users/{id}/deactivate`
+**Why:** Okta and Entra both deprovision via PATCH, not DELETE. An app that only implements DELETE for offboarding passes testing and then silently fails to deprovision anyone in production.
+
+### MCQ: Why deactivate a departed user's record instead of hard-deleting it?
+- [ ] Hard deletes are slower
+- [x] Their content needs an owner and audit trails must outlive the user
+- [ ] SCIM's spec forbids DELETE entirely
+- [ ] It saves database storage
+**Why:** Deleting loses attribution and can cascade-delete content; "who published this?" has to still be answerable a year later.
+
+### MCQ: A user is marked `active: false`, but their existing session token is a long-lived stateless JWT no one revoked. What's true right now?
+- [ ] They're fully logged out
+- [x] They can likely keep working until the token expires — deactivation without session/token revocation is theatre
+- [ ] SCIM automatically invalidates all JWTs on deactivation
+- [ ] The next API call will fail with 401 regardless
+**Why:** Marking a user inactive stops future logins; it does nothing to a session or token that's already been issued unless you explicitly revoke it.
+
+### MCQ: Why is `filter` support (e.g. `userName eq "x"`) mandatory in a real SCIM server, not just nice to have?
+- [ ] It's required for the SCIM schema to validate
+- [x] The IdP checks whether a user already exists before creating one — without it you get duplicate users on every sync
+- [ ] It's needed for pagination
+- [ ] It's how group membership is queried
+**Why:** IdPs call filter to check existence pre-create. Miss that endpoint and every sync run creates a fresh duplicate.
+
+### MCQ: What is `externalId` on a SCIM `User` resource for?
+- [ ] A public-facing user handle
+- [x] The IdP's own identifier for the user, stored so later updates correlate to the right record
+- [ ] A password reset token
+- [ ] The user's employee ID for payroll
+**Why:** The IdP references its own id on every later call; losing that correlation means updates and deactivations can't be matched to the right account.
+
+### MCQ: How should an IdP group become an in-app role or permission?
+- [ ] Automatically, by matching the group's name to a role name
+- [x] Through explicit per-tenant configuration mapping that group to that role
+- [ ] Groups shouldn't map to permissions at all
+- [ ] By granting the highest privilege among all mapped roles by default
+**Why:** Customers control their own group names — a group literally called "admins" must not grant admin access just because of what it's named.
+
+### MCQ: A system advertises "immediate" deprovisioning. What actually determines how fast access really ends?
+- [ ] Only how quickly the SCIM PATCH request arrives
+- [x] The SCIM call latency plus any remaining access-token TTL, authorization-decision cache, replication lag, and in-memory caches
+- [ ] Nothing — SCIM guarantees sub-second revocation by spec
+- [ ] Only the database write latency
+**Why:** The SCIM call itself is fast, but real end-to-end revocation time is that plus every cache and token lifetime downstream — worth measuring, not assuming.
+
+### MCQ: Why doesn't a nightly CSV export of the IdP's user directory solve deprovisioning well enough?
+- [ ] CSV files can't represent group membership
+- [x] It leaves up to 24 hours of continued access after a termination — exactly the window that matters most
+- [ ] CSV imports can't create users, only update them
+- [ ] IdPs don't support CSV export
+**Why:** The gap is latency on the case that matters most: an involuntary departure needs access cut within minutes, not by the next scheduled sync.
 
 ---
 

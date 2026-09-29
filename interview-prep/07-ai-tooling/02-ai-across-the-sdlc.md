@@ -12,6 +12,42 @@ where the claim either has substance or falls apart.
 
 ---
 
+## In brief
+
+- **Every AI step in the chain produces a draft a human judges — nothing
+  has approval or production authority.** That boundary (the bot comments,
+  it never approves) is the direct answer to "did quality suffer?" and
+  the reason AI code review can't rubber-stamp bad code.
+- **Pre-review output must be cheap to dismiss** — tuning toward fewer,
+  higher-confidence comments is the difference between adoption and
+  abandonment. A reviewer arguing with twelve low-confidence nits per PR
+  turns the tool off within a fortnight.
+- **AI test generation fails in two specific, predictable ways**: tests
+  that assert the implementation rather than the behavior (pass forever,
+  catch nothing, break on every refactor), and "coverage theatre" (a model
+  asked to raise a number produces assertion-free tests that execute
+  lines). The fix is asking for cases, never for a coverage percentage.
+- **In debugging, treat every AI explanation as a hypothesis, never a
+  verdict** — a confident, fluent, wrong explanation is worse than no
+  explanation, because it sends you down a path and you stop looking.
+  Confirm against the system (a log line, a reproducing test, a metric)
+  before acting.
+- **RCA's real speed-up comes from orientation, not fixing** — the
+  mechanism is assembling the context a responder would otherwise gather
+  by hand (error signature, logs, trace, recent deploys, affected tenants)
+  into ranked hypotheses with evidence. That's a search-and-summarize
+  problem, which is exactly what models are good at; diagnosis yes,
+  executing a mitigation no.
+- **Security analysis is pattern matching, not threat modeling, and
+  conflating the two is the most expensive overclaim available in this
+  specialty**: a model reliably catches known-shaped classes (string-
+  concatenated queries, a committed secret, a missing check where every
+  sibling route has one) but has no way to know whether a given role
+  should read a given field in a given tenant — that's a business question
+  about the threat model.
+
+---
+
 ## The tools, and which one for what
 
 You name three on your resume. Be able to say why more than one exists.
@@ -350,6 +386,80 @@ the answer.
   Chapter 1.
 - **Generated tests measured by coverage.** Invites the coverage-theatre
   follow-up you can't win.
+
+---
+
+## Quiz
+
+### MCQ: What's the core rule that keeps AI-assisted code review from becoming a rubber stamp?
+- [ ] The AI must always leave at least one comment per PR
+- [x] The bot comments, it never approves — a human remains the only actor who can actually merge the change
+- [ ] AI review only runs on PRs under 50 lines
+- [ ] The AI reviews only test files, never application code
+**Why:** If AI approval could merge code, the only real check in the process would be removed — commenting-only permissions keep a human as the final decision-maker.
+
+### MCQ: Why does pre-review output need to be "cheap to dismiss," tuned toward fewer, higher-confidence comments?
+- [ ] Low-confidence comments are technically harder to generate
+- [x] A reviewer forced to argue with a dozen low-confidence nits per PR will turn the tool off within a fortnight — noise, not wrong verdicts, is the practical failure mode
+- [ ] It reduces the AI provider's API costs
+- [ ] High-confidence comments are required by most CI systems
+**Why:** Adoption dies from friction as much as from errors — a tool that's annoying to use gets abandoned even if its individual comments are technically defensible.
+
+### MCQ: What's wrong with a generated test that mirrors the implementation line by line?
+- [ ] It runs slower than a handwritten test
+- [x] It passes forever and catches nothing — it locks in the current implementation and breaks on every refactor, rather than verifying actual behavior
+- [ ] It can't be run in CI
+- [ ] It only works with one specific testing framework
+**Why:** A test that just restates the implementation in test form provides no independent verification — a bug written into the implementation gets "verified" by a test that duplicates the same bug's logic.
+
+### MCQ: What happens if a model is explicitly asked to "raise the coverage number"?
+- [ ] It writes more comprehensive integration tests
+- [x] It tends to produce assertion-free tests that execute lines without verifying anything — "coverage theatre," a percentage that means nothing
+- [ ] It refuses the request as an anti-pattern
+- [ ] It automatically writes mutation tests instead
+**Why:** This is exactly why the chapter recommends asking a model for edge *cases* (null, boundary values, the error path) rather than pointing it at a coverage target — the target itself invites gaming.
+
+### MCQ: In AI-assisted debugging, why is a "confident, fluent, wrong explanation" described as worse than no explanation at all?
+- [ ] Wrong explanations always contain syntax errors that are easy to spot
+- [x] A plausible wrong theory sends you down an investigative path and you stop looking elsewhere — costing more time than starting with no theory at all
+- [ ] It uses more compute resources than a correct explanation
+- [ ] Wrong explanations are always longer than correct ones
+**Why:** This is why the discipline is to treat every AI explanation as a hypothesis to confirm against the system (a log line, a reproducing test, a metric) rather than acting on it directly.
+
+### MCQ: Where does the actual speed-up in AI-driven RCA (incident root cause analysis) come from?
+- [ ] The AI directly applies fixes to production systems
+- [x] Orientation — assembling the context a responder would otherwise gather by hand (error signature, logs, trace, recent deploys, affected tenants) into ranked hypotheses
+- [ ] The AI replaces the need for monitoring and alerting entirely
+- [ ] It eliminates the need for a human on-call responder
+**Why:** This is explicitly a search-and-summarize problem, which models are good at — the savings are in the first fifteen minutes of an incident spent figuring out where to look, not in the model fixing anything.
+
+### MCQ: What's the stated boundary for AI involvement during a live incident?
+- [ ] AI should handle the entire incident response autonomously
+- [x] Diagnosis yes, executing a mitigation no — an agent with production write access during an incident risks turning a small outage into a large one
+- [ ] AI should only be used for post-incident write-ups, never live
+- [ ] AI can execute mitigations if a human reviews the plan afterward
+**Why:** Keeping AI's role to gathering and ranking evidence (which a human then confirms and acts on) contains the blast radius if the AI's hypothesis or suggested action is wrong.
+
+### MCQ: What's the key distinction between "pattern matching" and "threat modeling" in AI security analysis?
+- [ ] They're two names for the same underlying technique
+- [x] Pattern matching detects known-bad shapes (a string-concatenated query, a committed secret, a missing check where every sibling route has one); threat modeling requires knowing your specific business rules — which fields a given role should access in a given tenant
+- [ ] Threat modeling is a subset of pattern matching
+- [ ] Pattern matching only applies to authentication, not authorization
+**Why:** A model can reliably catch known-shaped vulnerability classes but has no way to know your organization's specific access rules — conflating the two is called the most expensive overclaim available in a security specialist's interview.
+
+### MCQ: Why does this chapter maintain "AI does not write security-sensitive logic" (authorization checks, token handling, crypto) even though AI can be used to scan for security issues?
+- [ ] AI models are incapable of generating cryptographic code
+- [x] Reviewing subtly-wrong security code is harder than writing it correctly in the first place — a plausible-looking authorization bug can survive review undetected
+- [ ] It's a legal requirement in most jurisdictions
+- [ ] Security-sensitive logic is always too complex for current models
+**Why:** Using AI to scan for known-bad patterns while refusing to let it author the control itself is presented as the coherent position — the review burden for security code is asymmetric compared to ordinary code.
+
+### MCQ: When defending a coverage increase (e.g. 75% to 85%) that included AI-generated tests, what's the strongest response to "is that extra 10% meaningful?"
+- [ ] Insist the exact percentage proves quality improved
+- [x] Acknowledge coverage is a floor, not a target, and point to bug turnaround (an outcome metric) as the number actually worth defending
+- [ ] Claim all the generated tests were manually rewritten afterward
+- [ ] Avoid answering and change the subject
+**Why:** Being honest that coverage alone doesn't prove quality — and redirecting to an outcome-based metric like bug turnaround — is more credible than defending the raw percentage as if it were self-evidently meaningful.
 
 ---
 

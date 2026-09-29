@@ -6,6 +6,40 @@ round.
 
 ---
 
+## In brief
+
+- **`setState` reads stale after the call in the same tick** because
+  updates are batched and async — use the functional form
+  (`setCount(c => c + 1)`) when the new value depends on the old, not
+  `setCount(count + 1)`.
+- **The classic memoization bug is a new object or function identity every
+  render** — passing an inline arrow function to a `React.memo`'d child
+  defeats the memoization entirely, since the props are never
+  referentially equal even though they're equivalent. `useCallback`/
+  `useMemo` exist specifically to stabilize that identity, but they're not
+  free — reach for them when you've measured a problem, not by default.
+- **List keys need a stable id, not the array index** — with an index,
+  inserting at the front makes React think every item changed, re-
+  rendering everything and attaching component state to the wrong row.
+- **Redux Saga's effects are plain objects a middleware executes**, which
+  is why sagas can be tested by stepping the generator and comparing
+  yielded objects, without mocking `fetch`. `takeLatest` buys cancellation
+  and debouncing in one word instead of hand-rolled `AbortController`
+  plumbing — the trade is generators and effect vocabulary to learn.
+- **Most historical Redux usage was really a cache of server state** — a
+  data-fetching library (React Query, SWR) handles caching, refetching,
+  and invalidation better than hand-written reducers. Redux earns its
+  place for genuinely global client state shared across distant parts of
+  the tree, not as a default store for everything.
+- **Types disappear at runtime — they never validate anything.** Casting
+  an API response with `as User` just tells the compiler to stop checking;
+  if the API returns something different, the error surfaces at some
+  distant point with a stack trace that doesn't mention the real cause.
+  `unknown` forces narrowing before use; validating untrusted input with
+  something like Zod is what actually checks it.
+
+---
+
 ## React
 
 ### Hooks, and the ones that get asked about
@@ -421,6 +455,80 @@ type derived from it.
 - **`useMemo` everywhere.** Adds complexity; often slower than the re-render.
 - **Casting API responses with `as`.** Types don't validate anything at runtime.
 - **Redux for everything.** Server state belongs in a data-fetching library.
+
+---
+
+## Quiz
+
+### MCQ: Why does `setCount(count + 1)` called twice in the same event handler often not produce the expected `+2` result?
+- [ ] React only allows one state update per handler
+- [x] State updates are batched and asynchronous, so both calls read the same stale `count` value rather than seeing each other's update
+- [ ] `setCount` is deprecated in modern React
+- [ ] It only fails when the component is memoized
+**Why:** The functional form `setCount(c => c + 1)` avoids this by always receiving the latest pending value, which is why it's recommended whenever the new state depends on the old.
+
+### MCQ: Why does passing an inline arrow function as a prop to a `React.memo`-wrapped child defeat the memoization?
+- [ ] `React.memo` doesn't support function props at all
+- [x] A new function is created on every render, so the prop is never referentially equal to the previous render's prop, even though its behavior is identical
+- [ ] Inline functions are always slower to execute
+- [ ] `React.memo` only works with class components
+**Why:** `React.memo` compares props by reference (shallow equality) — a fresh function identity every render means the comparison always fails, causing the "memoized" child to re-render anyway.
+
+### MCQ: Why is using the array index as a React list `key` problematic when items can be inserted or removed?
+- [ ] Indexes are not valid JavaScript values for keys
+- [x] Inserting an item at the front shifts every subsequent index, making React think every item changed — causing full re-renders and component state attaching to the wrong row
+- [ ] Array indexes are always strings, and keys must be numbers
+- [ ] It only matters for lists longer than 100 items
+**Why:** A stable, content-based id (not derived from position) lets React correctly track which specific item moved, was added, or was removed.
+
+### MCQ: What makes Redux Saga's "effects" (like `call`, `put`, `take`) testable without mocking `fetch` or dispatch?
+- [ ] Sagas run in a separate testing environment automatically
+- [x] Effects are plain descriptive objects, not the actual side effect execution — a test can step the generator and compare the yielded objects directly
+- [ ] Redux Saga includes a built-in mocking library
+- [ ] Sagas don't actually perform any real side effects
+**Why:** Since `yield call(api.getUser, id)` produces a plain object describing "call this function with this argument" rather than actually calling it, tests can assert on that description without needing to intercept or mock the real API call.
+
+### MCQ: What does `takeLatest` provide over a hand-rolled `AbortController` for something like search-as-you-type?
+- [ ] Better network performance
+- [x] Automatic cancellation of the previous running saga when a new matching action arrives, in one word instead of manually wiring cancellation logic
+- [ ] It eliminates the need for a search API entirely
+- [ ] It only works with GraphQL APIs
+**Why:** This is the concrete example of what sagas "buy" over thunks — cancellation and debouncing become built-in helpers rather than something you have to construct yourself with AbortController plumbing.
+
+### MCQ: According to this chapter, what was a large share of what people historically stored in Redux actually being used for?
+- [ ] Client-only UI state like modal visibility
+- [x] A cache of server data — something a dedicated data-fetching library (React Query, SWR) handles better with caching, refetching, and invalidation built in
+- [ ] Routing state
+- [ ] Form validation state
+**Why:** This is why the chapter recommends reserving Redux for genuinely global client state shared across distant parts of the tree, rather than defaulting to it for data that originated from an API.
+
+### MCQ: Why does casting an API response with `as User` in TypeScript provide no actual safety?
+- [ ] `as` casts are removed by the TypeScript compiler and never execute
+- [x] TypeScript types don't exist at runtime — the cast just tells the compiler to stop checking, without verifying the actual shape of the data at all
+- [ ] `as` only works for primitive types, not object shapes
+- [ ] It requires a separate runtime library to function
+**Why:** If the API actually returns something different from `User`, the mismatch surfaces later as a runtime error somewhere unrelated to the cast — with no clear indication that the original assumption was wrong.
+
+### MCQ: Why is `unknown` preferred over `any` for values arriving from outside the program (API responses, `JSON.parse`, user input)?
+- [ ] `unknown` and `any` behave identically; it's purely stylistic
+- [x] `unknown` forces you to narrow the type (via a guard, check, or schema parse) before you can use it, while `any` disables type checking entirely and lets that lack of checking spread
+- [ ] `unknown` is faster to compile than `any`
+- [ ] `any` cannot be assigned to a variable
+**Why:** `unknown` makes validation a requirement rather than an option — you literally cannot call methods on it or access its properties until you've proven what it actually is.
+
+### MCQ: In the micro-frontend "strangler fig" migration pattern, how are old and new framework apps typically composed during the transition?
+- [ ] The entire app is rewritten in one large deployment
+- [x] The new framework's app is mounted for one route at a time inside the existing app's shell, with shared concerns like auth moved into a small shared module, while old routes are retired incrementally
+- [ ] Both frameworks run simultaneously on every route with no coordination
+- [ ] The old framework is deleted before any new code is written
+**Why:** This lets users see one continuous app throughout the migration, rather than a disruptive big-bang cutover — routes migrate incrementally as they're replaced.
+
+### MCQ: What's the core risk with Module Federation (webpack 5/Rspack) style micro-frontend composition, where a host loads remote bundles at runtime?
+- [ ] It requires server-side rendering to work at all
+- [x] Version skew between remotes — since dependencies like React are shared as singletons across independently deployed bundles, mismatched versions can cause subtle runtime bugs
+- [ ] It can't share any dependencies between the host and remotes
+- [ ] It only works with a single specific CSS framework
+**Why:** Because remotes are built and deployed independently but share runtime dependencies, a version mismatch between what one remote expects and what's actually loaded is a real operational risk unique to this approach.
 
 ---
 

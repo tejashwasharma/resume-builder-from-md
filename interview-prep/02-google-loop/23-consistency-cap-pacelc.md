@@ -5,6 +5,38 @@ read more than a blog post about it.
 
 ---
 
+## In brief
+
+- **CAP doesn't mean "pick two of three."** Partition tolerance isn't
+  optional — networks partition, and a system that can't tolerate that
+  isn't "CA," it's just broken during a failure. The real trade only
+  applies *during* a partition: refuse requests (CP) or serve possibly-
+  stale data (AP)? And CAP's "C" means **linearizability specifically**,
+  not the C in ACID.
+- **PACELC is the more useful frame** because it covers the normal case
+  too: *if Partition, Availability or Consistency; Else, Latency or
+  Consistency.* Systems spend ~100% of their time in the "Else" branch —
+  stronger consistency costs latency there too, because agreement needs
+  round trips.
+- Consistency models form a ladder from strongest to weakest —
+  linearizable → sequential → causal → eventual — and reading down the
+  ladder means giving up coordination in exchange for latency and
+  availability.
+- **Read-your-writes is the session guarantee users actually notice
+  breaking**: post a comment, refresh, and it's gone. Fixed with sticky
+  routing to the replica that took the write, reading from the primary for
+  a short window, or a version token the replica must have caught up to.
+- **The same choice (CP vs AP) is made per data type within one system, not
+  once for the whole platform.** A product catalogue can be AP; an
+  authorization check should be CP — serving a stale "allow" for a revoked
+  permission is a security failure, not a UX degradation.
+- Spanner is the existence proof that strong, global consistency is
+  achievable at scale — via TrueTime (a bounded time *interval*, not a
+  point) and "commit wait," at the cost of real latency and unavailability
+  for the minority side during a genuine partition.
+
+---
+
 ## Foundations
 
 ### What CAP actually says
@@ -314,6 +346,80 @@ paying for linearizability everywhere.
   admits and how the app handles them.
 - **Not knowing PACELC.** It's the more useful framing and knowing it signals
   reading beyond the standard blog post.
+
+---
+
+## Quiz
+
+### MCQ: Why is "CAP means pick two of three" considered a wrong framing?
+- [ ] Because CAP only has two properties, not three
+- [x] Because partition tolerance isn't optional — networks partition, so a system claiming "CA" is simply broken when a partition happens
+- [ ] Because CAP applies to single-node systems too
+- [ ] Because consistency and availability are the same thing
+**Why:** The real trade is CP vs. AP during an actual partition; when the network is healthy (nearly all the time), a system can have both consistency and availability.
+
+### MCQ: What does the "C" in CAP theorem specifically mean?
+- [ ] The same thing as the "C" in ACID (constraint preservation)
+- [x] Linearizability — the strongest consistency model, where the system behaves as if there's a single copy of the data
+- [ ] Eventual consistency
+- [ ] Causal consistency
+**Why:** Conflating CAP's C with ACID's C is a common and telling mistake — they're different concepts: linearizability versus preserving database constraints.
+
+### MCQ: Why is PACELC considered more useful than CAP for everyday engineering decisions?
+- [ ] PACELC is a formally proven theorem while CAP is just a guideline
+- [x] PACELC also describes the trade-off during normal operation (latency vs. consistency), which is where systems spend nearly all their time — CAP only addresses the rare partition case
+- [ ] PACELC eliminates the need to think about partitions at all
+- [ ] PACELC only applies to single-region deployments
+**Why:** CAP says nothing about the vast majority of a system's operating time; PACELC's "Else: Latency or Consistency" branch is the trade actually made every day.
+
+### MCQ: Reading down the consistency ladder from linearizable to eventual, what are you gaining and giving up?
+- [ ] Gaining consistency, giving up availability
+- [x] Giving up coordination between replicas, and buying latency and availability in exchange
+- [ ] Gaining durability, giving up throughput
+- [ ] Nothing changes except terminology
+**Why:** Each weaker model requires less cross-replica coordination to satisfy, which is exactly what makes it cheaper in latency and more available under partition.
+
+### MCQ: A user posts a comment, refreshes the page, and their own comment is missing. Which consistency anomaly is this?
+- [ ] Monotonic reads violation
+- [x] A read-your-writes violation
+- [ ] A writes-follow-reads violation
+- [ ] This is expected behavior under linearizability
+**Why:** Read-your-writes specifically guarantees a user sees their own prior writes — its violation is the anomaly users report as "the app ate my post," which is why it's the guarantee worth naming first.
+
+### MCQ: Which of these is a practical fix for the read-your-writes problem?
+- [ ] Switching the entire database to linearizable consistency
+- [x] Carrying a version token from the write and requiring the replica serving the next read to have caught up to it
+- [ ] Disabling all read replicas
+- [ ] Increasing the replica count
+**Why:** A version token gives precisely the guarantee needed for that user's session without paying for global linearizability — sticky routing and "read from primary for N seconds" are cruder alternatives with their own costs.
+
+### MCQ: Within a single platform, should the CP/AP choice be made once for the whole system or per data type?
+- [ ] Once — a system should be entirely CP or entirely AP for consistency's sake
+- [x] Per data type — e.g. a product catalogue can be AP while an authorization check should be CP
+- [ ] The choice is fixed by whichever database vendor you use
+- [ ] CAP doesn't allow mixing choices within one platform
+**Why:** Serving stale product listings is harmless; serving a stale "allow" for a revoked permission is a security failure — the same platform reasonably makes opposite choices for different data.
+
+### MCQ: Why is a stale "allow" on an authorization check treated differently from stale content in a product feed?
+- [ ] It isn't — both are equally acceptable trade-offs
+- [x] A stale allow is a security failure (someone acts with permissions they no longer have), not merely a UX degradation like slightly outdated content
+- [ ] Authorization checks are always faster than content queries
+- [ ] Product feeds require stronger consistency than authorization
+**Why:** This is the concrete argument for treating revocation as a CP operation even inside an otherwise AP system — the cost of staleness is qualitatively different, not just quantitatively.
+
+### MCQ: What does Google Spanner's TrueTime API provide that makes global external consistency possible?
+- [ ] A single, perfectly synchronized clock across all datacenters
+- [x] A guaranteed time *interval* that is proven to contain the true time, letting Spanner wait out the uncertainty ("commit wait") before making a write visible
+- [ ] A way to eliminate network partitions entirely
+- [ ] Unlimited bandwidth between datacenters
+**Why:** Rather than pretending clocks are perfectly synchronized, TrueTime acknowledges bounded uncertainty and waits it out — this is what lets timestamps be used for ordering across the whole planet.
+
+### MCQ: During an actual network partition, what does Spanner choose — and what does it cost during normal operation?
+- [x] Consistency during partition (minority side becomes unavailable for writes); during normal operation it pays latency for cross-datacenter coordination and commit wait
+- [ ] Availability during partition, with no normal-operation cost
+- [ ] Spanner avoids the CAP trade-off entirely through TrueTime
+- [ ] Spanner is AP during partition and EL during normal operation
+**Why:** Spanner is a CP/EC system on the PACELC framing — it chooses consistency under partition and pays a latency cost for consistency during normal operation too, which is the whole point PACELC makes that CAP alone doesn't.
 
 ---
 

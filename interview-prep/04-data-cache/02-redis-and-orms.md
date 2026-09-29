@@ -6,6 +6,37 @@ credibly.
 
 ---
 
+## In brief
+
+- **Redis's single-threaded command execution is a feature, not just a
+  limitation**: no locking, no race between commands, which is what makes
+  `INCR` atomic for free and a Lua script an atomic multi-command block.
+  The real bottleneck is almost always network or client-side, not Redis
+  itself — one slow command (`KEYS *`, a big `SORT`) can still stall every
+  other client, which is why `SCAN` replaces `KEYS` and `UNLINK` replaces
+  `DEL` for large keys.
+- **"Redis is not a database of record" is the sentence to say out loud** —
+  even with AOF persistence and aggressive fsync, you can lose the last
+  second of writes. Treat it as cache and derived state you can rebuild,
+  never as the only place the truth lives.
+- **Sorted sets are the underrated data type**: score by timestamp and you
+  get a sliding-window rate limiter, a priority queue, or a scheduled job
+  store — one structure covering three use cases.
+- **Redis Cluster's multi-key operations only work within one shard** —
+  keys you use together need a hash tag (`{tenant123}:sessions`) to force
+  them onto the same shard, or a multi-key operation simply fails.
+- **The N+1 problem is invisible in ORM code** — `user.posts` looks like a
+  harmless property access, but with lazy loading it silently fires one
+  query per iteration (101 queries for 100 users). Eager loading (`include`
+  in Sequelize, `populate` in Mongoose) turns it into 1-2 queries; nothing
+  in the code itself warns you, only query logs or an APM trace do.
+- **Firebase's security rules are a declarative authorization language,
+  conceptually similar to Rego but far less expressive** — which is
+  exactly why a platform with real RBAC needs a policy engine instead of
+  trying to express complex permission logic in Firestore rules.
+
+---
+
 ## Redis
 
 An in-memory data store. Fast because it's in memory and single-threaded for
@@ -315,6 +346,80 @@ rather than a failure of the tool.
 - **Unconditional `DEL` to release a lock.** Can delete someone else's.
 - **No eviction policy set**, then surprise when writes start failing.
 - **Not knowing eager loading**, while claiming ORM experience.
+
+---
+
+## Quiz
+
+### MCQ: Why is Redis's single-threaded command execution described as a feature rather than purely a limitation?
+- [ ] It makes every command run faster than a multi-threaded system could
+- [x] Commands execute one at a time with no locking and no race conditions between them — which is what makes `INCR` atomic for free and Lua scripts atomically multi-command
+- [ ] It eliminates the need for a network connection
+- [ ] It prevents any command from ever blocking
+**Why:** The atomicity guarantees several important patterns (counters, lock release, token-bucket refills) rely on — the trade-off is that one genuinely slow command (like `KEYS *`) can stall every other client.
+
+### MCQ: Why is it accurate to say "Redis is not a database of record"?
+- [ ] Redis doesn't support any form of persistence at all
+- [x] Even with AOF persistence and aggressive fsync settings, it's possible to lose the last second of writes — anything that can't be rebuilt shouldn't live only in Redis
+- [ ] Redis data is automatically deleted after 24 hours
+- [ ] Redis can't be backed up at all
+**Why:** This is why Redis is treated as cache and derived, rebuildable state — durability guarantees weaker than a real database mean it's the wrong place for data you can't afford to lose.
+
+### MCQ: What makes sorted sets "the underrated" Redis data type, according to this chapter?
+- [ ] They're the fastest data type for simple key lookups
+- [x] Scoring members by timestamp turns them into a sliding-window rate limiter, a priority queue, or a scheduled job store — one structure covering multiple use cases
+- [ ] They're the only data type that supports atomic operations
+- [ ] They automatically expire old entries
+**Why:** The same "score = time" pattern generalizes across several common problems, which is why it's worth knowing well beyond its most obvious use (leaderboards).
+
+### MCQ: In Redis Cluster, what's required for a multi-key operation (like `MGET` on two keys) to succeed?
+- [ ] Nothing special — multi-key operations always work across shards
+- [x] The keys involved must land on the same shard, which is forced with a hash tag like `{tenant123}:key`
+- [ ] The operation must be wrapped in a transaction
+- [ ] Cluster mode doesn't support multi-key operations at all
+**Why:** Without the hash tag, related keys can be distributed across different shards, and Redis Cluster will simply fail a multi-key operation spanning shards — this is a common production gotcha.
+
+### MCQ: Why is deleting a Redis lock with an unconditional `DEL` dangerous?
+- [ ] `DEL` is deprecated and shouldn't be used at all
+- [x] If the lock has already expired and been acquired by someone else, an unconditional `DEL` can delete their lock instead of your own
+- [ ] `DEL` doesn't actually remove the key from memory
+- [ ] It causes a full cluster resync
+**Why:** The safe pattern checks that the key still holds your specific token (via a Lua script) before deleting — an unconditional delete has no way to know whether it's still "your" lock.
+
+### MCQ: In the ORM N+1 problem, why is the bug described as "invisible in the code"?
+- [ ] The ORM logs a warning that's easy to miss
+- [x] Accessing a lazy-loaded relation like `user.posts` looks like an ordinary property access, but silently fires a database query — nothing in the code signals that a query just happened
+- [ ] N+1 bugs only occur in production, never in development
+- [ ] The ORM throws a runtime error that's often ignored
+**Why:** This is exactly what makes N+1 dangerous — a loop that looks completely innocent (`for (const u of users) await u.getPosts()`) generates N additional queries with no visual cue in the code itself.
+
+### MCQ: How does eager loading (e.g. Sequelize's `include`, Mongoose's `populate`) fix the N+1 problem?
+- [ ] It caches every query result indefinitely
+- [x] It fetches the related data up front in one or two queries (via a join or a `WHERE ... IN (...)`) instead of issuing one query per item in a loop
+- [ ] It converts the ORM's queries into raw SQL automatically
+- [ ] It disables lazy loading globally for the entire application
+**Why:** Turning 101 sequential queries into 1-2 batched ones is the concrete fix — the trade is that eager loading needs to be requested explicitly rather than happening by default.
+
+### MCQ: What's the practical position this chapter recommends for using an ORM versus raw SQL?
+- [ ] Always use raw SQL; ORMs should never be trusted
+- [x] Use the ORM for CRUD and relationships, and drop to raw SQL for reporting and hot paths — using each tool for what it's actually good at
+- [ ] Always use the ORM; raw SQL indicates a design flaw
+- [ ] Alternate between them randomly to avoid vendor lock-in
+**Why:** ORMs excel at everyday CRUD and abstracting relationships, but they can generate inefficient SQL for complex queries — the chapter frames dropping to raw SQL for hot paths as using the tool correctly, not as a failure of the ORM.
+
+### MCQ: Why are Firestore security rules compared to Rego, but described as "far less expressive"?
+- [ ] They use an entirely unrelated syntax with no conceptual overlap
+- [x] Both are declarative authorization languages, but Firestore's rules struggle to express complex permission logic the way a real policy engine like OPA/Rego can
+- [ ] Firestore rules only apply to read operations, never writes
+- [ ] Rego is a Google product while Firestore rules are not
+**Why:** This is the bridge point for why a platform with real RBAC needs a dedicated policy engine — Firestore's rules work for simple cases but become awkward or insufficient as permission logic grows more complex.
+
+### MCQ: Why should cached objects in Redis typically be stored as hashes rather than serialized JSON strings?
+- [ ] Hashes support larger total data sizes than strings
+- [x] A hash lets you read or update individual fields without serializing and rewriting the entire object on every access
+- [ ] JSON strings aren't supported by the Redis protocol
+- [ ] Hashes are automatically compressed while strings are not
+**Why:** For an object where only one field changes at a time, updating a hash field avoids the cost of re-serializing and rewriting the whole object, which a JSON string would require.
 
 ---
 

@@ -6,6 +6,44 @@ chose gRPC for the auth package.
 
 ---
 
+## In brief
+
+- **Start from who calls it, not from abstract merits.** Internal
+  service-to-service → gRPC; server must push to a live client →
+  WebSocket (or SSE for one-way); public/browser with uniform data →
+  REST; public/browser with wildly varying client needs → GraphQL. The
+  edge and the interior have different needs, which is why a platform
+  commonly runs REST outside and gRPC inside rather than picking one.
+- **401 vs 403 is the one to get right in an auth interview**: 401 means
+  "I don't know who you are," 403 means "I know, and no." Getting this
+  backwards is a specific, checkable tell.
+- **GraphQL's N+1 problem is invisible in the query itself** — a query for
+  100 users and their posts naively becomes 101 database queries, one per
+  resolver call. DataLoader batches and dedupes keys within a request
+  (101 queries → 2), and knowing that name specifically is the signal.
+- **GraphQL authorization has to live at the resolver level, not the
+  endpoint** — a single query can traverse into data the caller shouldn't
+  reach, since there's no one endpoint to gate. This is more surface area
+  to get right than REST's one-check-per-endpoint model.
+- **Protobuf field numbers are the wire contract, and they're
+  append-only**: adding a field is safe (old clients ignore it); removing
+  one must mark the number `reserved` so nothing reuses it; changing a
+  type breaks everything. This additive-only discipline is what lets nine
+  teams run different client versions against the same server
+  indefinitely, without a synchronized deploy.
+- **gRPC's real cost is at the edge, not internally**: browsers need
+  grpc-web plus a proxy, you can't easily `curl` it, and load balancers
+  need HTTP/2 awareness — naive L4 balancing sends all of one client's
+  calls to a single server because connections are long-lived. None of
+  that matters for service-to-service traffic, which is exactly where
+  gRPC fits.
+- **WebSockets need the same "recheck periodically" discipline as any
+  long-lived session** — authenticating only at the handshake means a
+  terminated user with an already-open socket keeps receiving data past
+  their revocation.
+
+---
+
 ## The comparison
 
 ```mermaid
@@ -298,6 +336,81 @@ gRPC internally, GraphQL only if client diversity justifies it.
   drawbacks.
 - **Not knowing DataLoader** while claiming GraphQL.
 - **Reusing Protobuf field numbers.** Silently corrupts data for old clients.
+
+---
+
+## Quiz
+
+### MCQ: What's the recommended starting question for choosing between REST, GraphQL, gRPC, and WebSockets?
+- [ ] Which one is fastest in benchmarks?
+- [x] Who calls it — internal service, public client, varied clients needing different shapes, or a server that must push data?
+- [ ] Which one the team already knows best
+- [ ] Which one has the most mature tooling
+**Why:** Arguing the abstract merits of each style is how this question gets failed — starting from the caller's actual needs (internal vs. public, uniform vs. varied data, push vs. pull) usually makes the choice itself.
+
+### MCQ: In HTTP status codes, what's the difference between 401 and 403?
+- [ ] They're interchangeable synonyms
+- [x] 401 means "I don't know who you are" (not authenticated); 403 means "I know who you are, and you're not allowed" (authenticated but not authorized)
+- [ ] 401 is for GET requests; 403 is for POST requests
+- [ ] 403 always implies a server-side bug
+**Why:** Getting this backwards is a specific, checkable mistake — especially costly in an interview for an auth-focused role, where the two codes map to fundamentally different failure states.
+
+### MCQ: Why does a GraphQL query for 100 users, each with their posts, naively trigger 101 database queries?
+- [ ] GraphQL always executes queries twice for validation
+- [x] Each field resolver runs independently — the users resolver runs once, then the posts resolver runs once per individual user, with no batching by default
+- [ ] The GraphQL schema requires separate queries for each field type
+- [ ] It's a bug specific to one GraphQL server implementation
+**Why:** This is the N+1 problem — it's invisible in the query itself, which is exactly what makes it dangerous: a client can write something innocuous-looking that generates a huge number of database round trips.
+
+### MCQ: How does DataLoader fix the GraphQL N+1 problem?
+- [ ] It caches every query result indefinitely across all requests
+- [x] It collects the keys each resolver needs within a tick, issues one batched query for all of them, and dedupes repeated keys within that single request
+- [ ] It rewrites the client's GraphQL query into SQL directly
+- [ ] It limits how many fields a client can request per query
+**Why:** 101 individual queries become effectively 2 batched ones — and because batching happens per-request, there's no stale-cache risk the way a longer-lived cache would introduce.
+
+### MCQ: Why does authorization in GraphQL need to happen at the resolver level rather than at a single endpoint check?
+- [ ] GraphQL doesn't support endpoint-level authorization at all
+- [x] A single GraphQL query can traverse into deeply nested data the caller shouldn't be able to see, since there's no one endpoint boundary to gate the whole request
+- [ ] Resolver-level checks are faster than endpoint-level checks
+- [ ] It's a GraphQL server configuration requirement, not a security concern
+**Why:** With REST, one endpoint maps to one permission check; with GraphQL, one query can reach many different pieces of data, so each resolver needs its own authorization check — more surface area to get right.
+
+### MCQ: In Protobuf, what happens if you remove a field from a `.proto` message definition without marking its number `reserved`?
+- [ ] Nothing — Protobuf automatically prevents number reuse
+- [x] A future field could be assigned the same number, causing old clients (or old serialized data) to misinterpret that field's data as the new one — silent data corruption
+- [ ] The build simply fails with a compile error
+- [ ] It only affects performance, not correctness
+**Why:** Field numbers are the actual wire contract in Protobuf — `reserved` prevents a future developer from accidentally reusing a number that already has a meaning baked into deployed clients or stored data.
+
+### MCQ: Why can nine different teams run different client versions against the same gRPC server indefinitely, without a synchronized deploy?
+- [ ] gRPC automatically translates between different protocol versions
+- [x] Protobuf's additive-only compatibility rule (never reuse/renumber fields, mark removed fields reserved) means old clients keep working correctly against a newer server
+- [ ] gRPC servers run a separate instance for each client version
+- [ ] Field numbers are ignored at runtime, so mismatches don't matter
+**Why:** This discipline is exactly what makes a wire format tolerant of mixed versions — you can't force nine independent teams to deploy simultaneously, so the contract itself has to remain backward compatible.
+
+### MCQ: What makes gRPC poorly suited for browser-facing, public-facing APIs specifically?
+- [ ] It's slower than REST at every scale
+- [x] Browsers can't speak gRPC natively (requiring grpc-web plus a proxy), it's hard to debug with `curl`, and load balancers need HTTP/2 awareness — none of which matter for internal service calls
+- [ ] gRPC doesn't support JSON payloads at all
+- [ ] gRPC requires a paid license for public use
+**Why:** These are all edge-specific costs — they don't apply to service-to-service traffic, which is exactly why a platform often runs gRPC internally and REST at the public edge rather than choosing one universally.
+
+### MCQ: Why does naive Layer 4 load balancing cause problems for gRPC specifically, compared to typical REST traffic?
+- [ ] gRPC doesn't use TCP, so L4 balancing can't route it at all
+- [x] gRPC connections are long-lived (HTTP/2, multiplexed), so L4 balancing — which routes at the connection level — can send all of one client's many calls to a single server instead of spreading them
+- [ ] L4 balancers can't parse binary Protobuf payloads
+- [ ] gRPC requires a minimum of three backend servers to function
+- [ ] REST doesn't work with L4 load balancers either
+**Why:** REST's typical short-lived HTTP/1.1 connections get load-balanced roughly per-request; gRPC's persistent multiplexed connection means the balancing decision happens once per connection, not per call, unskewing it requires L7 (HTTP/2-aware) balancing.
+
+### MCQ: Why must a WebSocket connection be re-authenticated or re-checked periodically, not just verified once at the handshake?
+- [ ] WebSocket connections automatically expire every 60 seconds
+- [x] A long-lived socket connection can outlive the user's token expiry or an explicit session revocation, so a terminated user could keep receiving data over an already-open connection
+- [ ] Handshake-time authentication is technically impossible for WebSockets
+- [ ] It's only a concern for connections lasting longer than 24 hours
+**Why:** Unlike a typical REST request that re-authenticates on every call, a WebSocket's single handshake-time check doesn't automatically get re-validated as the connection stays open — revocation needs an explicit mechanism to actually close it.
 
 ---
 

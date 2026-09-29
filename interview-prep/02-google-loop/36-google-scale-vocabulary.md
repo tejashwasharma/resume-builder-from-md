@@ -14,6 +14,41 @@ internally today.
 
 ---
 
+## In brief
+
+- **Cite once, correctly, at the moment the idea is load-bearing** — three
+  citations in a 45-minute round is plenty; ten reads as reciting. Citing a
+  system loosely says the opposite of what citing it correctly says.
+- **Zanzibar's "new enemy" problem** — a just-removed user seeing
+  just-added content because an ACL change and a content change weren't
+  observed in causal order — is solved with **zookies**: opaque tokens
+  from a write that force later checks to a snapshot at least that fresh.
+  Caching stays safe by keying on the check *and* the snapshot timestamp,
+  not by invalidating.
+- **BeyondCorp removes network location as a trust signal entirely** —
+  every request goes through an access proxy that authenticates the user,
+  checks device state, and applies policy per request. No VPN; an employee
+  at a coffee shop and one at their desk are treated identically.
+- **Spanner's TrueTime returns a bounded time *interval*, not a point** —
+  it waits out that interval's uncertainty ("commit wait") before making a
+  write visible, which is what gives global external consistency without
+  coordination between independent transactions, at the cost of real
+  per-write latency.
+- **SLSA's three build levels grade how much you can trust provenance**:
+  L1 it exists, L2 a hosted platform signed it (forging requires attacking
+  the platform, not editing a file), L3 the platform is hardened so even a
+  malicious build step inside it can't forge its own provenance.
+- **Sigstore replaces "a key that must be protected forever" with "an
+  identity, at a time, publicly recorded"** — Fulcio issues short-lived
+  certs bound to an OIDC identity, and Rekor's transparency log is what
+  lets a verifier trust a signature made under a now-expired certificate.
+- **An SBOM attached to the deployed artifact digest (not the source repo)
+  closes the gap between "what the repo says" and "what's actually
+  running"** — a signed, digest-keyed SBOM turns "which of 4,000 services
+  are affected by this CVE" from an investigation into a query.
+
+---
+
 ## Zanzibar — authorization
 
 **What it is.** *Zanzibar: Google's Consistent, Global Authorization System*
@@ -525,6 +560,80 @@ affected digests, which stops the problem growing while the fix rolls out.
    the next person does not repeat it.
 
    </details>
+
+---
+
+## Quiz
+
+### MCQ: How many system citations are recommended for a 45-minute design round?
+- [ ] As many as possible, to demonstrate breadth of knowledge
+- [x] About three, cited correctly at the moment each idea is load-bearing — ten reads as reciting
+- [ ] Exactly one, and no more
+- [ ] None — naming papers is considered showing off
+**Why:** Citing a system correctly at the right moment signals genuine understanding; over-citing turns the answer into a recitation rather than reasoning.
+
+### MCQ: What is Zanzibar's "new enemy" problem?
+- [ ] A malicious actor gaining admin access
+- [x] A permission check and a content change aren't observed in causal order, letting a just-removed user see just-added content
+- [ ] Two services disagreeing on which is the leader
+- [ ] A denial-of-service attack on the authorization service
+**Why:** This is specifically a consistency race between an ACL write and a content write on different systems — solved by zookies forcing later checks to a sufficiently fresh snapshot.
+
+### MCQ: How does a "zookie" solve Zanzibar's consistency problem?
+- [ ] It encrypts the permission data at rest
+- [x] It's an opaque token returned from a write, stored with content, that forces later checks to be evaluated at a snapshot at least as fresh as that write
+- [ ] It's a rate limiter on authorization checks
+- [ ] It's a cache invalidation signal sent to all replicas
+**Why:** This lets checks be served from potentially-stale caches and replicas most of the time, while still guaranteeing causal correctness exactly when it matters — pinning freshness via the token rather than requiring global synchronous consistency.
+
+### MCQ: How can Zanzibar-style authorization checks be cached safely without an invalidation mechanism?
+- [ ] They can't be cached at all
+- [x] Key the cache on the check AND the snapshot timestamp — a cached result at snapshot T is valid for any request whose zookie is at or before T
+- [ ] Cache every result with an infinite TTL
+- [ ] Cache only negative (deny) results
+**Why:** Making freshness part of the cache key sidesteps the need to actively invalidate entries — a request demanding something fresher simply misses the cache instead of reading a stale value.
+
+### MCQ: What does BeyondCorp fundamentally change about how internal services decide to trust a request?
+- [ ] It requires all internal traffic to be encrypted with TLS
+- [x] It removes network location entirely as a basis for trust — every request goes through an access proxy that evaluates identity, device state, and policy per request, VPN or no VPN
+- [ ] It replaces passwords with biometric authentication
+- [ ] It only applies to requests from outside the corporate network
+**Why:** Under the old perimeter model, being on the corporate network was itself a trust signal; BeyondCorp treats a request from the office and one from a coffee shop identically.
+
+### MCQ: What does Spanner's TrueTime API return, and why does that matter?
+- [ ] A single, perfectly precise timestamp
+- [x] A bounded time interval guaranteed to contain the true time — Spanner waits out that interval's uncertainty ("commit wait") before making a write visible
+- [ ] A hash of the current system clock state
+- [ ] The average clock drift across all datacenters
+**Why:** Acknowledging bounded uncertainty rather than pretending clocks are perfectly synchronized is what lets Spanner assign globally meaningful commit timestamps without cross-transaction coordination.
+
+### MCQ: What's the key difference between SLSA Build Level 1 and Level 2?
+- [ ] Level 1 doesn't require a build at all
+- [x] Level 1 just means provenance exists (possibly unsigned); Level 2 means a hosted build platform generates and signs it, so forging it requires attacking the platform rather than just editing a file
+- [ ] Level 2 requires the source code to be open-sourced
+- [ ] Level 1 is for containers only; Level 2 is for all artifact types
+**Why:** The levels grade trust in the provenance statement — Level 1 makes the supply chain visible; Level 2 makes that visibility tamper-resistant by moving signing to a platform the individual developer doesn't control.
+
+### MCQ: What does SLSA Build Level 3 specifically defend against that Level 2 doesn't?
+- [ ] Network eavesdropping on the build artifact
+- [x] A malicious build script or compromised dependency inside the build itself forging its own provenance, because the build platform is hardened — builds are isolated and the signing key is inaccessible to build steps
+- [ ] A developer accidentally committing a secret
+- [ ] An expired TLS certificate on the build server
+**Why:** Level 2 protects against an external party editing provenance after the fact; Level 3 protects against the build process itself lying about what it produced.
+
+### MCQ: Why is a transparency log (Rekor) necessary in Sigstore's keyless signing model, given that the signing certificate is short-lived and soon expires?
+- [ ] It replaces the need for the certificate entirely
+- [x] It records the signature, certificate, and timestamp so a verifier can later confirm the signature was valid *at the time it was made*, even though the certificate has since expired
+- [ ] It speeds up the signing process
+- [ ] It's only used for debugging failed signature verifications
+**Why:** Without the log, an expired certificate would make a past signature unverifiable — Rekor's public, append-only record is what lets trust rest on "who signed, and when" rather than an ever-valid key.
+
+### MCQ: Why does attaching an SBOM to the deployed artifact's digest (rather than just checking the source repository) matter for vulnerability response?
+- [ ] Digests are faster to query than repository manifests
+- [x] It closes the gap between "what the repo says" and "what's actually running" — a digest-keyed SBOM captures transitive dependencies, vendored copies, and whatever was actually built, not just a manifest file
+- [ ] Source repositories don't support dependency manifests
+- [ ] It eliminates the need for vulnerability scanning entirely
+**Why:** Scanning source repos for a manifest line misses transitive dependencies and can describe code that isn't what's actually deployed — a signed, digest-keyed SBOM describes precisely what is running right now.
 
 ---
 

@@ -6,6 +6,39 @@ delivery belongs here too.
 
 ---
 
+## In brief
+
+- **A log is not a queue with persistence.** A queue removes a message once
+  consumed and competing workers split the work; a log retains messages and
+  each consumer group tracks its own offset, so multiple independent
+  consumers can read the same stream at their own pace — and a new consumer
+  can replay from the beginning.
+- **Kafka guarantees order within a partition only**, chosen by key —
+  there's no ordering across partitions. Partition by the entity whose
+  order matters (`user_id`); ordering requires serialization, so a single
+  hot key becomes a throughput ceiling.
+- **Acknowledgement timing decides your delivery semantics, with no third
+  option**: ack before processing loses messages on crash (at-most-once);
+  ack after processing redelivers on crash (at-least-once) — which is the
+  normal choice, and exactly why consumers must be idempotent.
+- **A poison message (always fails) blocks its entire partition** if
+  retried forever — every other message behind it stalls, which is an
+  outage, not a single failed message. The fix is a bounded retry with
+  backoff, then move to a **dead-letter queue** and keep the offset
+  advancing. A DLQ nobody monitors is just a slower way to lose data.
+- **Backpressure means producers outpacing consumers**, and consumer lag
+  (how far behind the head a consumer is) is the leading indicator before
+  anything user-visible breaks. Unbounded buffering is not a response to
+  backpressure — it's an out-of-memory error waiting to happen.
+- **WebSocket connections are stateful**, which is the scaling problem: a
+  message for a user must reach the specific server instance holding their
+  connection. A pub/sub backplane (Socket.io's Redis adapter) lets any
+  instance publish to any connection. Authenticate at the handshake **and
+  recheck periodically** — a long-lived socket outlives token expiry and
+  session revocation.
+
+---
+
 ## Foundations
 
 ### Queue vs log — the distinction that matters
@@ -412,6 +445,80 @@ detect and reorder or reject out-of-sequence work.
 - **Expecting global ordering.** It's per-partition, and that's a design
   constraint.
 - **Unbounded buffering** as the answer to backpressure. That's an OOM.
+
+---
+
+## Quiz
+
+### MCQ: What's the fundamental difference between a queue and a log?
+- [ ] Queues are always faster than logs
+- [x] A queue removes a message once consumed (competing consumers); a log retains messages and each consumer group tracks its own offset (independent consumers)
+- [ ] Logs can only have one consumer at a time
+- [ ] Queues guarantee ordering; logs don't
+**Why:** This offset-based independence is what lets a log support replay and multiple unrelated consumers reading the same stream at their own pace — a queue can't do either once a message is acknowledged.
+
+### MCQ: In Kafka, across how much of the data stream is strict message ordering guaranteed?
+- [ ] Globally, across the entire topic
+- [x] Only within a single partition
+- [ ] Only within a single consumer group
+- [ ] Ordering is never guaranteed in Kafka
+**Why:** Messages with the same key go to the same partition and are strictly ordered there; across partitions there's no ordering guarantee at all — this is why partition key choice is a core design decision.
+
+### MCQ: Why does partitioning by a single very active key (e.g. one huge customer's `user_id`) create a throughput ceiling?
+- [ ] Kafka limits the number of messages per key
+- [x] Ordering within a partition requires serialization — that key's events can't be processed in parallel no matter how many partitions exist elsewhere
+- [ ] Active keys are automatically rate-limited by Kafka
+- [ ] It causes a hash collision with other keys
+**Why:** The trade is direct: anything that must stay ordered can't be parallelized, so a single hot key's processing rate is capped regardless of overall partition count.
+
+### MCQ: When should a consumer commit (acknowledge) a message's offset for the normal at-least-once semantics this chapter argues for?
+- [ ] Immediately upon receiving the message, before processing
+- [x] After successfully processing the message
+- [ ] Only once per batch of 100 messages
+- [ ] Offsets should never be committed manually
+**Why:** Acking before processing risks losing the message if the consumer crashes mid-work (at-most-once); acking after processing means a crash causes redelivery (at-least-once) — the normal choice, which is why handlers must be idempotent.
+
+### MCQ: A single malformed message causes a consumer to fail every time it's retried. What's the danger if it's retried forever without any other handling?
+- [ ] Only that one message is ever lost
+- [x] It blocks its entire partition — every other message behind it for that key stalls, turning one bad message into an outage
+- [ ] The consumer automatically skips it after 10 seconds
+- [ ] It has no effect on other messages in different partitions
+**Why:** This is the "poison message" problem — the fix is a bounded retry with backoff, then moving the message to a dead-letter queue and advancing the offset so the stream keeps flowing.
+
+### MCQ: Why is "a dead-letter queue nobody monitors" considered equivalent to data loss?
+- [ ] DLQ messages automatically expire after an hour
+- [x] Messages sent there are effectively abandoned if nothing alerts a human to investigate and reprocess them
+- [ ] DLQs don't actually persist messages
+- [ ] Because DLQ messages can't be replayed even if found
+**Why:** Moving a message to a DLQ unblocks the stream, but without an owner and an alert, it's just a slower, quieter way for that message's work to never get done.
+
+### MCQ: Why must a consumer's message handler be idempotent under at-least-once delivery?
+- [ ] It's a Kafka client library requirement
+- [x] The same message can be redelivered (e.g. after a crash between processing and acking), so processing it twice must not double the effect
+- [ ] Idempotency improves consumer throughput
+- [ ] Only queue-based systems require idempotent handlers, not logs
+**Why:** At-least-once delivery guarantees no message is lost, at the cost of possible duplicates — idempotent handling is what turns that into effectively-once processing.
+
+### MCQ: A consumer processes a batch of ordered messages from one partition using `Promise.all(batch.map(handle))`. What happens to ordering?
+- [ ] Ordering is preserved because Kafka enforces it end-to-end
+- [x] It can be broken — the broker delivered them in order, but concurrent processing in the consumer can complete them out of order
+- [ ] This pattern is required for correct at-least-once processing
+- [ ] Ordering only matters for producers, not consumers
+**Why:** The broker's ordering guarantee only covers delivery order; processing messages from one partition concurrently (rather than sequentially with a for-loop) undoes that guarantee.
+
+### MCQ: What is "consumer lag" and why is it the key metric to watch for backpressure?
+- [ ] The time it takes to establish a connection to the broker
+- [x] How far behind the head of the stream a consumer is — growing lag is the leading indicator of a capacity problem before anything user-visible breaks
+- [ ] The number of consumer groups subscribed to a topic
+- [ ] The latency of a single message's round trip
+**Why:** Lag directly measures whether a consumer is keeping pace with producers — watching it lets you react (scale out, shed load) before the backlog becomes a user-visible incident.
+
+### MCQ: Why is authenticating a WebSocket only at handshake time, with no recheck, a security gap?
+- [ ] WebSocket handshakes can't carry authentication tokens
+- [x] A long-lived socket connection can outlive the token's expiry or an explicit session revocation, so a terminated user could keep receiving data over an already-open connection
+- [ ] WebSocket connections automatically expire after 5 minutes
+- [ ] This is only a problem when using Socket.io specifically
+**Why:** A revocation that closes HTTP access but leaves an open socket connected isn't a real revocation — the connection needs to be periodically rechecked or explicitly closed on revocation.
 
 ---
 

@@ -5,6 +5,40 @@ both connect to real stories.
 
 ---
 
+## In brief
+
+- **Build the artifact once, promote the same one through every
+  environment** — rebuilding per environment means what you tested isn't
+  what you shipped. Fail fast: cheap checks (lint, types) run before the
+  expensive ones, so a trivial error surfaces in 30 seconds, not after a
+  10-minute test suite.
+- **Canary with automatic rollback on error rate is the mature answer for
+  a tier-0 service** — canary is the one deployment strategy that finds
+  problems staging never will, because production traffic is the one thing
+  you can't reproduce off production.
+- **Database migrations that "can't be rolled back" usually just weren't
+  split into backward-compatible steps**: add the column, dual-write,
+  backfill, read-new, drop-old. At every one of those five points, the
+  code can roll back safely because the schema is still correct for the
+  old code too.
+- **Alert on symptoms users feel, never on causes** — error rate and p99
+  latency, not CPU at 80%. Percentiles, not averages: a service where 90%
+  of requests take 50ms and 10% take 5 seconds has a fine average and a
+  terrible experience, and p99 is what your unhappiest users actually get.
+- **An error budget turns a reliability-vs-velocity argument into a
+  number** — budget remaining means ship riskily; budget exhausted means
+  stop shipping features and fix reliability. This only works if it's
+  enforced, not just reported.
+- **Observability means answering questions you didn't anticipate, without
+  shipping new code** — monitoring checks known things against a
+  threshold; observability needs high-cardinality data (structured logs,
+  traces) to ask "which tenant, which endpoint, which version" during an
+  incident. Most teams have monitoring and call it observability; the real
+  test is whether an unanticipated question during an incident can be
+  answered without a deploy.
+
+---
+
 ## CI/CD
 
 **CI** — every push builds and tests automatically, so broken code is caught in
@@ -362,6 +396,80 @@ during an incident without deploying a change.
 - **Rebuilding per environment.** Then you didn't ship what you tested.
 - **No feature flags.** Every behaviour change becomes a deploy and a rollback.
 - **Unstructured logs.** Grep doesn't scale; JSON logs are queryable.
+
+---
+
+## Quiz
+
+### MCQ: Why should the same build artifact be promoted through every environment, rather than rebuilding for each one?
+- [ ] It's faster to rebuild for each environment
+- [x] Rebuilding per environment means what was actually tested (in an earlier environment) isn't exactly what gets deployed to production
+- [ ] Different environments require different compiled binaries
+- [ ] It reduces CI storage costs
+**Why:** A rebuild introduces the possibility of a different artifact (different dependency versions, different build-time config) reaching production than the one that passed the tests.
+
+### MCQ: Why does a CI pipeline run cheap checks (lint, types) before expensive ones (integration tests)?
+- [ ] Cheap checks catch more bugs than expensive ones
+- [x] Fail-fast: a trivial error surfaces in seconds rather than after waiting for a much longer test suite to finish
+- [ ] Expensive checks can't run until cheap checks pass, by CI tool design
+- [ ] It reduces the total number of tests needed
+**Why:** Ordering by cost means the most common, fastest-to-detect failures (typos, type errors) don't cost a developer a 10-minute wait before they learn something trivial was wrong.
+
+### MCQ: Why is canary deployment described as finding problems that staging environments cannot?
+- [ ] Canary deployments run more test cases than staging
+- [x] Production traffic — real user behavior, real data shapes, real load patterns — is the one thing that can't be fully reproduced in a staging environment
+- [ ] Staging environments don't support automated rollback
+- [ ] Canary deployments use a different programming language for testing
+**Why:** A canary exposes new code to a small slice of genuine production traffic, catching the class of issues (edge cases, real-world load, unusual inputs) that synthetic staging traffic simply doesn't generate.
+
+### MCQ: In the five-step backward-compatible migration pattern (add column → dual-write → backfill → read-new → drop-old), why can code be rolled back safely at every step?
+- [ ] Because each step is automatically reversible by the database
+- [x] Because at every point, the current schema still supports both the old and new code — the schema itself was never in a state that only one version of the code could read
+- [ ] Because backfills always complete instantly
+- [ ] Because rollback only applies to the application code, never touches the database
+**Why:** This is the whole point of expand/contract — a single-step rename or destructive migration leaves no safe state to roll back to, while the staged approach keeps the schema compatible with both code versions throughout.
+
+### MCQ: Why should alerts be based on symptoms (like error rate) rather than causes (like CPU usage)?
+- [ ] Symptom-based alerts are technically easier to implement
+- [x] High CPU with no actual user impact isn't an incident — alerting on it anyway trains people to ignore pages, and symptoms are what users actually experience
+- [ ] Cause-based alerts require more expensive monitoring infrastructure
+- [ ] CPU metrics are inherently less accurate than error rates
+**Why:** CPU, memory, and similar resource metrics are diagnostic context useful *after* a symptom-based alert fires — they're not reliable signals of user-facing problems on their own.
+
+### MCQ: Why can a service with a "fine" average latency still be delivering a terrible experience to some users?
+- [ ] Averages are always miscalculated in monitoring tools
+- [x] An average can hide a bimodal distribution — e.g. 90% of requests at 50ms and 10% at 5 seconds still produces a deceptively low average
+- [ ] This scenario is actually impossible in practice
+- [ ] It only happens when sample sizes are very small
+**Why:** p99 (or other high percentiles) directly measures what the unhappiest fraction of users experience, which an average can completely obscure — this is why the chapter insists on percentiles over averages.
+
+### MCQ: What does an "error budget" actually let a team decide, according to this chapter?
+- [ ] Which cloud provider to use
+- [x] Whether to keep shipping risky features (budget remaining) or stop and focus on reliability (budget exhausted) — turning a subjective argument into a number
+- [ ] How many engineers to hire
+- [ ] Which programming language to use for a new service
+**Why:** The error budget converts "should we prioritize velocity or stability right now" from a debate into a concrete, checkable number derived directly from the SLO.
+
+### MCQ: What's the key difference between "monitoring" and "observability" as defined in this chapter?
+- [ ] They're synonyms with no meaningful difference
+- [x] Monitoring checks known things you decided to measure in advance; observability lets you ask new, unanticipated questions of a running system without shipping new code
+- [ ] Observability only applies to distributed systems, monitoring only to monoliths
+- [ ] Monitoring uses logs; observability uses only metrics
+**Why:** The practical test given is whether you can answer an unanticipated question during a live incident without deploying a code change — that capability requires high-cardinality data (structured logs, traces), not just pre-aggregated metrics.
+
+### MCQ: Why does multi-tenant observability specifically require tagging telemetry with tenant?
+- [ ] Tenant tagging is required by most compliance frameworks
+- [x] "The system is slow" is undiagnosable in a multi-tenant platform without the ability to slice by customer — "it's slow for one tenant" is a common real incident shape that aggregate metrics hide
+- [ ] It reduces the total volume of logs generated
+- [ ] It's only relevant for billing purposes, not operations
+**Why:** Being able to filter by tenant (rather than grep through everything) is the difference between diagnosing a single-customer incident in minutes versus hours.
+
+### MCQ: Why does the chapter caution against running PM2 inside a container managed by an orchestrator (Kubernetes, ECS)?
+- [ ] PM2 doesn't work at all inside containers
+- [x] It creates two supervisors — PM2 can keep restarting a broken process forever, so the container never actually exits, and the orchestrator never detects it as unhealthy
+- [ ] PM2 requires root access, which containers disallow
+- [ ] Containers don't support Node.js process managers of any kind
+**Why:** The orchestrator already handles supervision and restart at the container level; adding PM2's own restart loop inside can mask failures that should surface to the orchestrator's health checks.
 
 ---
 

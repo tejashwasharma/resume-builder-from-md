@@ -11,6 +11,31 @@ resolve here should be updated — strike it out and note the resolution.
 
 ---
 
+## In brief
+
+- Distributed-systems vocabulary is the biggest gap: the resume claims
+  billions of requests, a service split, Redis caching, gRPC — but nothing
+  proves you can talk consistency, partitioning, or failure modes unprompted.
+- The Go migration claim (design 2) invites three questions in order — why
+  Go, how you migrated without an outage, and how much of the 65x speedup was
+  the language versus the Rego/Redis redesign. Credit the redesign, not Go.
+- "~2–3B daily requests" is the headline number — be precise about what you
+  owned inside that scale (the auth layer, not the whole platform) and know
+  your RPS and peak-to-average ratio cold.
+- "Led RBAC 0 to 1" and "led 5+ developers" are attribution-sensitive claims:
+  rehearse team size, your specific surface, and one decision you got wrong.
+- You're not currently employed (Contentstack ended Aug 2026) — have a short,
+  forward-facing answer ready and stop there.
+- "13s to under 200ms" needs the missing middle: what the 13 seconds was
+  actually doing, and how you found it.
+- "2–3x more PRs" from AI adoption invites a quality challenge — pair it with
+  the coverage number (75%→85%+) every time you say it.
+- Four Google-specific exposures (Go-vs-Node fit, "security software" framing,
+  the 0→1 culture story, design at 10× current scale) apply only if you're
+  interviewing there — see the Google-specific section below.
+
+---
+
 ## 1. No distributed-systems vocabulary, despite claiming distributed scale
 
 **The gap.** Your resume claims ~2–3B daily requests, a monolith split into 3

@@ -5,6 +5,45 @@ service is for and the one or two gotchas per thing.
 
 ---
 
+## In brief
+
+- **Prefer IAM roles over IAM users for anything programmatic** — a user's
+  long-lived access keys leak (git, logs, laptops) and work until someone
+  notices; a role's temporary credentials expire on their own, so the
+  exposure window is small even if they escape. IAM policy evaluation is
+  the same shape as any policy engine: explicit deny beats explicit allow,
+  default is deny.
+- **Lambda's constraints are what decide the choice, not vibes**: cold
+  starts (bad on a latency-sensitive path), a 15-minute execution limit
+  (rules out long jobs), and genuinely awkward connection management
+  (thousands of concurrent invocations can exhaust a database's connection
+  limit — RDS Proxy exists specifically for this). Cost inverts at volume:
+  cheap idle, can exceed a plain server under sustained high load.
+- **CloudFront's cache hit rate is the number that matters** — it
+  determines both origin load and egress cost. Including a header or
+  cookie that varies per user in the cache key means every request misses,
+  producing a CDN that costs money and caches nothing. Since invalidation
+  is slow and rate-limited, versioned URLs are the standard practice
+  instead of purging.
+- **DNS is a coarse, slow load balancer** — Route 53 weighted routing
+  shifts traffic between stacks, but clients cache responses for the TTL,
+  so you cannot pull traffic back instantly. A canary needs a load
+  balancer or service mesh doing the split; DNS is for region-level or
+  whole-stack moves.
+- **Containers are not VMs** — they share the host kernel and isolate via
+  namespaces and cgroups, which is why they start in milliseconds where a
+  VM takes tens of seconds. Multi-stage Docker builds keep build tools and
+  source code out of the production image; layer ordering (install deps
+  before copying source) is what makes a code change not reinstall every
+  dependency.
+- **Secrets never belong in an image or a build-time environment
+  variable** — anything in an image layer is readable by anyone who can
+  pull it, and layer history persists even after a later layer deletes the
+  file. The pattern is the same as IAM roles: short-lived credentials
+  fetched at runtime, not long-lived secrets distributed ahead of time.
+
+---
+
 ## AWS, the services on your resume
 
 ### EC2
@@ -390,6 +429,80 @@ deny-by-default.
 - **No mention of cold starts** when advocating Lambda for user-facing traffic.
 - **Secrets in the image** or baked into build-time environment variables.
 - **Scaling on CPU** when CPU isn't the constraint.
+
+---
+
+## Quiz
+
+### MCQ: Why is an IAM role generally preferred over an IAM user for programmatic access?
+- [ ] Roles are free while users incur an hourly charge
+- [x] A role issues short-lived credentials that expire on their own, while a user's long-lived access keys work indefinitely until someone notices they leaked and rotates them
+- [ ] Users can't be granted the same permissions as roles
+- [ ] Roles don't require any policy to be attached
+**Why:** Long-lived keys leak into git, logs, and laptop backups; a role's temporary credentials bound the exposure window even if they do escape.
+
+### MCQ: What does AWS IAM's policy evaluation order prioritize when multiple statements apply?
+- [ ] The most recently created policy always wins
+- [x] Explicit deny always beats explicit allow, and the default with no matching statement is deny
+- [ ] Explicit allow always overrides explicit deny
+- [ ] Policies are evaluated in alphabetical order by name
+**Why:** This is the same deny-by-default, deny-wins evaluation model used by policy engines generally — an explicit deny can never be overridden by an allow elsewhere.
+
+### MCQ: Why can thousands of concurrent Lambda invocations exhaust a database's connection limit in a way a traditional server wouldn't?
+- [ ] Lambda functions can't close database connections properly
+- [x] Each concurrent invocation runs in its own separate environment, so connection pooling across invocations doesn't work the way it does within one long-running server process
+- [ ] Databases have a hard limit of 100 total connections
+- [ ] Lambda doesn't support any database drivers
+**Why:** This is exactly the problem RDS Proxy exists to solve — pooling connections on the database's behalf across many independent, short-lived Lambda environments.
+
+### MCQ: Why does including a per-user cookie or header in the CloudFront cache key effectively disable caching for that content?
+- [ ] CloudFront doesn't support cookies at all
+- [x] CloudFront caches per unique key combination — if the key includes something that varies per user, every request produces a different key, so every request misses the cache
+- [ ] Cookies are stripped by CloudFront automatically
+- [ ] It only affects HTTPS traffic, not HTTP
+**Why:** This turns a CDN that should absorb most traffic into one that costs money while caching effectively nothing — only forward what genuinely varies the response.
+
+### MCQ: Why does this chapter recommend versioned URLs (e.g. `app.a3f9c1.js`) over cache invalidation for updating CDN content?
+- [ ] Versioned URLs are required by the CloudFront API
+- [x] CDN invalidation is slow and rate-limited; a versioned URL simply stops being requested once new content ships under a new URL, with no invalidation needed
+- [ ] Invalidation doesn't work for JavaScript files specifically
+- [ ] Versioned URLs are cheaper to store in S3
+**Why:** New content gets a new URL and old cached copies simply age out or stop being referenced — sidestepping the latency and rate limits of active invalidation entirely.
+
+### MCQ: Why is DNS (like Route 53 weighted routing) described as "a coarse, slow load balancer" rather than a substitute for a real load balancer?
+- [ ] DNS can only route to a single destination at a time
+- [x] Clients and resolvers cache DNS answers for the TTL, so traffic shifted via DNS can't be pulled back instantly — unsuitable for a fine-grained, fast canary rollout
+- [ ] DNS doesn't support percentage-based traffic splitting
+- [ ] Route 53 specifically doesn't support weighted routing
+**Why:** A load balancer or service mesh can adjust traffic split instantly; DNS-based routing is better suited to region-level or whole-stack moves where the caching delay is acceptable.
+
+### MCQ: Why do containers start in milliseconds while a VM typically takes tens of seconds?
+- [ ] Containers use a more efficient CPU architecture
+- [x] Containers share the host's kernel and isolate using namespaces and cgroups, rather than booting an entire separate operating system like a VM does
+- [ ] Containers don't actually run any operating system code
+- [ ] VMs always run on slower physical hardware
+**Why:** This is the core structural difference — "containers are lightweight VMs" understates it; they don't boot a kernel at all, they share the host's.
+
+### MCQ: Why does Docker layer ordering matter — specifically, copying `package.json` and installing dependencies before copying the rest of the source code?
+- [ ] It's required by Docker's build syntax
+- [x] Docker caches each layer; if the dependency-install layer comes before the source-copy layer, changing only source code doesn't invalidate (and re-run) the slower dependency installation
+- [ ] It reduces the final image size
+- [ ] It's only relevant for multi-stage builds
+**Why:** Putting the slow, stable step (installing dependencies) before the frequently-changing step (copying source) means most code changes only re-run the fast, changed layers.
+
+### MCQ: Why is a multi-stage Docker build considered important for a production image?
+- [ ] It's the only way to use a specific base image version
+- [x] It lets you build with a full toolchain in one stage, then copy only the built artifact into a slim final image — keeping build tools, dev dependencies, and source code out of production
+- [ ] It automatically encrypts the final image
+- [ ] It's required for images larger than 1GB
+**Why:** Shipping compilers and source code in a production image increases both size (slower deploys) and attack surface — the final stage should contain only what's needed to run the app.
+
+### MCQ: Why is baking a secret into a container image or a build-time environment variable considered unsafe, even if a later build step removes it?
+- [ ] Docker doesn't support environment variables at build time
+- [x] Anything written into an image layer is readable by anyone who can pull the image, and image layer history persists even after a subsequent layer deletes the file
+- [ ] Build-time variables are always logged to CI output automatically
+- [ ] It only matters for public container registries
+**Why:** Docker's layered filesystem preserves each layer's changes independently — deleting a file in a later layer doesn't remove it from an earlier layer that anyone with image access can still inspect.
 
 ---
 

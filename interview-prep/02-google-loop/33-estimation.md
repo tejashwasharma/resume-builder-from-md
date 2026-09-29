@@ -8,6 +8,37 @@ cache size on a whiteboard without hesitating.
 
 ---
 
+## In brief
+
+- **The one shortcut worth memorizing**: divide daily requests by 100,000
+  (since a day ≈ 10⁵ seconds) to get average RPS, error under 15%. Apply a
+  2-3x peak multiplier on top.
+- **State the number's implication, not just the number** — "30k RPS, so
+  this won't fit on one database, we need caching and probably read-path
+  sharding" is worth ten times the bare figure. A senior candidate
+  estimates before being asked, in the first five minutes.
+- **The read/write split is usually the most consequential number in the
+  whole design** — at 2-3B daily requests for an auth layer (~30k RPS
+  average), a 1000:1 read/write ratio means the write path is trivial and
+  can stay strongly consistent, while the read path is the entire
+  engineering problem, justifying aggressive caching and read replicas.
+- **The hot working set is often small even when the request rate is
+  huge** — 1M active sessions at ~1KB each is ~1GB, comfortably in memory
+  on one Redis node. Auth data is tiny compared to content; it's the *rate*
+  that's large, not the data — which is exactly why caching pays off so
+  dramatically there.
+- **Round aggressively and sanity-check** — 86,400 → 100,000, 1.3M → 1M.
+  Precision wastes the interviewer's time; if you compute 50M RPS for a
+  mid-size system, you've slipped a decimal, and catching that in the room
+  matters more than the arithmetic itself.
+- **Retention policy is the lever for audit-log storage, not the storage
+  technology** — logging every request (2.5B/day) versus logging only
+  denials (0.1% of traffic) is the difference between a 450TB/year system
+  and a manageable 450GB/year one; deciding what's worth logging is the
+  actual design decision.
+
+---
+
 ## The numbers to memorise
 
 **Time:**
@@ -281,6 +312,80 @@ design, because it directly determines origin load and cost.
 - **Giving the number without its implication.** The point is what it forces.
 - **No read/write split.** Usually the most design-relevant figure.
 - **Not sanity-checking.** A slipped decimal produces absurd designs.
+
+---
+
+## Quiz
+
+### MCQ: What's the fastest way to convert "daily requests" into average requests per second?
+- [ ] Divide by 24
+- [x] Divide by 100,000 (since a day is approximately 10⁵ seconds), with under 15% error
+- [ ] Multiply by 3
+- [ ] Divide by 1,000,000
+**Why:** 86,400 seconds in a day rounds cleanly to 10⁵, making "daily requests ÷ 100,000" the standard mental-math shortcut for average RPS.
+
+### MCQ: Why is stating the *implication* of an estimate considered more valuable than the number itself?
+- [ ] Interviewers don't actually check the arithmetic
+- [x] "30k RPS, so this won't fit on one database and needs caching" demonstrates design reasoning; the bare number alone shows only that you can do arithmetic
+- [ ] Implications are required by the interview rubric
+- [ ] Numbers without implications are considered incorrect
+**Why:** The estimation exercise exists to test whether you can reason about scale and its consequences, not whether you can compute a precise figure.
+
+### MCQ: For a system doing 2.5 billion requests/day with a 1000:1 read/write ratio, roughly how does the load split?
+- [ ] Reads and writes are roughly equal at ~15,000 RPS each
+- [x] About 30,000 RPS of reads and about 30 RPS of writes
+- [ ] About 30 RPS of reads and 30,000 RPS of writes
+- [ ] All traffic is reads; there are no writes
+**Why:** At ~30,000 RPS average total traffic, a 1000:1 read/write split puts nearly all of it on the read side — this asymmetry is what justifies aggressive caching and stateless validation on reads while writes stay simple and strongly consistent.
+
+### MCQ: Why does a heavily-cached auth system's "hot working set" often turn out to be surprisingly small?
+- [ ] Auth systems don't actually need much data per user
+- [x] Even at very high request rates, the actual data (e.g. 1M sessions × 1KB) can total only ~1GB — it's the request *rate* that's large, not the volume of data itself
+- [ ] Redis automatically compresses session data
+- [ ] Most requests are for the same single session
+**Why:** This is the insight behind why caching auth decisions is so effective — a small, memory-resident working set can absorb an enormous request rate at very low latency.
+
+### MCQ: Why should estimation numbers be rounded aggressively (e.g. 86,400 → 100,000) rather than computed precisely?
+- [ ] Precise numbers are considered dishonest
+- [x] The goal is establishing the correct order of magnitude for design decisions, not precision — computing exact figures wastes time that should go toward reasoning
+- [ ] Calculators aren't allowed in system design interviews
+- [ ] Rounding always produces more accurate results
+**Why:** Whether the true answer is 28,935 or 30,000 RPS makes no difference to whether you need sharding — the order of magnitude is what actually drives architectural decisions.
+
+### MCQ: If your back-of-envelope math produces something like "50 million RPS" for a mid-size consumer app, what should that trigger?
+- [ ] Immediately designing for that scale
+- [x] A sanity check — that figure is almost certainly the result of a slipped decimal or a wrong unit conversion
+- [ ] Assuming the interviewer gave inflated numbers
+- [ ] Switching to a completely different estimation method
+**Why:** Sanity-checking your own arithmetic against intuition (is this plausible for the stated user count?) catches errors before they propagate into an absurd design.
+
+### MCQ: Why is "retention policy" described as the real lever for audit-log storage cost, rather than the choice of storage technology?
+- [ ] Storage technology choices don't affect cost at all
+- [x] Logging every request (2.5B/day) versus logging only denials (a small fraction of traffic) is the difference between a ~450TB/year system and a ~450GB/year one — deciding what's worth logging dominates the cost equation
+- [ ] All storage technologies cost the same per byte
+- [ ] Retention policy only affects compliance, not cost
+**Why:** The order-of-magnitude difference between "log everything" and "log what's actually needed" dwarfs any storage-engine optimization — the design decision that matters most is what gets logged at all.
+
+### MCQ: What should you do when an interviewer doesn't give you specific scale numbers for a design?
+- [ ] Refuse to proceed until numbers are provided
+- [x] State a reasonable assumption explicitly (e.g. "I'll assume 10M DAU") so the design has stated constraints that can be corrected
+- [ ] Design without any numbers at all
+- [ ] Ask to skip the estimation phase entirely
+**Why:** A stated assumption can be checked and corrected by the interviewer; designing with no numbers means designing without any real constraints at all.
+
+### MCQ: A photo-sharing estimate produces 66 PB/year of storage. What does that figure alone immediately tell you about the design?
+- [ ] The exact number of servers needed
+- [x] This is fundamentally an object-storage problem with lifecycle tiering, not something a traditional database can handle
+- [ ] The application needs to switch to a NoSQL database
+- [ ] The CDN is unnecessary at this scale
+**Why:** An estimate's value is in what it forces architecturally — a PB-scale storage figure rules out relational databases as the storage layer and points directly at object storage with tiering.
+
+### MCQ: In a storage or bandwidth estimate, why does read/write ratio matter as much as the total request volume?
+- [ ] It doesn't — total volume is what determines architecture
+- [x] The same total traffic can demand wildly different designs depending on whether it's read-heavy (favoring caching, read replicas) or write-heavy (favoring sharding, strong consistency on the write path)
+- [ ] Read/write ratio only matters for database selection, not overall architecture
+- [ ] Write-heavy and read-heavy systems always need the same caching strategy
+**Why:** A 1000:1 read-heavy system and a balanced 1:1 system at the same total RPS lead to very different architectural priorities — which is why the ratio, not just the raw number, drives design.
 
 ---
 

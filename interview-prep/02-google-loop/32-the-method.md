@@ -13,6 +13,37 @@ This chapter is the structure to follow.
 
 ---
 
+## In brief
+
+- **The round tests how you work through a problem, not what you know** —
+  strong engineers fail by knowing everything and structuring nothing,
+  talking for 45 minutes in a way the interviewer can't follow.
+- **The L5 bar is about who's driving the conversation**, not extra
+  knowledge: setting the agenda unprompted, stating trade-offs (not just
+  naming a technology), designing the failure path alongside the happy
+  path, and bringing SLOs/rollout/on-call in without being asked.
+- **The six-part timeline**: requirements (never skip — functional scope
+  narrowed, non-functional numbers stated explicitly) → estimation (order
+  of magnitude, not precision) → API and data model (driven by access
+  patterns, which choose the database far more than entities do) →
+  high-level design (deliberately simple, walk one request end to end) →
+  deep dive (where most marks are — offer the hardest part if not
+  steered) → bottlenecks and wrap.
+- **State assumptions explicitly rather than stalling on missing
+  information** — "you haven't given me a scale, so I'll assume 10M daily
+  actives, and flag where that matters" turns silence into a constraint
+  instead of a blocker.
+- **Volunteering your own design's weaknesses is a stronger signal than
+  defending it** — naming what breaks at 10x traffic and what you traded
+  away shows judgment, not salesmanship.
+- **When pushed on a flaw, understand the objection before responding** —
+  changing your design on real evidence beats defending a broken one, and
+  reframing a disagreement as a checkable assumption ("it works if writes
+  stay under N — is that wrong?") is stronger than either caving or
+  stonewalling.
+
+---
+
 ## What is actually being assessed
 
 Not whether you produce "the right architecture" — there isn't one. The
@@ -267,6 +298,81 @@ my own design's weaknesses tends to land better than defending it.
    this question is very often about exactly that.
 
    </details>
+
+---
+
+## Quiz
+
+### MCQ: What is the design round primarily assessing, according to this chapter?
+- [ ] Whether you produce the objectively correct architecture
+- [x] How you work through an ambiguous problem — clarifying, justifying trade-offs, quantifying, and communicating throughout
+- [ ] How many system design patterns you can name
+- [ ] How fast you can draw the final diagram
+**Why:** There isn't one "right architecture" — strong engineers can still fail by knowing everything but structuring and communicating nothing.
+
+### MCQ: What primarily distinguishes an L5 (senior) pass from an L4 (mid-level) pass in this round?
+- [ ] Knowing more specific technology names
+- [x] Who is driving the conversation — setting the agenda, stating trade-offs unprompted, and designing the failure path alongside the happy path
+- [ ] Drawing the diagram faster
+- [ ] Avoiding any discussion of what could go wrong
+**Why:** Both levels might "know" the same facts — the senior candidate proactively brings in estimation, trade-offs, failure modes, and operational concerns without being asked.
+
+### MCQ: In the six-part timeline, why does "requirements" come first and get explicitly called out as something to never skip?
+- [ ] It's required by Google's official interview rubric
+- [x] Diving into boxes-and-arrows without clarifying scope and numbers is called the single most common and costly failure mode
+- [ ] It's the longest phase of the interview
+- [ ] Requirements gathering is the only phase that gets scored
+**Why:** Designing without stated numbers or scope means designing without constraints — everything downstream (data model, estimation, architecture) depends on this being established first.
+
+### MCQ: Why does the chapter say access patterns "choose the datastore" more than the entities do?
+- [ ] Entities are irrelevant to database selection
+- [x] How data will actually be read and written (query shape, frequency, consistency needs) determines whether you need a relational store, a key-value store, a search index, etc. — not just what the data looks like
+- [ ] All datastores support the same access patterns equally
+- [ ] This only applies to NoSQL databases
+**Why:** Two systems with identical entities can need completely different databases depending on whether the dominant pattern is point lookups, range scans, or full-text search.
+
+### MCQ: When an interviewer gives you no numbers and stays silent, what's the recommended response?
+- [ ] Wait for them to provide the missing information
+- [x] State a reasonable assumption explicitly and proceed, flagging where that assumption matters
+- [ ] Ask if the interview can be rescheduled
+- [ ] Design a generic system with no specific scale in mind
+**Why:** Converting missing information into a stated, explicit constraint ("I'll assume 10M daily actives") keeps the design moving and shows you can drive — silence is often deliberately part of the test.
+
+### MCQ: Why is "volunteering the weaknesses of your own design" considered a strong signal rather than a risk?
+- [ ] It shortens the interview
+- [x] It demonstrates judgment and self-awareness rather than salesmanship — a senior engineer is expected to know what they traded away
+- [ ] It's required to reach the estimation phase
+- [ ] Interviewers penalize candidates who don't find any flaws
+**Why:** Naming what breaks at 10x traffic and what was traded away shows the same critical thinking that would be applied to a real production system, not just optimism about the design presented.
+
+### MCQ: The interviewer says your design won't work. What's the recommended first move?
+- [ ] Immediately abandon the design and start over
+- [x] Understand the objection before responding — ask what specifically breaks, since it could be a real flaw or a test of whether you'll cave under pressure
+- [ ] Defend the original design without further discussion
+- [ ] Ask the interviewer to suggest the correct design instead
+**Why:** You can't tell whether the pushback is a genuine flaw or a pressure test until you understand it — responding to a misunderstood objection risks either caving unnecessarily or missing a real problem.
+
+### MCQ: What should you do if, after understanding the pushback, you still believe your design is correct?
+- [ ] Stop discussing it and move to a different topic
+- [x] Explain the reasoning and the assumption the design rests on, reframing it as a checkable fact ("it works if writes stay under N — is that assumption wrong?")
+- [ ] Simply repeat the original explanation more emphatically
+- [ ] Agree with the interviewer regardless, to avoid conflict
+**Why:** This turns a potential standoff into a factual question that can actually be resolved, rather than a battle of who's more persistent.
+
+### MCQ: Why is "over-engineering" (e.g. proposing Kafka and Kubernetes for 100 requests/second) listed as a failure mode?
+- [ ] Kafka and Kubernetes are never appropriate in interviews
+- [x] It signals reaching for impressive-sounding technology rather than reasoning from the actual scale and bottleneck of the problem
+- [ ] These technologies are too difficult to explain in 45 minutes
+- [ ] Interviewers have a fixed list of banned technologies
+- [ ] It shows a lack of knowledge about these specific tools
+**Why:** Naming heavyweight infrastructure without justifying it against the actual numbers is name-dropping without trade-offs — exactly the pattern that reads as memorized rather than reasoned.
+
+### MCQ: Why does the chapter recommend narrowing scope ("should search be included?") rather than accepting the full prompt at face value?
+- [ ] It reduces the total time available for the interview
+- [x] Interviewers usually want a narrower system than the prompt implies, and proactively narrowing scope is itself a positive signal of judgment
+- [ ] Broad prompts are always interviewer mistakes
+- [ ] Narrow designs are inherently more scalable
+**Why:** "Design Twitter" is a week of real engineering work — explicitly agreeing to cover posting and a timeline while deferring search, DMs, and trending shows deliberate scoping, not evasion.
 
 ---
 

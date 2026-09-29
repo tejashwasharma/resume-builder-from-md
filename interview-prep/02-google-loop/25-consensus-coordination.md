@@ -5,6 +5,39 @@ distributed-lock section — and the Redlock argument — is fair game.
 
 ---
 
+## In brief
+
+- **Consensus means getting nodes to agree on a value despite failures.**
+  FLP impossibility is the theoretical bound: in a fully async system with
+  even one faulty process, no deterministic algorithm is *guaranteed* to
+  reach consensus — real systems (Raft) sidestep it with timeouts and
+  randomized leader election, which work promptly in practice without a
+  formal guarantee.
+- **Raft's leader election relies on randomized timeouts specifically to
+  break split votes** — if every follower waited the same fixed time, split
+  votes would repeat forever. A candidate needs a **majority** to become
+  leader, which is also why any two majorities of the same cluster must
+  overlap — two leaders in the same term is structurally impossible.
+- **Consensus clusters are sized odd (3, 5) because an even node adds cost
+  with zero extra fault tolerance** — fault tolerance is `floor((N-1)/2)`,
+  so 4 nodes tolerate exactly as many failures as 3, for 33% more cost.
+- **A Redis lock (`SET NX PX` + conditional Lua release) buys efficiency —
+  avoiding duplicate work — never correctness.** A paused holder (GC, VM
+  suspension) can't know its TTL expired; it resumes believing it still
+  holds the lock while another client legitimately acquired it. This is
+  the core of Kleppmann's Redlock critique.
+- **Fencing tokens are the actual fix, and the burden falls on storage, not
+  the lock**: the lock service hands out a monotonically increasing number,
+  every write carries it, and storage rejects any write whose token is
+  lower than the highest it has already seen. If the datastore can't check
+  a token, the lock cannot give you safety.
+- **The better engineering move is often to avoid needing a lock at all** —
+  make the operation idempotent, push atomicity into the datastore (a
+  conditional update, a unique constraint), or partition ownership so only
+  one worker ever touches a given key.
+
+---
+
 ## Foundations
 
 **Consensus** is getting nodes to agree on a value despite failures. It
@@ -454,6 +487,80 @@ the lock isn't load-bearing.
   there now.
 - **Reaching for a lock** where an idempotency key or a conditional update
   would remove the need.
+
+---
+
+## Quiz
+
+### MCQ: What does FLP impossibility say about consensus in a fully asynchronous system?
+- [ ] Consensus is impossible in any distributed system
+- [x] With even one faulty process, no deterministic algorithm can *guarantee* consensus terminates
+- [ ] Consensus requires at least 5 nodes
+- [ ] Only Byzantine failures make consensus impossible
+**Why:** Real systems like Raft sidestep this theoretical bound with timeouts and randomized leader election — not a formal guarantee of termination, but reliable in practice.
+
+### MCQ: In Raft, why is the election timeout randomized rather than fixed?
+- [ ] To save battery on mobile nodes
+- [x] A fixed timeout means all followers would time out simultaneously and repeatedly split the vote; randomization staggers candidates so one wins first
+- [ ] It's required by the TCP protocol
+- [ ] To make the leader election result unpredictable to attackers
+**Why:** Without randomization, equal wait times mean split votes would repeat forever — the randomized timeout is what actually resolves them.
+
+### MCQ: Why does winning a majority (not just a plurality) matter for Raft leader election?
+- [ ] Majorities are faster to compute
+- [x] Any two majorities of the same cluster must overlap in at least one node, making two conflicting leaders in the same term structurally impossible
+- [ ] It's an arbitrary convention with no functional purpose
+- [ ] Majority voting reduces network traffic
+**Why:** This overlap property is what guarantees at most one leader per term — it's the mathematical foundation of Raft's safety.
+
+### MCQ: Why do consensus clusters typically have an odd number of nodes (3 or 5) rather than even (4 or 6)?
+- [ ] Odd numbers are required by the Raft protocol specification
+- [x] Fault tolerance is floor((N-1)/2) — 4 nodes tolerate exactly as many failures as 3, so the extra node adds cost with no added resilience
+- [ ] Even numbers cause network hashing collisions
+- [ ] It's purely a historical convention with no technical reason
+**Why:** 3 nodes need 2 for a majority (tolerates 1 failure); 4 nodes need 3 (still tolerates only 1) — the even node is pure overhead.
+
+### MCQ: A client acquires a Redis lock with a 30-second TTL, then pauses for 40 seconds (e.g. a GC pause). What's the core danger?
+- [ ] The lock will simply refuse to expire during the pause
+- [x] The TTL expires, another client legitimately acquires the lock, and the first client resumes still believing it holds it — producing two writers
+- [ ] Redis will crash from the extended connection hold
+- [ ] The pause has no effect since Redis locks don't use TTLs
+**Why:** This is the core of Kleppmann's Redlock critique — a paused client cannot know time passed, so a lock with only a TTL cannot guarantee mutual exclusion under all conditions.
+
+### MCQ: Why must a Redis lock's release use a Lua script rather than `GET` then `DEL` as two separate commands?
+- [ ] Lua scripts run faster than individual commands
+- [x] Two separate round trips create a race window where another client's operation can run in between; a Lua script executes as one atomic, uninterruptible unit
+- [ ] `DEL` alone doesn't exist as a Redis command
+- [ ] Lua is required for TTL-based keys
+**Why:** The property being bought isn't speed, it's atomicity — nothing else can run on that Redis instance while the Lua script executes, closing the race where you might delete someone else's lock.
+
+### MCQ: What do fencing tokens actually fix that a correctly-released Redis lock alone cannot?
+- [ ] They make lock acquisition faster
+- [x] They stop a paused, stale holder from corrupting data even though it still believes it holds the lock — by having storage reject writes carrying an outdated token
+- [ ] They eliminate the need for a TTL on the lock
+- [ ] They prevent network partitions from occurring
+**Why:** Even a perfectly correct lock implementation can't stop a paused client from acting on stale beliefs — only the storage layer, checking that each write's token is the highest seen, can prevent the resulting corruption.
+
+### MCQ: Where does the responsibility for enforcing fencing-token safety actually live?
+- [ ] In the lock service itself
+- [x] In the storage layer — it must reject any write whose token is lower than the highest it has already accepted
+- [ ] In the client application's retry logic
+- [ ] In the network load balancer
+**Why:** If the datastore can't check a fencing token, the lock can only give you efficiency, never safety — the check has to be enforced where the actual mutation happens.
+
+### MCQ: When is a plain Redis lock (without fencing) actually sufficient?
+- [ ] Never — it's always unsafe to use
+- [x] When double-execution only wastes resources (efficiency) rather than corrupting data or double-charging a customer (correctness)
+- [ ] Only when running a single Redis instance, never a cluster
+- [ ] Only for read operations, never writes
+**Why:** The efficiency/correctness distinction is the whole answer — occasional duplicate work is a fine trade for a simple lock; anything where double-execution is unacceptable needs fencing or a consensus-backed lock.
+
+### MCQ: What's often a better engineering solution than reaching for a distributed lock at all?
+- [ ] Using a longer TTL to reduce contention
+- [x] Making the operation idempotent, or pushing atomicity into the datastore via a conditional update or unique constraint
+- [ ] Running the lock service on more powerful hardware
+- [ ] Always defaulting to a consensus-backed lock like etcd
+**Why:** If concurrent or duplicated execution converges to the same result, there's nothing left to protect — eliminating contention structurally beats mediating it with coordination.
 
 ---
 

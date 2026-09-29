@@ -16,6 +16,24 @@ blanks are filled with something true.
 
 ---
 
+## In brief
+
+- This round grades Leadership and Googleyness — two of the four hiring-
+  committee attributes — as seriously as the coding rounds, and it's the
+  first thing the committee reads for level.
+- STAR is the floor; credit comes from the dig afterward: what you personally
+  did, who else was involved, what you'd do differently, what happened after.
+- Both postings name Navigating Ambiguity, Cross-functional work, and
+  Mentoring specifically — have a concrete story for each, not just the
+  headline leadership story.
+- Every model answer here is a skeleton pointing at your real Contentstack
+  and BestPeers stories — nothing should be said in the room until the
+  `FILL IN` blanks are true, specific, and rehearsed.
+- Vague answers to the dig read as inflation even when the story is true;
+  precision about your actual surface is what separates L4 from L5 here.
+
+---
+
 ## What the round grades
 
 Google's public interview guidance names the attributes; the L5 signals are

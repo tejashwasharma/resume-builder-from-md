@@ -10,6 +10,23 @@ carry hard numbers, and any number on your resume is fair game.
 
 ---
 
+## In brief
+
+- Story 1 — built CI/CD pipelines that cut deploys from 2–3 hours to under
+  30 minutes and eliminated manual deploy errors. Know where the time
+  actually went before automation.
+- Story 2 — migrated AngularJS to React as a micro-frontend, incrementally
+  rather than as a rewrite. This is the strangler-pattern story; know why
+  incremental beat a big-bang rewrite.
+- Story 3 — full-stack delivery on two Sweden-based client platforms,
+  sustained 80%+ test coverage, ran biweekly client demos over a 19-month
+  engagement. Know how coverage stayed meaningful rather than becoming a
+  vanity number.
+- Framing for the whole era: this is a trajectory story, not a depth story —
+  agency work → product ownership → platform work at Contentstack.
+
+---
+
 ## Story 1 — CI/CD automation
 
 *Covers bullet 1.*

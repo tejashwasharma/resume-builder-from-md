@@ -18,6 +18,45 @@ one concrete example, and defend two follow-ups deep. Not an encyclopedia.
 
 ---
 
+## In brief
+
+- Every security conversation starts with a **five-minute threat model**:
+  assets, attacker models, trust boundaries, walk them with **STRIDE**, then
+  decide per finding to eliminate, mitigate, detect, or explicitly accept.
+  Saying this unprompted before drawing an architecture is a cheap senior
+  signal.
+- **Secure by design beats finding-and-fixing instances**: an instance fix
+  (parameterize this query) scales with the number of bugs; a class fix (an
+  API where untrusted strings structurally can't reach the query position)
+  scales with the number of *classes* — and there are far fewer classes than
+  bugs.
+- **SLSA grades how trustworthy a build is**, via signed *provenance*
+  ("this artifact came from this source, this commit, this builder") —
+  Level 3 means even a compromised project can't forge its own provenance.
+  **Sigstore** makes signing keyless (Fulcio issues short-lived certs bound
+  to an OIDC identity; Rekor logs every signature).
+- **Almost every cloud breach is a customer-side misconfiguration, not a
+  provider exploit** — public storage, over-privileged identities,
+  long-lived keys, open network exposure. The fix pattern is the same as
+  secure-by-design: make the dangerous state impossible (org policy
+  guardrails, workload identity instead of key files) before relying on
+  detect-and-remediate.
+- **Third-party/vendor risk is the SCIM lifecycle problem applied outward**:
+  you can't govern OAuth grants, SaaS-to-SaaS integrations, or vendor
+  accounts you haven't inventoried, and "what did this breached vendor have
+  access to?" needs an hour-scale answer, not a scramble.
+- **AI coding agents are a new IAM principal**: prompt injection, excessive
+  agency, and tool poisoning are all instances of an actor with too much
+  trust and too little scoping — the guardrails are least privilege,
+  short-lived credentials per task, and treating tool output as untrusted
+  data, never as instructions.
+- **Fail open vs. fail closed is a per-control cost comparison**, not a
+  universal rule: fail closed where allowing is irreversible or high-impact
+  (authorization, deploy-time verification); fail open with loud alerting
+  where blocking would be the worse incident (a fraud score on a read path).
+
+---
+
 ## Threat modelling — the five-minute version
 
 Every security conversation starts here, and interviewers notice whether
@@ -911,6 +950,87 @@ alternative.
 - **Overclaiming AI security.** "Our AI catches vulnerabilities" invites the
   question you can't answer. "It pattern-matches; humans threat-model" is
   the senior answer.
+
+---
+
+## Quiz
+
+### MCQ: In the five-minute threat-modelling shape, what comes right after identifying assets and attacker models?
+- [ ] Writing the incident response runbook
+- [x] Drawing the trust boundaries — every place data crosses from less-trusted to more-trusted
+- [ ] Choosing which programming language to use
+- [ ] Estimating the cost of a breach in dollars
+**Why:** Trust boundaries are where STRIDE gets applied next — each boundary is a place to ask "what if the thing on the left is lying?"
+
+### MCQ: What does STRIDE stand for?
+- [ ] Scope, Threat, Risk, Impact, Detection, Escalation
+- [x] Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege
+- [ ] Secrets, Trust, Review, Isolation, Defense, Encryption
+- [ ] Source, Test, Review, Integrate, Deploy, Evaluate
+**Why:** STRIDE is the standard checklist walked at every trust boundary during threat modelling to surface credible attack classes.
+
+### MCQ: What's the core difference between an "instance fix" and a "class fix" for a vulnerability?
+- [ ] Class fixes are always cheaper to implement immediately
+- [x] An instance fix corrects one occurrence of a bug; a class fix makes the entire vulnerable pattern inexpressible, so it scales with the number of vulnerability classes instead of the number of bugs
+- [ ] Instance fixes require code review; class fixes don't
+- [ ] There's no practical difference — both terms describe the same approach
+**Why:** A parameterized-query fix for one endpoint is an instance fix; an API where the query text can only be a compile-time constant makes SQL injection structurally impossible everywhere — that's the leverage of a class fix.
+
+### MCQ: In SLSA's Build track, what does Level 3 specifically add over Level 2?
+- [ ] Provenance simply exists for the first time
+- [x] The build runs on a hardened, isolated platform where the signing key is inaccessible to build steps — so even a compromised project can't forge its own provenance
+- [ ] The artifact is scanned for known CVEs
+- [ ] A human manually reviews every build
+**Why:** Level 2 gets you signed, tamper-evident provenance from a hosted builder; Level 3 protects against the build process itself being compromised and lying about what it built.
+
+### MCQ: In Sigstore's keyless-signing model, what plays the role of the "key"?
+- [ ] A long-lived private key stored in a hardware security module
+- [x] A short-lived certificate from Fulcio, bound to a verified OIDC identity
+- [ ] A shared secret distributed to all CI runners
+- [ ] The artifact's own SHA-256 hash
+**Why:** Instead of managing a long-lived private key that can leak, Fulcio issues a short-lived cert tied to who you are (a CI job, a person via OIDC) — Rekor then logs the signature for transparency.
+
+### MCQ: What's the primary reason "almost every cloud breach is on the customer side" of the shared-responsibility line?
+- [ ] Cloud providers don't patch their hypervisors
+- [x] Breaches are overwhelmingly misconfigurations the customer controls — public storage, over-privileged identities, long-lived keys, open network exposure — not exploits of the underlying infrastructure
+- [ ] Cloud providers don't offer encryption by default
+- [ ] Customers can't audit provider infrastructure at all
+**Why:** The provider secures the infrastructure; the customer secures what they configure and run — and configuration mistakes, not infrastructure exploits, are what actually cause most incidents.
+
+### MCQ: Why is workload identity considered safer than long-lived service-account keys?
+- [ ] It's faster to authenticate with
+- [x] There's no key file that can leak — the workload proves identity via the platform and receives a short-lived token instead
+- [ ] It doesn't require any authentication at all
+- [ ] It only works for read-only operations
+**Why:** A key file is a bearer credential that ends up in repos, laptops, and logs; workload identity replaces "possession of a secret" with "provable identity plus a short-lived token," the same idea behind Sigstore's keyless signing.
+
+### MCQ: An organization wants to know what third-party apps have access to its data. What's the foundational step before any control can be applied?
+- [ ] Rotating all API keys immediately
+- [x] Building an inventory of grants across the identity provider, every SaaS admin API, and vendor cloud service accounts
+- [ ] Requiring SOC 2 attestations from every vendor
+- [ ] Blocking all new OAuth app installs
+**Why:** You cannot govern what you haven't listed — scope minimization, access reviews, and incident response all depend on first having a complete inventory of who can access what.
+
+### MCQ: In the OWASP Top 10 for LLM Applications, what is "excessive agency"?
+- [ ] The model generating overly long responses
+- [x] An agent having more tools or permissions than the task actually needs, so a hijacked agent can cause more damage
+- [ ] A model refusing to answer legitimate questions
+- [ ] Training data containing biased content
+**Why:** The guardrail is least privilege per task with scoped, short-lived credentials — the same IAM principle applied to a new kind of principal (an AI agent) rather than a human or service.
+
+### MCQ: Why should a coding agent treat a tool's output (e.g. a fetched web page or file content) as untrusted?
+- [ ] Tool output is always malformed JSON
+- [x] Untrusted content can contain embedded instructions (prompt injection) that the model may follow as if they came from the user
+- [ ] Tool calls are rate-limited and results may be stale
+- [ ] It's a performance optimization, not a security measure
+**Why:** A model can't reliably distinguish "data to read" from "instructions to follow" — treating all tool output as data, not commands, is the core defense against prompt injection and tool poisoning.
+
+### MCQ: When deciding fail-open vs. fail-closed for a specific security control, what should drive the decision?
+- [ ] Always fail closed — it's the more secure default in every case
+- [x] Compare the cost of each failure mode for that specific control — fail closed where allowing is irreversible/high-impact, fail open (with alerting) where blocking would be a worse incident
+- [ ] Always fail open to preserve availability
+- [ ] Whichever is easier to implement in the current codebase
+**Why:** Authorization for a destructive action should fail closed; a fraud score on a read path might reasonably fail open with degraded mode and loud alerting — there's no universal answer, only a per-control cost comparison.
 
 ---
 

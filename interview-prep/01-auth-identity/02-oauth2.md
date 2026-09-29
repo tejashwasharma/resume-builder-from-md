@@ -10,6 +10,28 @@ PKCE: [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) ·
 
 ---
 
+## In brief
+
+- OAuth 2.0 is delegated *authorization*, not authentication — it issues
+  scoped, revocable access tokens to a client, and never authenticates the
+  user. "Login with Google" is OIDC layered on top, not raw OAuth.
+- Authorization Code + PKCE is the one flow to know cold: a front-channel
+  redirect returns a short-lived, single-use code; the back channel (server
+  to server) exchanges it for tokens using a verifier only the client holds.
+- PKCE defends against a stolen *code* being redeemed by someone other than
+  whoever started the flow. `state` is a separate defense, against CSRF —
+  you need both, and confusing them is a common interview slip.
+- Client type decides the flow: confidential clients can hold a secret;
+  public clients (SPA, mobile) cannot, which is why PKCE exists.
+- Refresh token rotation with reuse detection is the standard defense for
+  the long-lived credential: replaying an already-used refresh token revokes
+  the whole family, since the server can't tell who the attacker is.
+- OAuth 2.1 is still a draft, not a published RFC — know that precisely, and
+  know its substance (PKCE mandatory everywhere, no implicit grant, no
+  password grant, exact redirect matching, rotation required).
+
+---
+
 ## Foundations
 
 **OAuth 2.0 is a delegated authorization framework.** It lets a user grant an
@@ -352,6 +374,55 @@ that's where `oidc-provider` earns its place instead of hand-rolling
 
 ---
 
+## Workshop: Authorization Code without PKCE vs with PKCE
+
+**Without PKCE** (pre-2015, or a confidential-client-only design):
+
+```
+/authorize?client_id=...&redirect_uri=...&state=xyz
+                    │
+                    ▼ (code returned via browser redirect)
+POST /token  { code, client_id, client_secret }
+```
+
+The code alone, plus a static `client_secret`, redeems the token. On a public
+client (SPA, mobile) there is no secret to send — the secret would have to
+ship inside the app binary, where it's extractable, so it isn't really
+secret. Anyone who intercepts the code (a malicious app registering the same
+custom URL scheme, a referrer leak, a proxy log) and either has or doesn't
+need the secret can redeem it.
+
+**With PKCE:**
+
+```
+generate code_verifier (kept in memory, never sent yet)
+code_challenge = SHA256(code_verifier)
+
+/authorize?...&code_challenge=...&code_challenge_method=S256
+                    │
+                    ▼ (code returned via browser redirect — same as before)
+POST /token  { code, client_id, code_verifier }
+```
+
+The client proves it's the *same* party that started the flow by producing
+the one thing that was never transmitted until now — the verifier. A
+per-request secret replaces a static, shippable one.
+
+**The concrete attack PKCE closes:** two apps register the same custom URL
+scheme on a mobile OS; the OS delivers the `?code=...` redirect to both.
+Without PKCE, whichever app calls `/token` first (or has the shared secret)
+wins. With PKCE, only the app holding the matching verifier succeeds — the
+other's exchange fails with `invalid_grant`.
+
+**What PKCE does *not* replace:** `state`, which stops CSRF (an attacker
+injecting *their own* authorization into your session), and exact
+`redirect_uri` matching, which stops the code being redirected somewhere the
+attacker controls in the first place. All three are independent controls
+defending different steps of the same flow — a common interview trap is
+treating any one of them as sufficient on its own.
+
+---
+
 ## Interview Q&A
 
 ### Q: What problem does OAuth 2.0 solve?
@@ -600,6 +671,80 @@ same guarantee with stateless tokens.
 - **Confusing `state` and PKCE**, or claiming one replaces the other.
 - **"OAuth 2.1 is the current standard."** It's a draft. Precision here is
   cheap and signals you actually track the working group.
+
+---
+
+## Quiz
+
+### MCQ: What does OAuth 2.0 actually authenticate?
+- [ ] The user
+- [ ] The resource server
+- [x] Nothing — it's an authorization framework that issues tokens to a client
+- [ ] The redirect URI
+**Why:** OAuth issues scoped, revocable access to a client; authenticating the user is OIDC's job, layered on top.
+
+### MCQ: A confidential client is one that:
+- [ ] Uses HTTPS
+- [x] Can securely hold a secret, such as a backend server
+- [ ] Requires PKCE
+- [ ] Only supports client credentials
+**Why:** Confidential vs public is about whether the client can keep a secret; a backend server can, an SPA or mobile app cannot.
+
+### MCQ: In the Authorization Code flow, what travels over the front channel?
+- [ ] The access token
+- [ ] The client secret
+- [x] The authorization code, via a browser redirect
+- [ ] The code_verifier
+**Why:** The front channel is everything routed through the browser; only the code (short-lived, single-use, useless alone) appears there.
+
+### MCQ: What does PKCE actually defend against?
+- [ ] CSRF
+- [x] A stolen authorization code being redeemed by a party other than whoever started the flow
+- [ ] Token replay after expiry
+- [ ] An open redirect
+**Why:** PKCE binds the code to the party holding the code_verifier, which never left the client that generated it — a different attack from CSRF.
+
+### MCQ: What stops CSRF in the Authorization Code flow, if not PKCE?
+- [ ] The client_id
+- [ ] code_challenge_method=S256
+- [x] state, echoed back and checked against what the client sent
+- [ ] The redirect_uri
+**Why:** PKCE and state defend different attacks; state ties the callback to the session that initiated it.
+
+### MCQ: Why is `code_challenge_method=plain` considered useless?
+- [ ] It's not supported by any authorization server
+- [x] If the authorization request itself is observed, the challenge equals the verifier, so nothing is protected
+- [ ] It's slower than S256
+- [ ] It doesn't work with public clients
+**Why:** S256 hashes the verifier so observing the challenge doesn't reveal it; plain sends the verifier's plaintext equivalent, defeating the point.
+
+### MCQ: A refresh token is used, then the same (now-rotated) refresh token is presented again. What should the server do?
+- [ ] Issue a new access token as normal
+- [ ] Ignore the second request silently
+- [x] Revoke the entire token family — it can't tell which party is the attacker
+- [ ] Ask the client to retry with the newest token
+**Why:** Reuse of an already-rotated refresh token means either legitimate replay or theft; since the server can't distinguish, it revokes the whole chain.
+
+### MCQ: Why is the resource owner password grant removed in OAuth 2.1?
+- [ ] It's slower than authorization code
+- [x] The client handling the user's password defeats delegation and is incompatible with MFA and federation
+- [ ] It doesn't support refresh tokens
+- [ ] It requires a public client
+**Why:** Once the app has the password directly, OAuth's core promise — the app never sees the credential — is gone, and MFA/SSO can't be layered on top.
+
+### MCQ: An SPA needs to call an API on the user's behalf. Where should the access token be stored for the strongest protection against XSS?
+- [ ] localStorage
+- [ ] A regular cookie
+- [x] Not in the browser at all — a backend-for-frontend holds it, browser gets an httpOnly session cookie
+- [ ] sessionStorage
+**Why:** Any token reachable by JavaScript is reachable by an XSS payload; the BFF pattern removes the token from the browser entirely.
+
+### MCQ: A token minted for tenant A is presented against a tenant-B resource in a multi-tenant OAuth server. What should happen?
+- [x] The resource server rejects it — the token's tenant claim doesn't match the resource's tenant
+- [ ] It's allowed if the scopes match
+- [ ] It's allowed if the user belongs to both tenants
+- [ ] The authorization server re-issues a tenant-B token automatically
+**Why:** Every issued token carries the tenant it was minted for, and checking that against the resource's tenant belongs in shared middleware, not per-endpoint logic.
 
 ---
 
