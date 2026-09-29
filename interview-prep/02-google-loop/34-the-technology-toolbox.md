@@ -18,6 +18,44 @@ system reads far more than it writes and can tolerate a second of staleness."
 
 ---
 
+## In brief
+
+- **There is no best technology, only a fit.** "X is better" is a weaker
+  answer than "X, because this system reads far more than it writes and
+  can tolerate a second of staleness" — every choice in this chapter is
+  conditional, and the condition is the actual answer.
+- **Two questions resolve most communication choices**: does the caller
+  need the answer to continue (if no, it shouldn't be a blocking call —
+  the single highest-leverage instinct in system design), and how many
+  independent things care about the event (one → a queue, several or
+  "might replay" → a log).
+- **Default to the boring option and name the switch condition**: Postgres
+  unless writes outgrow one leader or the shape genuinely varies; Redis
+  cache-aside, or *no cache* if the database doesn't need the help; SQS
+  unless several independent consumers need the same events or you need
+  replay (then Kafka); a modular monolith unless teams are blocking each
+  other on deploys.
+- **"Exactly-once" doesn't exist for any of these async systems** — Kafka,
+  RabbitMQ, SQS, and a plain DB table are all at-least-once. Consumers must
+  be idempotent; a product claiming "exactly-once" means "at-least-once
+  plus deduplication."
+- **Persistent connections (WebSockets) are state held on a specific
+  server** — a load balancer can't freely rebalance, deploys drop
+  connections, and reaching a user's socket from any instance needs a
+  pub/sub layer. SSE is underrated and usually sufficient when the client
+  only needs to receive, not push.
+- **JWTs trade instant revocation for stateless validation** — a signed
+  token is valid until it expires regardless of what happens server-side,
+  so real systems need short lifetimes plus refresh tokens plus a denylist
+  for the emergency case, which reintroduces the lookup you were trying to
+  avoid. Say that trade-off out loud rather than pretending JWTs are free.
+- **Choosing for scale you don't have is a reliable interview tell** —
+  Cassandra at 500 writes/second, Kubernetes for six services, Kafka for
+  one consumer. Naming the boring, correctly-sized option is often the
+  stronger signal.
+
+---
+
 ## How the choices connect
 
 ```mermaid
@@ -478,6 +516,80 @@ justifies a separate service before any scaling argument does.
   would do.
 - **Forgetting the boring option.** "The database handles this load fine, so I
   wouldn't add a cache yet" is often the strongest thing you can say.
+
+---
+
+## Quiz
+
+### MCQ: What's the meta-rule this chapter states for every technology choice?
+- [ ] Always pick the newest, most scalable option available
+- [x] There is no best technology, only a fit — the condition under which one wins is the actual answer, not a bare preference
+- [ ] Always default to whatever is cheapest to operate
+- [ ] Pick whichever technology the interviewer mentions first
+**Why:** "X is better" is a weak answer; "X, because this system reads far more than it writes and can tolerate staleness" names the actual reasoning being tested.
+
+### MCQ: What's the first of the two questions that resolve most service-communication design choices?
+- [ ] Which programming language is the service written in?
+- [x] Does the caller need the answer to continue (i.e., should this be synchronous or asynchronous)?
+- [ ] How much does the technology cost to operate?
+- [ ] Is the service public-facing or internal?
+**Why:** If the caller doesn't need the result to proceed, it shouldn't be a blocking call — this is described as the single highest-leverage instinct in system design.
+
+### MCQ: When should you reach for Kafka instead of a simple queue like SQS, according to this chapter's default guidance?
+- [ ] Whenever throughput might someday be high
+- [x] When several independent consumers need the same events, or you need replay capability
+- [ ] Whenever more than one team is involved
+- [ ] By default, since Kafka is more capable than SQS
+**Why:** SQS/BullMQ is the starting default for one producer, one consumer, moderate volume — reaching for Kafka without a concrete need for fan-out or replay is over-engineering.
+
+### MCQ: What do Kafka, RabbitMQ, SQS, and a plain database table with a status column all have in common regarding delivery guarantees?
+- [ ] They all provide exactly-once delivery natively
+- [x] They are all at-least-once — duplicates can happen, and consumers must be idempotent
+- [ ] Only Kafka provides at-least-once; the others are exactly-once
+- [ ] None of them can guarantee any delivery at all
+**Why:** A product claiming "exactly-once" delivery really means at-least-once plus deduplication — idempotency is doing the real work regardless of which async system is used.
+
+### MCQ: Why does scaling WebSocket connections across multiple server instances require a pub/sub layer like Redis?
+- [ ] WebSockets don't support horizontal scaling at all
+- [x] A user's connection lives on exactly one specific server instance — reaching that user from any other instance requires a shared mechanism to route the message to the right place
+- [ ] Redis is required by the WebSocket protocol specification
+- [ ] It's only needed if using more than 1,000 connections
+**Why:** The persistent connection is state held on a specific server — any instance can publish to the pub/sub layer, but only the instance actually holding the socket can deliver the message.
+
+### MCQ: Why is SSE (Server-Sent Events) often preferred over WebSockets for notifications specifically?
+- [ ] SSE is a newer technology
+- [x] Notifications are one-directional by nature, and SSE is dramatically simpler operationally — it's plain HTTP, working with existing proxies and load balancers without the persistent-connection complexity WebSockets add
+- [ ] SSE supports more concurrent connections than WebSockets
+- [ ] WebSockets cannot deliver server-to-client messages
+**Why:** WebSockets earn their added complexity only when the client genuinely needs to push data too (chat, collaborative editing) — for one-way delivery, SSE gets the same result more simply.
+
+### MCQ: What's the fundamental trade-off JWTs make compared to server-side sessions?
+- [ ] JWTs are always faster to validate but less secure
+- [x] JWTs give stateless validation (no lookup) but make revocation genuinely hard — a signed token stays valid until it expires regardless of server-side state changes
+- [ ] Server-side sessions cannot scale across multiple servers
+- [ ] JWTs can only be used for public APIs, never internal services
+**Why:** The honest version of using JWTs includes naming the cost: short lifetimes plus refresh tokens plus a denylist for emergency revocation — which reintroduces a lookup on the path that was supposedly made stateless.
+
+### MCQ: According to the default guidance, when should a new product start with microservices instead of a monolith?
+- [ ] As soon as more than one engineer is working on it
+- [x] Rarely at the start — the chapter recommends a modular monolith first, splitting when the trigger is organizational (teams blocking each other on deploys, wildly different scaling needs) rather than aesthetic
+- [ ] Whenever the product might eventually need to scale
+- [ ] As soon as the codebase exceeds 10,000 lines
+**Why:** On a new product you don't yet know where the boundaries go — getting them wrong inside a monolith is a refactor; getting them wrong across services is a migration with data movement and coordinated deploys.
+
+### MCQ: What is specifically named as "a reliable signal you haven't operated it" in this chapter?
+- [ ] Choosing PostgreSQL as a default database
+- [x] Proposing Kubernetes for six services
+- [ ] Choosing REST for a public API
+- [ ] Defaulting to a modular monolith
+**Why:** Kubernetes is a distributed system you now also have to run — proposing it for a handful of services signals reaching for a technology by reputation rather than by actual operational need.
+
+### MCQ: Why is "the database handles this load fine, so I wouldn't add a cache yet" called one of the strongest things you can say in a design round?
+- [ ] Caches are never actually useful
+- [x] It shows the courage to name "no cache" as a real, deliberate answer rather than reflexively adding complexity — a cache is a second source of truth that adds invalidation bugs and stampede risk
+- [ ] It avoids having to discuss Redis at all
+- [ ] Interviewers always prefer simpler answers regardless of context
+**Why:** Adding Redis when the database doesn't need the help is complexity taken on for nothing — recognizing when NOT to add a component is as much a signal of judgment as knowing when to add one.
 
 ---
 

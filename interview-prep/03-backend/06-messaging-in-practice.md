@@ -12,6 +12,39 @@ blocking, how you get exactly-once, what you'd use on AWS instead.*
 
 ---
 
+## In brief
+
+- **Start from the consumption pattern, not the product name.** Several
+  independent consumers or replay needed → a log (Kafka). Work done once
+  with per-message retry/routing → a broker (RabbitMQ). On AWS wanting zero
+  ops → SQS/SNS. Each has a stated weakness: Kafka at per-message routing,
+  RabbitMQ at replay, SQS at ordering (unless FIFO) and replay.
+- **Kafka's exactly-once only covers Kafka-to-Kafka pipelines** —
+  transactions let a producer write to several partitions and commit
+  consumer offsets atomically, but the moment the side effect leaves Kafka
+  (a database write, an email), you're back to at-least-once plus an
+  idempotent handler.
+- **All three brokers solve the poison-message problem the same shape**:
+  move it aside after bounded retries and keep the stream/queue moving —
+  Kafka via a retry/DLQ topic plus committing past it, RabbitMQ via `nack`
+  to a dead-letter exchange (or `x-delivery-limit` automatically), SQS via
+  `maxReceiveCount` and a redrive policy.
+- **Auto-commit is a real trap**: it can commit a Kafka offset before your
+  handler actually finishes, so a crash silently skips messages — manual
+  commit after processing is what the at-least-once contract requires.
+- **Publishing directly after a DB write, with no outbox, has a real gap**:
+  a crash between the commit and the publish means the change happened but
+  no consumer ever hears about it. A transactional outbox closes that gap
+  by writing the event in the same transaction as the state change.
+- For a cross-service cache-invalidation design (role changes needing to
+  reach five services in order, per tenant), the pattern is: fan-out
+  (consumer group per service, or one SQS queue per service behind SNS),
+  ordering by a per-tenant key, and consumers bumping a version rather than
+  deleting individual keys — so a stale entry becomes unreachable at once
+  even under out-of-order or duplicate delivery.
+
+---
+
 ## The three, in one table
 
 | | **Kafka** | **RabbitMQ** | **SQS (+ SNS)** |
@@ -405,6 +438,81 @@ delayed, and the most sensitive actions bypass the cache.
    At-least-once again — so consumers stay idempotent.
 
    </details>
+
+---
+
+## Workshop: at-most-once vs at-least-once vs effectively-once
+
+Same consumer, same message, three different places to put the acknowledgement
+— and three genuinely different guarantees about what happens on a crash.
+
+**At-most-once — ack before processing:**
+
+```ts
+await consumer.run({
+  autoCommit: true,          // commits as soon as the message is polled,
+  eachMessage: async ({ message }) => {
+    await invalidatePolicyCache(JSON.parse(message.value!.toString()));
+    // Crash HERE, after the offset is already committed: this message is
+    // gone forever. Kafka will never redeliver it — the group thinks it's done.
+  },
+});
+```
+
+The failure mode: the offset is durable the instant it's polled, regardless of
+whether the handler ever runs to completion. A crash mid-handler, or the
+handler throwing, loses the message silently — nothing retries it, nothing
+alerts on it.
+
+**At-least-once — ack after processing:**
+
+```ts
+await consumer.run({
+  autoCommit: false,
+  eachMessage: async ({ topic, partition, message }) => {
+    await invalidatePolicyCache(JSON.parse(message.value!.toString()));
+    // Crash HERE, after the work but before the commit below: on restart,
+    // the group resumes from the LAST COMMITTED offset and redelivers this
+    // message. invalidatePolicyCache() runs a second time.
+    await consumer.commitOffsets([{ topic, partition,
+      offset: (BigInt(message.offset) + 1n).toString() }]);
+  },
+});
+```
+
+The failure mode moves from *loss* to *duplication* — strictly the safer
+direction for almost everything, but the handler now has to tolerate being
+called twice for the same message.
+
+**Effectively-once — at-least-once plus a dedupe check:**
+
+```ts
+await consumer.run({
+  autoCommit: false,
+  eachMessage: async ({ topic, partition, message }) => {
+    const id = message.headers?.eventId?.toString()!;
+    const first = await redis.set(`seen:${id}`, '1', 'EX', 86_400, 'NX');
+    if (first) {
+      // Only the first delivery of this event id actually runs the effect.
+      // A redelivered duplicate finds `first` false and skips straight
+      // to committing — safe to receive twice, applied once.
+      await invalidatePolicyCache(JSON.parse(message.value!.toString()));
+    }
+    await consumer.commitOffsets([{ topic, partition,
+      offset: (BigInt(message.offset) + 1n).toString() }]);
+  },
+});
+```
+
+**What to say out loud:** there is no configuration that gives you
+exactly-once delivery — the wire-level guarantee is always at-most-once or
+at-least-once, full stop. "Effectively-once" is not a fourth delivery mode;
+it's at-least-once delivery **plus an idempotent handler**, and the dedupe
+check above is exactly that idempotency, implemented as a side table. The
+same shape applies identically to RabbitMQ (`ack` after processing, a Redis
+`SET NX` keyed by a message id) and SQS (`DeleteMessage` after processing,
+dedupe keyed by `MessageId` or an application-level event id) — the broker
+changes, the three-way trade does not.
 
 ---
 

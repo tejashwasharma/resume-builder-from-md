@@ -5,6 +5,40 @@ fair game, and this one has a trap built into it.
 
 ---
 
+## In brief
+
+- **Coverage is a floor, not a target** — it tells you what's definitely
+  not tested, nothing about whether what's covered is tested well. A test
+  that executes every line without asserting anything gets 100% coverage
+  and catches nothing. Used as a target, people write assertion-free tests
+  to move the number.
+- **Mutation testing measures what coverage only gestures at**: it changes
+  the code deliberately (flip `>` to `>=`) and checks whether tests fail —
+  if they don't, that line executes without being actually verified.
+- **Test behaviour, not implementation, and mock at boundaries, not inside
+  your own code.** A test asserting internal structure breaks on every
+  refactor, teaching the team tests are a tax; mocking three of your own
+  classes just verifies you called your mocks in the expected order, which
+  passes while the real system is broken.
+- **A flaky test is worse than no test** — it trains the team to re-run
+  the pipeline instead of reading it, and once that habit forms, a real
+  failure gets re-run too. Quarantine flakes out of the gate immediately
+  rather than leaving them to erode the suite's authority.
+- **Sustaining a coverage number across releases requires enforcement in
+  the pipeline, not periodic measurement** — a threshold that fails the
+  build (applied to changed files, not the whole repo, and as a
+  never-decreases ratchet rather than a hard "85% or fail" gate) is what
+  makes the number a floor instead of a report.
+- **In authorization testing specifically, negative cases matter more than
+  positive ones** — auth bugs are almost always wrongly-*permitted*, not
+  wrongly-denied, and fail silently. A decision table (role, permission,
+  resource, tenant → expected outcome) plus a dedicated cross-tenant suite
+  are the concrete tools; shadow comparison in production is the
+  highest-value technique for a migration, catching cases nobody thought
+  to write a test for.
+
+---
+
 ## The pyramid, and what it's really saying
 
 ```
@@ -327,6 +361,80 @@ what I'd want in place before switching a permission system over.
 - **Mocking everything.** Tests the mocks.
 - **Only testing happy paths** — especially in authorization.
 - **Claiming strict TDD always.** Rarely true, and interviewers can tell.
+
+---
+
+## Quiz
+
+### MCQ: What does 100% code coverage actually guarantee?
+- [ ] That every code path is tested for correctness
+- [x] Only that every line was executed during the test run — it says nothing about whether the assertions actually verify correct behavior
+- [ ] That no bugs exist in the covered code
+- [ ] That mutation testing would also pass
+**Why:** A test that calls a function and asserts nothing gets full coverage on that function while verifying nothing — coverage measures execution, not correctness.
+
+### MCQ: What happens when coverage is used as a hard target ("must be 85% or the build fails") rather than a floor?
+- [ ] Teams naturally write higher-quality tests to hit the number
+- [x] People write assertion-free tests that execute code without verifying behavior, just to make the number increase — producing a suite that passes when the code is broken
+- [ ] The build becomes slower but more reliable
+- [ ] It has no real effect on test-writing behavior
+**Why:** This is the core trap in citing a coverage number — optimizing the metric directly produces exactly the meaningless tests the metric was meant to prevent.
+
+### MCQ: How does mutation testing measure something coverage cannot?
+- [ ] It runs tests faster than a coverage tool
+- [x] It deliberately alters the code (e.g. flipping `>` to `>=`) and checks whether any test fails — if none do, that code is executed but never actually verified
+- [ ] It automatically generates new test cases
+- [ ] It measures code complexity instead of test quality
+**Why:** A line can be 100% covered yet have no test that would catch a real bug in it — mutation testing directly exposes that gap by injecting an actual defect and checking whether tests notice.
+
+### MCQ: Why is asserting on internal implementation details (e.g. `expect(service._cache.get('key')).toBe(...)`) considered a brittle test?
+- [ ] It runs slower than testing the public interface
+- [x] It breaks whenever the internals are refactored, even if the externally observable behavior is unchanged — training the team to see tests as a tax rather than a safety net
+- [ ] Private fields can't be accessed in JavaScript tests
+- [ ] It only works with certain testing frameworks
+**Why:** Testing behavior (what a caller actually experiences) rather than implementation lets the test survive refactors that don't change observable outcomes — which is the whole point of having a safety net.
+
+### MCQ: Why is mocking your own internal classes (rather than external boundaries) considered over-mocking?
+- [ ] It makes tests run more slowly
+- [x] A test with several internal mocks ends up verifying that the mocks were called in the expected order, which can pass even while the real, unmocked system is broken
+- [ ] Internal mocks aren't supported by most test frameworks
+- [ ] It violates most style guides
+**Why:** Mocking should happen at true boundaries (HTTP clients, the clock, payment providers) — mocking your own code means you're testing your assumptions about your own code, not the code itself.
+
+### MCQ: Why is a flaky test described as "worse than no test"?
+- [ ] Flaky tests take longer to write than reliable ones
+- [x] It trains the team to re-run the pipeline instead of investigating failures — and once that habit forms, a genuine failure gets reflexively re-run too, rather than caught
+- [ ] Flaky tests always indicate a bug in the test framework
+- [ ] They consume more CI compute than passing tests
+**Why:** This is why flaky tests should be quarantined out of the blocking gate immediately rather than left in — leaving them erodes the whole suite's authority to signal real problems.
+
+### MCQ: What makes a coverage number a "floor" rather than just "a report," according to this chapter?
+- [ ] Reporting it in the README instead of a dashboard
+- [x] Enforcing it in the CI pipeline — a threshold that fails the build (applied to changed files, ideally as a never-decreases ratchet) — rather than just measuring it occasionally
+- [ ] Running the coverage tool with `--verbose`
+- [ ] Using a specific coverage measurement tool
+**Why:** Sustaining a coverage number across releases is only possible if it's actively enforced in the pipeline — otherwise it drifts as untested code sneaks in unnoticed.
+
+### MCQ: In authorization testing, why do negative test cases (verifying denial) deserve more weight than positive cases (verifying access is granted)?
+- [ ] Negative cases are technically easier to write
+- [x] Authorization bugs are almost always cases of wrongly *permitting* access rather than wrongly denying it, and they fail silently — nothing errors when a check is missing, it just allows
+- [ ] Positive cases can't be automated
+- [ ] Most authorization frameworks only support negative assertions
+**Why:** A missing or broken check doesn't throw an exception — it just lets something through that shouldn't be — which is exactly the failure mode a suite weighted toward "prove this correctly denies" is designed to catch.
+
+### MCQ: Why does a multi-tenant system need a dedicated cross-tenant test suite, separate from general authorization tests?
+- [ ] Cross-tenant tests are required by most compliance frameworks
+- [x] A user in one org accessing another org's resources is a specific, high-severity failure class that's easy to overlook in general authz tests but ends up in incident reports when missed
+- [ ] It's the only way to test role-based permissions
+- [ ] General authorization tests can't cover multiple tenants at all
+**Why:** Explicitly testing "user in org A attempting every action in org B, expecting denial throughout" targets exactly the failure class most likely to cause a real security incident in a multi-tenant system.
+
+### MCQ: What makes "shadow comparison" (running new authorization logic alongside old in production without enforcing it) the highest-value technique for a migration?
+- [ ] It's faster to set up than writing new unit tests
+- [x] It catches divergences on real production traffic that nobody thought to write a test for — exactly the cases that are hardest to anticipate in advance
+- [ ] It automatically fixes any discrepancies it finds
+- [ ] It replaces the need for a decision table entirely
+**Why:** Unit tests and decision tables cover cases you thought of; shadow comparison surfaces the cases you didn't, by comparing real decisions against real traffic before the new logic is trusted to enforce anything.
 
 ---
 

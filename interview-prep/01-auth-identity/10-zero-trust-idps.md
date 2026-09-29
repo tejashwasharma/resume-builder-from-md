@@ -13,6 +13,41 @@ Reference: [NIST SP 800-207, Zero Trust Architecture](https://csrc.nist.gov/pubs
 
 ---
 
+## In brief
+
+- Zero Trust discards **network location** as a basis for trust: every
+  request is authenticated and authorized on its own merits, not because it
+  came from "inside the firewall." Skip the slogan ("never trust, always
+  verify") and name controls instead — it's the most over-claimed phrase in
+  IAM and interviewers probe specifically for pattern-matching.
+- The controls that actually make a system Zero-Trust-shaped: per-request
+  authorization, least privilege by default, assume breach, continuous
+  verification (re-evaluated as signals change, not once at login), and
+  micro-segmentation (services authenticate to each other, no implicit
+  internal trust).
+- **It complements network security, it doesn't replace it** — a firewall
+  still reduces attack surface; it just stops being the thing that decides
+  who may do what.
+- **Conditional Access** (Entra) is the clearest mainstream example: trust is
+  computed from current signals (device compliance, location, risk score)
+  and re-evaluated per sign-in, not granted once. As an integrator, you don't
+  implement it — you federate properly and don't undermine it (e.g. by
+  offering a local login that bypasses the customer's SSO policy).
+- **SSO-enforced MFA has a gap**: it only covers logins that go through the
+  IdP. Local admin accounts, break-glass accounts, service accounts, and API
+  tokens bypass it entirely and need their own MFA/hardening.
+- Across Okta, Entra, and Ping, protocol behavior (SAML/OIDC) is standards-
+  compliant and similar — the real differences are operational: Entra is
+  often already present (bundled with M365) and needs explicit `tid`
+  validation; Ping deployments are often self-hosted with manual certificate
+  rotation. **Certificate expiry is the universal number-one support issue**
+  regardless of IdP.
+- Scope your own IdP exposure honestly in an interview — claiming depth in
+  all three and failing a follow-up on the one you've only evaluated is worse
+  than naming the gap up front.
+
+---
+
 ## Foundations
 
 **The old model** was a wall around the network. Inside the firewall was
@@ -353,6 +388,80 @@ company at once, and nobody read the renewal email.
   most distinctive feature.
 - **Forgetting that SSO-enforced MFA can be bypassed** by local and service
   accounts.
+
+---
+
+## Quiz
+
+### MCQ: What does Zero Trust discard as a basis for granting access?
+- [ ] Multi-factor authentication
+- [x] Network location — being "inside the firewall" grants nothing by itself
+- [ ] Role-based permissions
+- [ ] Session tokens
+**Why:** NIST SP 800-207's framing is explicit: no implicit trust based on physical or network location or asset ownership — every request is judged on its own merits.
+
+### MCQ: Under a pure perimeter security model, what happens once an attacker phishes one internal laptop?
+- [ ] Nothing — internal services still require separate authentication
+- [x] They can typically move laterally, since everything inside the firewall trusts everything else inside
+- [ ] They're immediately detected by micro-segmentation
+- [ ] The firewall blocks lateral movement automatically
+**Why:** In the perimeter model the firewall is the only check; once past it, internal services trust each other with no further verification — this is exactly what Zero Trust's per-hop checks are designed to prevent.
+
+### MCQ: Which of these is a genuine Zero Trust control, as opposed to the marketing slogan?
+- [ ] "Never trust, always verify"
+- [x] Per-request authorization — every call checked, not just the session's first
+- [ ] Using HTTPS everywhere
+- [ ] Having a strong password policy
+**Why:** The slogan doesn't pass interviews; naming concrete controls (per-request authz, least privilege, continuous verification, micro-segmentation) does.
+
+### MCQ: Does adopting Zero Trust mean a firewall becomes unnecessary?
+- [ ] Yes, Zero Trust replaces network-layer defenses entirely
+- [x] No — the firewall remains useful defense in depth, it just stops being the thing that decides who may do what
+- [ ] Only for internal traffic, not external
+- [ ] Yes, but only in cloud-native environments
+**Why:** NIST frames Zero Trust as complementary to network segmentation, not a replacement — the authorization decision moves to the service owning the resource, informed by identity and context.
+
+### MCQ: What makes Microsoft Entra's Conditional Access "Zero-Trust-shaped"?
+- [ ] It's free and bundled with Microsoft 365
+- [x] Trust is computed from current signals (device compliance, location, risk score) and re-evaluated per sign-in, rather than granted once
+- [ ] It replaces the need for OIDC or SAML
+- [ ] It only applies to administrative accounts
+**Why:** The Zero Trust property is continuous, signal-based evaluation — the same user gets through quietly on a compliant device from a normal location, and gets challenged from an unusual one.
+
+### MCQ: A customer enforces MFA in their IdP for SSO logins. Does the application still need its own MFA?
+- [ ] No, MFA is fully covered for every login path
+- [x] Yes — for paths that bypass the IdP entirely: local admin accounts, break-glass accounts, service accounts, and API tokens
+- [ ] No, but only if the app also disables password login
+- [ ] Yes, duplicated on every SSO login too, for defense in depth
+**Why:** SSO-enforced MFA only covers logins that actually go through the IdP — a tenant with hardened SSO and an unprotected local admin login has a front door and an unlocked side door.
+
+### MCQ: For a multi-tenant application integrating with Entra ID, why must the `tid` claim be validated on every token?
+- [ ] It's required for GDPR compliance
+- [x] Accepting any Microsoft-issued token without checking which tenant it came from is a cross-tenant vulnerability
+- [ ] `tid` determines the token's expiry time
+- [ ] It's only relevant for SCIM provisioning, not authentication
+**Why:** A token being validly signed by Microsoft doesn't mean it's for the right customer — `tid` is what scopes it to the specific Entra tenant that should be allowed in.
+
+### MCQ: Across Okta, Entra, and Ping integrations, what's typically the number one real-world support issue?
+- [ ] Users forgetting their passwords
+- [x] Certificate expiry — it breaks SSO for an entire tenant at once, regardless of which IdP is involved
+- [ ] Rate limiting on the SCIM API
+- [ ] Browser incompatibility with SAML redirects
+**Why:** This is a universal operational lesson independent of protocol correctness — monitoring certificate expiry per tenant and alerting well ahead matters as much as getting the SAML/OIDC flow right.
+
+### MCQ: What does the OIDC `max_age` parameter enable, in the context of step-up authentication?
+- [ ] It sets the JWT's expiration time
+- [x] It forces re-authentication if the user's last login is older than the given threshold
+- [ ] It limits how many MFA attempts a user gets
+- [ ] It caps the lifetime of a refresh token
+**Why:** For a sensitive action needing fresh proof of identity, `max_age` (plus `acr_values` for required strength, and checking the returned `auth_time`/`acr`) is the standard OIDC mechanism rather than trusting the existing session blindly.
+
+### MCQ: What's the operationally honest way to answer "you claim experience with Okta, Entra, and Ping — compare them"?
+- [ ] Describe deep, equal expertise across all three regardless of actual exposure
+- [x] Scope your actual depth honestly per provider — claiming uniform depth and then failing a follow-up on the shallow one is worse
+- [ ] Decline to answer since IdP comparisons aren't testable
+- [ ] Redirect to a generic description of SAML vs OIDC
+**Why:** An interviewer probing IdP-specific depth will find a gap fast if there is one — naming "Okta and Entra in depth, Ping by evaluation" is a stronger answer than an overclaim.
 
 ---
 

@@ -11,6 +11,36 @@ See [WEAK-SPOTS](../WEAK-SPOTS.md) #1.
 
 ---
 
+## In brief
+
+- The **fallacies of distributed computing** are eight false assumptions
+  about networks that every outage rediscovers at least one of — the
+  network isn't reliable, latency isn't zero, bandwidth isn't infinite, and
+  it isn't secure by default (internal traffic needs authentication too).
+- **A timeout means "unknown," not "failed."** From the caller's side, at
+  least five things could have happened — never arrived, crashed before
+  acting, did the work then crashed, did the work and the reply was lost,
+  or just slow — and they demand opposite responses. That single ambiguity
+  is why idempotency exists and why "exactly once" delivery is a myth.
+- **"Just retry" without care causes retry storms**: a slow (overloaded)
+  service gets timed-out clients that retry, which triples its load right
+  when it's already struggling — a feedback loop that turns a blip into a
+  collapse. The fix is exponential backoff *with jitter* (the part people
+  forget), circuit breakers, and retry budgets.
+- **Grey failure hurts more than a crash**: a node that's up, passing
+  health checks, and serving 30% errors or 10x latency doesn't get removed
+  automatically the way a dead node does — it keeps taking traffic and
+  keeps damaging it. Binary liveness checks miss this by design; alert on
+  error rate and latency percentiles instead.
+- Failure kinds run from easiest to worst to reason about: crash-stop,
+  crash-recovery, omission, timing, and Byzantine (arbitrary/malicious) —
+  rare outside adversarial settings and expensive to tolerate.
+- **A network call is roughly 5,000x a main-memory read** — the reason an
+  N+1 across services is catastrophic where the same pattern in-process is
+  merely untidy, and why caching moves the needle so dramatically.
+
+---
+
 ## Foundations
 
 A system is distributed when it runs on more than one machine, and those
@@ -328,6 +358,80 @@ way to find out.
   [time ordering idempotency](26-idempotency-transactions.md).
 - **Only considering crash failures**, and having no answer for a node that's
   half-working.
+
+---
+
+## Quiz
+
+### MCQ: What do the "fallacies of distributed computing" describe?
+- [ ] Bugs specific to microservice architectures
+- [x] False assumptions people make about networks (e.g. "the network is reliable", "latency is zero") that every outage rediscovers at least one of
+- [ ] Design patterns that should always be avoided
+- [ ] Common mistakes in database schema design
+**Why:** These eight assumptions — reliability, zero latency, infinite bandwidth, security, static topology, one administrator, zero transport cost, homogeneity — are all false, and code that assumes them breaks in production.
+
+### MCQ: Service A calls Service B and its timeout fires with no response. What is the fundamentally correct interpretation?
+- [ ] The request definitely failed and can be safely retried
+- [x] The outcome is unknown — at least five different things could have happened, and they call for opposite responses
+- [ ] The request definitely succeeded, since B usually works
+- [ ] This always means the network cable was physically disconnected
+**Why:** A timeout doesn't distinguish "never arrived" (safe to retry) from "arrived, B did the work, reply was lost" (retry duplicates the effect) — the caller genuinely cannot tell which occurred.
+
+### MCQ: Why is jitter (random variation in retry delay) as important as the backoff itself?
+- [ ] It makes retries happen faster overall
+- [x] Without it, every client retries at the same instant after the same backoff, creating a synchronized thundering herd
+- [ ] It's required by most HTTP client libraries
+- [ ] It reduces the total number of retries needed
+**Why:** Exponential backoff alone still leaves all clients retrying in lockstep; jitter spreads those retries out so they don't collectively re-create the overload they were meant to avoid.
+
+### MCQ: What causes a "retry storm" to become a full outage rather than a brief blip?
+- [ ] A single client retrying too many times
+- [x] Retries are a feedback loop — timed-out clients retry, load increases on the already-struggling service, which gets slower, causing more timeouts and more retries
+- [ ] The database running out of disk space
+- [ ] A misconfigured DNS record
+**Why:** The load-to-slowness edge is what turns a temporary slowdown into a collapse that persists even after the original cause is gone, because the retry traffic itself is now the problem.
+
+### MCQ: What makes "grey failure" more dangerous in practice than a node crashing outright?
+- [ ] Grey failures are more common statistically
+- [x] A crashed node is detected and removed automatically (load balancers, failover); a grey-failing node keeps passing health checks and keeps receiving and damaging traffic indefinitely
+- [ ] Grey failures always cause data loss, unlike crashes
+- [ ] Crashes are always caused by grey failures first
+**Why:** Binary up/down health checks are blind to a node serving 30% errors or 10x latency while still responding 200 to `/health` — which is why alerting needs error rates and latency percentiles, not just liveness.
+
+### MCQ: Why do a shallow health check (liveness) and a deep health check (readiness) serve different purposes?
+- [ ] Shallow checks are simply an outdated approach
+- [x] A deep check that queries real dependencies can cascade — marking every instance unhealthy when a shared dependency wobbles — so shallow liveness and deep readiness are usually split, with hysteresis
+- [ ] Deep checks are always faster to run
+- [ ] Only readiness checks are needed in production
+**Why:** Exercising real dependencies gives a more honest signal but risks a shared-dependency blip taking down an entire healthy pool — the split balances honesty against that cascade risk.
+
+### MCQ: What's the correct response when a non-idempotent operation (e.g. "charge this card") is on a path that can time out?
+- [ ] Always retry once and accept the small risk
+- [x] Either make the operation idempotent (a client-generated key the server deduplicates on) or don't retry automatically and surface the uncertainty for reconciliation
+- [ ] Never allow any operation that could time out
+- [ ] Increase the timeout until it never fires
+**Why:** Retrying a non-idempotent operation after a timeout risks performing the action twice (e.g. double-charging) — the fix is either idempotency or explicit handling of the ambiguity, not blind retry.
+
+### MCQ: Roughly how much more expensive is a network round trip within a datacenter compared to a main-memory access?
+- [ ] About 10x
+- [ ] About 100x
+- [x] Roughly 5,000x
+- [ ] About the same
+**Why:** This is why an N+1 query pattern across services is catastrophic where the same pattern within one process is merely inefficient — and why caching (turning a network call into a memory read) has such outsized impact.
+
+### MCQ: What distinguishes "crash-recovery" failure from "crash-stop" failure?
+- [ ] Crash-recovery is more common in cloud environments
+- [x] A crash-stop node dies and stays dead; a crash-recovery node comes back, possibly with stale state
+- [ ] Crash-recovery only applies to database nodes
+- [ ] Crash-stop is a subtype of Byzantine failure
+**Why:** Crash-stop is the easiest failure mode to reason about because absence is detectable and permanent; crash-recovery adds the complication of a node returning with potentially outdated state.
+
+### MCQ: Why is Byzantine failure (a node behaving arbitrarily or maliciously) rarely designed for outside adversarial settings?
+- [ ] It never actually occurs in real systems
+- [x] Tolerating it is enormously expensive compared to simpler failure models, and it's mainly relevant where nodes might actively be compromised or malicious
+- [ ] It's identical to crash-stop failure in practice
+- [ ] Byzantine fault tolerance is a solved, free problem in modern systems
+**Why:** Most internal distributed systems can assume nodes fail honestly (crash, slow, drop messages) rather than lie — Byzantine fault tolerance is reserved for contexts like blockchain or multi-party systems with untrusted participants, where the extra cost is justified.
 
 ---
 

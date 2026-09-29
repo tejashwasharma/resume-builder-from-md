@@ -6,6 +6,40 @@ than knowing its features.
 
 ---
 
+## In brief
+
+- **Ask how the data is read, not what it looks like** — the question is
+  never "which database is better," it's "why did you use each." Default
+  to Postgres unless there's a specific reason not to; it handles
+  semi-structured data adequately via JSONB, so "we might need
+  flexibility" isn't a reason to leave relational.
+- **The common Mongo regret**: picking it for "flexibility," then
+  discovering the data had relationships after all, and ending up doing
+  joins in application code — slower and buggier than the database doing
+  them.
+- **Composite index column order matters** — an index on
+  `(user_id, tenant_id)` serves queries filtering on `user_id` alone or
+  both columns, but not `tenant_id` alone, the same way a phone book
+  sorted by surname-then-first-name is useless for finding everyone named
+  "James."
+- **Check-then-act has a race window between the read and the write** —
+  two sessions can both pass the check before either writes. The fix is an
+  atomic conditional update (`WHERE id = $2 AND status = 'open'`, then
+  check rows affected) rather than a pessimistic lock, which serializes on
+  a row that's hot by definition.
+- **Postgres uses a process per connection, making connections
+  expensive** — an app opening one per request exhausts the server. Use a
+  pool, and put PgBouncer in front when many app instances each run their
+  own pool (20 instances × 20 connections = 400, and the database falls
+  over).
+- **In MongoDB, embed vs. reference is the core modeling decision**: embed
+  bounded data always read together (one read gets everything); reference
+  data that's unbounded or accessed independently. Embedding something
+  unbounded (comments inside a post) risks the 16MB document limit and
+  rewriting a huge document for a small change.
+
+---
+
 ## Picking one
 
 **Ask how the data is read**, not what it looks like.
@@ -285,6 +319,80 @@ race entirely by making applying non-exclusive.
 - **Adding an index without considering write cost.**
 - **Check-then-act** as the answer to a concurrency question.
 - **No connection pooling.** Postgres uses a process per connection.
+
+---
+
+## Quiz
+
+### MCQ: What's the recommended first question when choosing between PostgreSQL and MongoDB?
+- [ ] Which one benchmarks faster for a given workload
+- [x] How is the data actually read — not what it looks like
+- [ ] Which database the team already has more experience with
+- [ ] Which one has cheaper managed hosting
+**Why:** Access patterns (joins needed, whole-document reads, known vs. ad-hoc queries) determine the right fit far more reliably than the data's shape alone.
+
+### MCQ: What's the commonly regretted reason people choose MongoDB, according to this chapter?
+- [ ] It's always cheaper to operate at scale
+- [x] "Flexibility" — only to later discover the data had relationships after all, ending up doing joins in application code
+- [ ] Better native support for full-text search
+- [ ] Stronger consistency guarantees than PostgreSQL
+**Why:** Doing joins in application code is slower and buggier than letting the database handle them — this is the specific trap the chapter warns against choosing Mongo to avoid schema rigidity prematurely.
+
+### MCQ: Does a composite index on `(user_id, tenant_id)` help a query that filters only on `tenant_id`?
+- [ ] Yes, composite indexes help regardless of column order
+- [x] No — the index only helps queries filtering on `user_id` alone, or on both columns; filtering on `tenant_id` alone gets no benefit
+- [ ] Only if `tenant_id` has fewer distinct values than `user_id`
+- [ ] Only in MongoDB, not PostgreSQL
+**Why:** This is the phone-book analogy — sorted by surname then first name, the index is useless for finding everyone with a given first name alone; composite index column order determines which queries it actually serves.
+
+### MCQ: In the "check-then-act" concurrency bug (read status, then update if available), what's the actual defect?
+- [ ] The SQL syntax is invalid
+- [x] There's a gap between the read and the write where two concurrent sessions can both pass the check before either one writes, letting both "win"
+- [ ] PostgreSQL doesn't support UPDATE statements
+- [ ] It only fails when using MongoDB, not PostgreSQL
+**Why:** Both sessions can see `status = 'open'` before either writes `status = 'taken'`, since nothing prevents the interleaving — this is the classic race that an atomic conditional update closes.
+
+### MCQ: Why is `UPDATE shifts SET status = 'taken' WHERE id = $2 AND status = 'open'` (checking rows affected) usually preferred over `SELECT ... FOR UPDATE`?
+- [ ] It's the only syntactically valid option in PostgreSQL
+- [x] It's one atomic statement that holds no lock, while `FOR UPDATE` serializes everything on that row — and popular rows are exactly the ones with the most contention
+- [ ] `FOR UPDATE` doesn't actually prevent races
+- [ ] The conditional update runs faster regardless of concurrency
+**Why:** The atomic update closes the race window without holding a lock at all; pessimistic locking is correct but creates contention exactly where load is highest.
+
+### MCQ: Why does PostgreSQL need connection pooling (and often PgBouncer) in a system with many application instances?
+- [ ] PostgreSQL limits total query throughput regardless of connections
+- [x] Postgres uses a process per connection, making connections expensive — many app instances each opening their own pool can multiply into hundreds of connections and exhaust the server
+- [ ] Connection pooling is required by the SQL standard
+- [ ] PgBouncer is needed only for replication, not connection management
+**Why:** 20 instances × 20 connections each = 400 connections is a concrete example of how unpooled or per-instance-pooled connections can overwhelm a database designed around one process per connection.
+
+### MCQ: In MongoDB, when should data be embedded within a parent document rather than referenced separately?
+- [ ] Whenever the data is frequently updated
+- [x] When the data is always read together with the parent and the child doesn't grow unboundedly
+- [ ] Whenever the data needs to be queried independently
+- [ ] Only for data smaller than 1KB
+**Why:** Embedding something that grows without limit (like comments on a post) risks hitting the 16MB document limit and forces rewriting a large document for small changes — the reference approach avoids both.
+
+### MCQ: Is the statement "MongoDB doesn't support transactions" accurate as a modern criticism?
+- [ ] Yes, MongoDB has never supported multi-document transactions
+- [x] No — it's out of date; MongoDB has had multi-document ACID transactions since version 4.0, though they're more expensive than in Postgres
+- [ ] Only true for MongoDB Atlas, not self-hosted deployments
+- [ ] Transactions work but only within a single collection
+**Why:** Repeating this outdated claim is called out as a weak-answer signal — the more nuanced point is that needing transactions often means the documents were modeled wrong in the first place.
+
+### MCQ: What does MongoDB's "write concern" setting of `w:majority` trade off against `w:1`?
+- [ ] `w:majority` is always faster but less safe
+- [x] `w:majority` waits for acknowledgment from a majority of nodes (more durable, slower); `w:1` only needs the primary's acknowledgment (faster, can lose data on failover)
+- [ ] `w:1` requires exactly one replica set member total
+- [ ] Write concern only affects read operations, not writes
+**Why:** This is a direct durability-versus-latency trade — losing data on failover with `w:1` is the concrete risk being accepted in exchange for lower write latency.
+
+### MCQ: When diagnosing a slow query, what should be checked before making any changes?
+- [ ] Immediately add an index to every column in the WHERE clause
+- [x] The actual query plan (`EXPLAIN ANALYZE` in Postgres, `.explain("executionStats")` in Mongo) to see what the database is actually doing
+- [ ] Rewrite the query in a different ORM
+- [ ] Increase the connection pool size
+**Why:** A sequential scan on a large table, a big gap between estimated and actual rows, or a late-filtered large intermediate result each point to a different root cause — guessing at fixes without the plan risks solving the wrong problem, and every added index has its own write-cost trade-off.
 
 ---
 

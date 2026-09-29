@@ -13,6 +13,38 @@ your first interview.
 
 ---
 
+## In brief
+
+- **Confident scoping beats bluffing every time** — claiming Go depth you
+  don't have gets found by the first real follow-up, and it damages
+  credibility on everything else you said. Naming the actual gap ("my
+  production depth is Node; I can read and modify Go comfortably") is the
+  stronger answer.
+- **A goroutine is scheduled by the Go runtime, not the OS** — starting at
+  ~2KB of growable stack versus megabytes for an OS thread, which is why
+  hundreds of thousands of goroutines are viable. The M:N scheduler
+  multiplexes them onto few OS threads, moving another goroutine onto a
+  thread whenever one blocks on I/O.
+- **Node gives concurrency without parallelism; Go gives both** — Node's
+  single thread means CPU-bound work blocks everything; Go runs CPU work in
+  genuine parallel across cores. This is the honest, specific reason to
+  reach for Go alongside Node, not a vague "Go is faster."
+- **A goroutine leak is a goroutine blocked forever** on a channel nobody
+  will ever write to or read from — silent, since nothing crashes, just a
+  steadily growing memory footprint. The usual cause is a missing
+  cancellation path; the fix is `context` with a `select` on `ctx.Done()`.
+- **`context.Context` is the first parameter of nearly every Go function
+  doing I/O** — it carries cancellation, deadlines, and request-scoped
+  values through a call chain, giving deadline propagation for free:
+  `context.WithTimeout` at the top means every layer below inherits the
+  *remaining* budget, not a fresh timer.
+- **Go has no exceptions — errors are values, returned and checked
+  explicitly**, wrapped with `%w` to preserve the chain for `errors.Is`/
+  `errors.As`. `panic` exists only for genuinely unrecoverable situations,
+  never for control flow.
+
+---
+
 ## If you're scoping it honestly
 
 A good version sounds like:
@@ -276,6 +308,80 @@ That keeps the cancellation path visible.
 - **Claiming Go depth you don't have.** The follow-up finds it, and it damages
   everything else you said.
 - **Not knowing the loop variable gotcha**, or that Go 1.22 fixed it.
+
+---
+
+## Quiz
+
+### MCQ: What's the main structural difference between a goroutine and an OS thread?
+- [ ] Goroutines can only run on a single CPU core
+- [x] A goroutine starts with a tiny (~2KB) growable stack managed by the Go runtime, versus megabytes reserved for an OS thread — enabling hundreds of thousands of goroutines
+- [ ] Goroutines require explicit thread pool configuration
+- [ ] OS threads are managed by the Go runtime as well
+**Why:** This size difference plus user-space scheduling (no kernel context switch) is why goroutine-per-connection scales to numbers that would exhaust OS threads.
+
+### MCQ: What does Go's M:N scheduler actually do?
+- [ ] It limits the program to exactly N goroutines at a time
+- [x] It multiplexes many goroutines (M) onto a smaller number of OS threads (N), moving another goroutine onto a thread whenever one blocks on I/O
+- [ ] It creates one OS thread per goroutine
+- [ ] It's a memory allocation strategy, unrelated to concurrency
+**Why:** This is what lets Go handle massive goroutine counts efficiently — a blocked goroutine doesn't leave its OS thread idle, since the scheduler moves other work onto it.
+
+### MCQ: What's the key difference between how Node and Go handle CPU-bound work?
+- [ ] They handle it identically; both block on CPU work
+- [x] Node's single thread means CPU-bound work blocks everything else; Go can run CPU-bound work genuinely in parallel across multiple cores
+- [ ] Go is single-threaded like Node but with a faster JIT compiler
+- [ ] Node handles CPU-bound work better than Go
+**Why:** This is the honest, specific reason to reach for Go for CPU-heavy services alongside a Node stack — not a vague "faster," but genuine multi-core parallelism versus a single JS thread.
+
+### MCQ: What is a "goroutine leak"?
+- [ ] A goroutine that runs too many times
+- [x] A goroutine blocked forever on a channel operation that will never complete, keeping it and everything it references alive indefinitely
+- [ ] A memory allocation that exceeds the configured heap size
+- [ ] A goroutine that panics without being recovered
+**Why:** Unlike a crash, this is silent — the process just gets steadily heavier as leaked goroutines accumulate, usually because a cancellation path (via `context`) was never wired in.
+
+### MCQ: How does `context.WithTimeout` give "deadline propagation" for free?
+- [ ] It automatically retries failed operations with backoff
+- [x] A budget set at the top of a call chain is inherited by every downstream call as the *remaining* time, rather than each layer starting a fresh independent timer
+- [ ] It converts all errors into timeouts automatically
+- [ ] It only affects the top-level function, not downstream calls
+**Why:** This is exactly the deadline-propagation pattern that has to be built by hand in many other languages — passing a context through the call chain gives it automatically.
+
+### MCQ: Why is passing `context.Context` explicitly as a function parameter preferred over storing it in a struct?
+- [ ] Structs in Go cannot hold interface values
+- [x] Explicit passing keeps the cancellation path visible at every call site, rather than hidden inside object state
+- [ ] Storing context in a struct causes a compile error
+- [ ] It's purely a stylistic preference with no functional difference
+**Why:** The convention exists specifically so a reader can see, at each function signature, that cancellation and deadlines flow through — hiding it in a struct obscures that.
+
+### MCQ: How does Go handle errors, in contrast to languages with exceptions?
+- [ ] Go has exceptions but discourages their use
+- [x] Errors are ordinary return values that must be explicitly checked at each call site — there's no automatic propagation to a distant handler
+- [ ] Go automatically logs and swallows all errors
+- [ ] Errors can only be handled via `panic`/`recover`
+**Why:** This is deliberate: every failure is visible where it occurs rather than jumping to a handler elsewhere, which is more verbose but keeps failure handling explicit.
+
+### MCQ: What does wrapping an error with `%w` (e.g. `fmt.Errorf("getting user: %w", err)`) preserve that using `%v` would not?
+- [ ] The original error's stack trace
+- [x] The error chain, so `errors.Is` and `errors.As` can still identify or unwrap the original underlying error
+- [ ] The error's exact formatting in logs
+- [ ] Nothing — `%w` and `%v` behave identically
+**Why:** `%w` specifically marks the wrapped error as unwrappable, letting callers programmatically check "is this ultimately a not-found error?" even after several layers of wrapping.
+
+### MCQ: Before Go 1.22, what was the "loop variable gotcha" with code like `for i := range x { go f(i) }`?
+- [ ] `f` would never actually be called
+- [x] All goroutines shared the same loop variable, so they often ended up seeing its final value rather than the value at the time each goroutine was launched
+- [ ] The loop would run infinitely
+- [ ] This was never actually a bug — it's a common misconception
+**Why:** Go 1.22 changed loop variables to be scoped per-iteration, fixing this — knowing both the historical bug and that it's fixed is a useful, specific signal of real Go experience.
+
+### MCQ: What should trigger `panic` in idiomatic Go code, according to this chapter?
+- [ ] Any error that a caller should handle
+- [x] Only genuinely unrecoverable situations — not ordinary control flow, which should use returned error values instead
+- [ ] Input validation failures
+- [ ] Any function that might fail
+**Why:** Using `panic` for expected failure conditions (bad input, not-found, etc.) misuses the mechanism — Go's idiom is that ordinary, expected errors are values returned and checked, not exceptions thrown.
 
 ---
 

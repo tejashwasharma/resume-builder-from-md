@@ -7,6 +7,38 @@ the whiteboard, with a reason and a cost.
 
 ---
 
+## In brief
+
+- **Draw the subset you need, not the whole chain** — the full
+  clients→CDN→LB→gateway→services→cache→DB→replicas→queue→workers→object-
+  store diagram is most designs' superset. Opening with all of it leaves
+  nowhere to go in the deep dive.
+- **Health checks trade two failure modes against each other**: shallow
+  checks miss grey failure (up but malfunctioning); deep checks that
+  actually exercise dependencies can cascade, draining every instance when
+  one shared dependency wobbles. The usual split is shallow for liveness,
+  deep for readiness, with hysteresis.
+- **An API gateway can only do coarse authorization** (valid token, correct
+  audience) — only the owning service knows ownership, tenancy, and state.
+  Treating the gateway as the *only* check turns the internal network into
+  an implicit trust zone.
+- **Choose a database from access patterns, not data shape** — "how is
+  this read?" decides more than "what does it look like?" It's normal and
+  not indecisive to use several stores for one system: Postgres for core
+  entities, Redis for sessions, Elasticsearch for search.
+- **The read and write paths in an auth system can be orders of magnitude
+  apart** (30 RPS writes vs. 30,000 RPS reads) and deserve genuinely
+  different designs — the write path bumps a cache version so stale reads
+  become unreachable, which is where the real correctness risk lives: a
+  cached "allow" for a just-removed role is a security bug, not a stale
+  read.
+- **Every cache layer (CDN, in-process, shared, database-level) has a
+  different invalidation problem** — decide the invalidation strategy
+  *before* adding the cache, not after, and use versioned keys for
+  anything security-relevant.
+
+---
+
 ## The standard architecture
 
 ```mermaid
@@ -240,6 +272,80 @@ layer closest to where it's consumed, with an invalidation strategy decided
 versioned keys so a change invalidates everything derived at once.
 
 </details>
+
+---
+
+## Quiz
+
+### MCQ: Why does the chapter recommend drawing only the subset of the standard architecture you actually need, rather than the full chain?
+- [ ] The full chain is too complex to draw correctly
+- [x] Opening with the whole chain leaves nowhere to go when the interviewer pushes for a deep dive — adding complexity under pressure is the stronger structure
+- [ ] Interviewers only ask about one component anyway
+- [ ] The full chain is only relevant for read-heavy systems
+**Why:** Starting simple and adding pieces as bottlenecks are identified demonstrates the same forced-progression reasoning as the scaling ladder — starting complex wastes the deep-dive time you'll need later.
+
+### MCQ: What's the trade-off between shallow and deep health checks?
+- [ ] Shallow checks are always sufficient; deep checks are unnecessary
+- [x] Shallow checks miss grey failure (a node that's up but malfunctioning); deep checks that exercise real dependencies can cascade, draining every instance when one shared dependency wobbles
+- [ ] Deep checks are faster to execute
+- [ ] Shallow checks require more infrastructure to implement
+**Why:** Neither extreme is safe alone — the usual answer splits liveness (shallow) from readiness (deep), with hysteresis to avoid overreacting to a blip.
+
+### MCQ: Why can't an API gateway alone provide fine-grained authorization?
+- [ ] Gateways don't support authentication at all
+- [x] Only the owning service knows ownership, tenancy, and state — the gateway can only do coarse checks like valid token and correct audience
+- [ ] Gateways are too slow for authorization checks
+- [ ] Fine-grained authorization requires a database the gateway can't access
+**Why:** Treating the gateway as the *only* authorization check makes the internal network an implicit trust zone — defense in depth means the owning service still enforces its own rules.
+
+### MCQ: What should primarily drive the choice of database type for a given piece of data?
+- [ ] The data's shape (how nested or flat it is)
+- [x] Access patterns — how the data will actually be read and written
+- [ ] Whichever database the team has used before
+- [ ] The total data volume alone
+**Why:** "How is this read?" decides more than "what does it look like?" — two datasets with identical shape can need very different databases depending on their query patterns.
+
+### MCQ: Is using multiple different databases within one system (Postgres for entities, Redis for sessions, Elasticsearch for search) a sign of poor decision-making?
+- [ ] Yes, a well-designed system should use exactly one database
+- [x] No — it's normal and reflects matching the tool to the specific access pattern, not indecision
+- [ ] Only acceptable in microservices architectures
+- [ ] Only acceptable if each database is managed by a different team
+**Why:** Different data has different access patterns; using the datastore that fits each one is a sign of deliberate design, not a failure to commit to a single technology.
+
+### MCQ: In an auth system, why might the write path (role changes) and read path (permission checks) deserve genuinely different designs?
+- [ ] They should always use identical infrastructure for consistency
+- [x] They can differ by orders of magnitude in volume (e.g. ~30 RPS writes vs ~30,000 RPS reads), which changes what's worth optimizing for on each side
+- [ ] Write paths are always more important to optimize
+- [ ] Read paths never need any caching
+**Why:** At three orders of magnitude apart, the write path can afford to bump a cache version synchronously while the read path needs to be served almost entirely from cache — a single unified design would be wrong for one side or the other.
+
+### MCQ: In an authorization system, why is a cached "allow" for a role that was just removed treated as a security bug rather than an ordinary stale read?
+- [ ] Because caches should never be used for authorization data
+- [x] Because the user retains access they should no longer have — unlike stale content, this has a real security consequence, not just a freshness inconvenience
+- [ ] Because it always causes a system crash
+- [ ] Because it violates HTTP caching standards
+**Why:** This is why write-path role changes bump a versioned cache key rather than relying on TTL alone — the correctness risk on this specific path is qualitatively different from ordinary staleness.
+
+### MCQ: Why does each layer of caching (CDN, in-process, shared cache, database-level) have a "different invalidation problem"?
+- [ ] They all use the exact same invalidation mechanism, so this isn't actually true
+- [x] Each layer has different scope and visibility — e.g. in-process caches are per-instance and invisible to other instances, while a shared Redis cache is one copy that all instances see
+- [ ] Only the database-level cache needs invalidation
+- [ ] CDN caches never need invalidation
+**Why:** An in-process cache requires reaching every instance to invalidate, which is easy to forget or delay; a shared cache is one target — understanding which layer you're at changes what "immediate" invalidation actually requires.
+
+### MCQ: According to the design rule stated in this chapter, when should a cache's invalidation strategy be decided?
+- [ ] After the cache is added, once invalidation bugs start appearing
+- [x] Before the cache is added — invalidation strategy should be part of the initial design, not a reactive fix
+- [ ] Invalidation strategy is optional if the TTL is short enough
+- [ ] Only for caches storing authorization data
+**Why:** Treating invalidation as an afterthought is how stampedes and stale-data bugs get discovered in production — deciding it upfront is part of deliberately placing the cache, not a follow-on task.
+
+### MCQ: Why does naming a specific product (e.g. "Kafka" or "an AWS ALB") signal more than naming the generic block ("load balancer" or "queue")?
+- [ ] Specific product names are required by interview scoring rubrics
+- [x] It signals that you've actually operated the technology, not just drawn a generic box on a diagram
+- [ ] Generic terms are considered incorrect answers
+- [ ] Product names are always more technically precise
+**Why:** A candidate who names "an AWS ALB" and can speak to its specific behavior demonstrates real operational familiarity beyond knowing the category of tool that belongs in that slot.
 
 ---
 

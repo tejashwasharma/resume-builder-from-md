@@ -6,6 +6,42 @@ follow-up lives here.
 
 ---
 
+## In brief
+
+- **Caching is a trade of freshness for speed — every failure mode in this
+  chapter follows from that one trade.** Cache-aside is the default
+  pattern: on write, **invalidate, don't update** — updating the cache
+  creates a race where two concurrent writers can leave it holding the
+  older value permanently; deleting is safe because the next read
+  repopulates from the source of truth.
+- **Cache stampede (thundering herd)**: a hot key expires, every concurrent
+  request misses at once, and the origin — sized for cache-hit load — takes
+  the full uncached load simultaneously. The three mitigations to know:
+  request coalescing (first miss fetches, others wait on it), probabilistic
+  early expiry (refresh before the TTL, with jitter), and
+  stale-while-revalidate (serve old, refresh behind it — must be bounded
+  for authorization data, since stale there means a revoked permission
+  still works).
+- **Hot keys are a distribution problem, not an expiry problem** — one key
+  saturates a single shard while the rest idle, and no TTL strategy
+  helps. Fixes are about spreading load (replicate the key with a suffix,
+  an in-process cache for just that key) or isolating a hot tenant.
+- **For authorization data, a cached "allow" for a revoked permission is a
+  vulnerability, not a stale read.** TTL-only invalidation means you've
+  *decided* revocation takes up to N seconds; versioned keys (bump a
+  per-user/tenant counter, include it in the cache key) are usually the
+  right answer because there's nothing to enumerate and nothing to miss.
+- **Cache the decision, not the inputs** — keyed on
+  `(principal, tenant, permission, resource, version)`. Re-evaluating from
+  cached inputs still pays the evaluation cost, which for a policy engine
+  is most of the cost you were trying to avoid.
+- **In-process caches are the invisible layer that makes "immediate" not
+  immediate** — fastest because there's no network hop, but every instance
+  has its own copy, so invalidation must reach all of them and doesn't
+  clear on deploy boundaries the way people assume.
+
+---
+
 ## Foundations
 
 Caching is a trade: you get speed, and you give up freshness. Every problem in
@@ -417,6 +453,72 @@ with identical TTLs will expire in the same second.
 
 ---
 
+## Workshop: cache-aside vs write-through
+
+Same cache, same database, two different places the write goes — and a
+different answer to "what does the cache say right after a write?"
+
+**Cache-aside — the app owns invalidation, and the cache doesn't see the
+write at all:**
+
+```js
+// Read: check cache, miss falls through to DB and repopulates.
+async function getPermissions(userId) {
+  const cached = await redis.get(`perms:${userId}`);
+  if (cached) return JSON.parse(cached);
+
+  const perms = await db.query('SELECT * FROM permissions WHERE user_id = $1', [userId]);
+  await redis.set(`perms:${userId}`, JSON.stringify(perms), 'EX', 300);
+  return perms;
+}
+
+// Write: touch the database only, then DELETE — never update the cache.
+async function grantPermission(userId, permission) {
+  await db.query('INSERT INTO permissions (user_id, permission) VALUES ($1, $2)', [userId, permission]);
+  await redis.del(`perms:${userId}`);   // next read repopulates from the DB
+}
+```
+
+Between the `db.query` and the `redis.del`, or during the brief window after
+delete before the next read repopulates, the cache can be **empty or briefly
+stale** — a read in that gap either misses (safe, just slower) or, rarely,
+repopulates from a read that started before the write committed (the
+narrower race versioned keys or a short TTL cover). The cache is a pure
+derived copy the app manages explicitly; if Redis is down, reads still work
+by falling through to the database.
+
+**Write-through — every write goes through the cache, which writes the
+database itself, synchronously:**
+
+```js
+// A caching layer that owns both stores. The app never talks to the
+// database directly for this data.
+async function grantPermissionWriteThrough(userId, permission) {
+  await cache.set(`perms:${userId}`, async (current) => {
+    const updated = [...current, permission];
+    await db.query('INSERT INTO permissions (user_id, permission) VALUES ($1, $2)', [userId, permission]);
+    return updated;          // cache now holds the post-write value, guaranteed in sync
+  });
+}
+```
+
+The cache is never stale relative to the database, because the write isn't
+acknowledged until both are updated — but every write now pays the latency
+of both the cache write and the database write, on the critical path, and if
+either one is down the write fails outright (there's no "fall through and
+try again later").
+
+**What to say out loud:** cache-aside is the right default because the app
+already treats the database as the single source of truth and the cache as
+disposable — an empty Redis is a performance problem, never a correctness
+one. Write-through earns its cost only when a stale cache read is
+unacceptable *and* the write path can tolerate the extra latency and the
+tighter coupling — which is rare enough that cache-aside plus a fast,
+well-designed invalidation strategy (versioned keys, from the section above)
+usually beats write-through's guarantee for less operational cost.
+
+---
+
 ## What a weak answer sounds like
 
 - **"We update the cache when we write."** Races, and the wrong value persists.
@@ -426,6 +528,80 @@ with identical TTLs will expire in the same second.
 - **"We just set a TTL"** with no view on what staleness that admits.
 - **Ignoring in-process caches** when reasoning about invalidation. They're the
   invisible layer that makes "immediate" not immediate.
+
+---
+
+## Quiz
+
+### MCQ: In cache-aside, why should a write invalidate (delete) the cache entry rather than update it?
+- [ ] Deleting is faster than updating
+- [x] Updating creates a race where two concurrent writers can leave the cache holding the older value permanently; deleting is safe because the next read repopulates from the source of truth
+- [ ] Redis doesn't support atomic updates
+- [ ] Update operations don't support a TTL
+**Why:** With two writers, the cache can end up with the wrong value and nothing detects or corrects it until expiry — deleting means the worst case is an extra cache miss, not a silently wrong value.
+
+### MCQ: A hot key expires and every concurrent request misses simultaneously, hitting the database at once. What is this called?
+- [ ] Cache penetration
+- [x] Cache stampede (thundering herd)
+- [ ] Cache avalanche
+- [ ] Write-behind failure
+**Why:** The database was sized for cache-hit load, and the sudden simultaneous full-load hit can saturate it — the three mitigations are request coalescing, probabilistic early expiry, and stale-while-revalidate.
+
+### MCQ: How does request coalescing (single-flight) prevent a stampede?
+- [ ] It increases the TTL on hot keys automatically
+- [x] The first miss for a key triggers the actual fetch; concurrent misses for the same key wait on that one result instead of each hitting the origin
+- [ ] It replicates the hot key across multiple cache shards
+- [ ] It rejects requests during high load
+**Why:** This directly caps origin load at one request per key regardless of how many concurrent requests are asking for it, which is the core defense against a stampede.
+
+### MCQ: Why does TTL jitter (randomizing expiry by ±10%) matter even outside of a stampede scenario?
+- [ ] It reduces memory usage in the cache
+- [x] A thousand keys populated in the same second with an identical TTL all expire in the same second, creating a synchronized load spike
+- [ ] It's required for Redis cluster mode
+- [ ] It improves compression of cached values
+**Why:** Without jitter, keys written together expire together, recreating a stampede-like spike even without a single obviously "hot" key.
+
+### MCQ: Why is stale-while-revalidate dangerous to use unboundedly for authorization data specifically?
+- [ ] It's slower than other stampede mitigations
+- [x] Serving the stale (expired) value means potentially serving a permission that has since been revoked — a security issue, not just a freshness one
+- [ ] It doesn't work with Redis
+- [ ] It requires a consensus system to implement
+**Why:** For content, serving something slightly stale is cosmetic; for an authorization decision, it can mean an actively revoked user still gets "allow" — the mitigation needs a tight bound in that context.
+
+### MCQ: Why doesn't a TTL-based fix help with a "hot key" saturating one Redis shard?
+- [ ] TTLs only apply to write operations, not reads
+- [x] The problem is load distribution (all traffic hitting one shard), not expiry timing — no TTL strategy redistributes load across shards
+- [ ] Hot keys never actually expire
+- [ ] Redis shards automatically rebalance hot keys
+**Why:** This is fundamentally a distribution problem — the fix is spreading the load (replicating the key with a suffix, an in-process cache for just that key) or isolating the source (a hot tenant), not adjusting expiry.
+
+### MCQ: For a cached authorization decision, why are versioned cache keys (a per-user/tenant counter) usually preferred over explicit key-by-key invalidation?
+- [ ] Versioned keys use less memory
+- [x] Explicit invalidation requires knowing every affected key — with permission inheritance that fan-out is easy to get wrong, while a version bump makes everything derived from the old version unreachable at once, with nothing to enumerate
+- [ ] Versioned keys don't require a TTL at all
+- [ ] Explicit invalidation is not supported by Redis
+**Why:** A missed key in explicit invalidation is a silent security hole; versioned keys can't miss anything because old entries simply become unreachable by construction.
+
+### MCQ: What should actually be cached for an authorization check — the policy inputs or the decision?
+- [ ] The policy document itself, re-evaluated on every request
+- [x] The decision (the boolean outcome), keyed on (principal, tenant, permission, resource, version)
+- [ ] Only the user's role name
+- [ ] Nothing — authorization checks should never be cached
+**Why:** Caching inputs and re-evaluating still pays the policy-evaluation cost on every request, which is exactly the cost caching was meant to eliminate — caching the outcome avoids re-evaluation entirely.
+
+### MCQ: Why are in-process (per-instance) caches described as "the invisible layer that makes 'immediate' not immediate"?
+- [ ] They're slower than a shared Redis cache
+- [x] Each instance holds its own copy, so an invalidation must reach every instance individually, and they don't clear at deploy boundaries the way people assume
+- [ ] In-process caches can't be invalidated at all
+- [ ] They only exist in development environments, not production
+**Why:** When someone says "revocation takes 30 seconds" and it actually takes longer, per-instance caches that weren't accounted for are usually why — they're easy to forget when reasoning about invalidation paths.
+
+### MCQ: What's the "cache penetration" failure mode, and its typical fix?
+- [ ] Too many keys expiring simultaneously; fixed with TTL jitter
+- [x] Requests for keys that don't exist bypass the cache every time and always hit the database; fixed by caching the negative result with a short TTL, or a Bloom filter
+- [ ] One key saturating a single shard; fixed by replicating the key
+- [ ] The cache tier restarting cold; fixed by warming it before taking traffic
+**Why:** Since a nonexistent key never gets cached under the normal read path, every request for it repeats the full database round trip — caching "not found" (negative caching) closes that gap, and if attacker-controlled, penetration is effectively a DoS vector.
 
 ---
 

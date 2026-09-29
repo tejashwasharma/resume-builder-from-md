@@ -5,6 +5,37 @@ because that's where people either understand it or have been copying patterns.
 
 ---
 
+## In brief
+
+- **Node runs your JavaScript on one thread; slow work goes to the OS.**
+  Network I/O goes to the kernel (epoll/kqueue) using no thread at all;
+  `fs`, DNS, `bcrypt`, zlib go to libuv's thread pool (4 threads by
+  default); genuinely CPU-bound work (a big `for` loop, `JSON.parse` of
+  50MB) offloads nowhere and blocks the JS thread — and everything else —
+  while it runs.
+- **Microtasks drain between phases, not after all of them** — an `await`
+  resumes there, not on the next lap of the loop. `process.nextTick` beats
+  promise callbacks; both beat anything waiting in a loop phase. An endless
+  promise chain starves the loop exactly like an infinite `for` loop.
+- **The libuv thread pool has only 4 threads by default** — five concurrent
+  `bcrypt` calls means the fifth queues behind the others, which shows up
+  as mysterious login latency under load, not as high CPU.
+- **The fix for CPU-bound work is worker threads or a separate process,
+  never more concurrency tricks** — `async` means "doesn't block," not
+  "runs in parallel." Reaching for worker threads to handle more traffic
+  is a category error; that's what more processes (cluster, more
+  containers) are for.
+- **40% aggregate CPU can still mean one core pinned at 100%** — Node uses
+  one core per process, so per-core usage (not the aggregate) and event
+  loop lag are the two metrics that actually diagnose a slow Node service
+  under load.
+- **The classic leak sources are dull, not exotic**: an unbounded
+  module-level cache, event listeners added per request and never removed,
+  closures holding large objects alive, timers never cleared. The tell is
+  a heap that grows and never returns to baseline after GC.
+
+---
+
 ## The one-sentence version
 
 Node runs your JavaScript on **one thread**, and hands slow work (files,
@@ -290,6 +321,80 @@ containers — because that's what actually uses more cores for I/O.
 - **No idea what blocks the loop.** It's the single most common Node
   performance bug.
 - **Not knowing microtasks run between phases.**
+
+---
+
+## Quiz
+
+### MCQ: What happens to genuinely CPU-bound work (like a large `JSON.parse` or a big `for` loop) in Node?
+- [ ] It's automatically sent to the libuv thread pool
+- [x] It runs directly on the JS thread with no offloading, blocking everything else — other requests, timers, all of it
+- [ ] It's queued and run during the next idle period
+- [ ] It's sent to the operating system kernel like network I/O
+**Why:** Unlike file I/O or DNS (which use the thread pool) or network I/O (which uses the kernel's async primitives), pure CPU work has nowhere to offload to — it monopolizes the single JS thread.
+
+### MCQ: When does a Promise's `.then()` callback actually run relative to the event loop's phases?
+- [ ] After all phases complete, in the next full loop iteration
+- [x] Between every phase — the microtask queue drains completely before the loop moves to the next phase
+- [ ] Only during the "check" phase alongside `setImmediate`
+- [ ] Immediately, synchronously, without any queuing
+**Why:** This is why an `await` resumes between phases rather than waiting for the next lap — and why an endless promise chain can starve the loop just as effectively as an infinite loop.
+
+### MCQ: Between `process.nextTick` and a resolved Promise's `.then()`, which runs first?
+- [ ] They always run in registration order regardless of type
+- [x] `process.nextTick` callbacks run before Promise microtask callbacks
+- [ ] Promise callbacks always run first
+- [ ] It depends on which phase of the event loop is active
+**Why:** Node maintains two separate microtask-like queues that drain between phases, and `nextTick` is drained first, ahead of the Promise microtask queue.
+
+### MCQ: How many threads does the libuv thread pool use by default for operations like file I/O, DNS lookups, and `bcrypt`?
+- [ ] 1 (it's fully single-threaded)
+- [x] 4
+- [ ] As many as there are CPU cores
+- [ ] Unlimited — it scales with load automatically
+**Why:** This is `UV_THREADPOOL_SIZE`'s default — it's why hashing five passwords concurrently with bcrypt causes the fifth to queue behind the pool, showing up as unexplained login latency under load.
+
+### MCQ: Does network I/O (like an HTTP request or socket read) use the libuv thread pool?
+- [ ] Yes, it's the primary consumer of the thread pool
+- [x] No — network I/O uses the OS kernel's async primitives (epoll/kqueue) directly, with no thread involved at all
+- [ ] Only for outbound requests, not inbound
+- [ ] Only when using HTTPS rather than HTTP
+**Why:** This is why Node handles thousands of concurrent sockets easily but only 4 concurrent file reads (or bcrypt hashes) — the two categories of "slow work" are handled completely differently under the hood.
+
+### MCQ: A Node service reports 40% CPU usage under load but feels sluggish. What should be checked first?
+- [ ] Total memory usage across the whole machine
+- [x] Per-core CPU usage rather than the aggregate — Node uses one core per process, so one core could be pinned at 100% while the aggregate reads low
+- [ ] The number of open file descriptors
+- [ ] The Node.js version currently installed
+**Why:** With 4 cores and one busy single-threaded Node process, the aggregate reads 25% even though the process's one core is saturated — aggregate CPU can hide exactly the problem you're looking for.
+
+### MCQ: Why are worker threads the wrong tool for handling more concurrent HTTP requests?
+- [ ] Worker threads can't communicate with the main thread at all
+- [x] Worker threads are for offloading CPU-bound work off the main thread — handling more request concurrency (which is I/O-bound) is what more processes (cluster, more containers) are for
+- [ ] Worker threads don't support async/await
+- [ ] Worker threads are deprecated in current Node versions
+**Why:** Reaching for worker threads to scale request handling is a category error — each worker thread still has its own single event loop; the actual lever for I/O concurrency is more OS processes using more cores.
+
+### MCQ: What's the most reliable single metric for distinguishing "the server is busy" from "the server is blocked" in Node?
+- [ ] Total requests per second
+- [x] Event loop lag — how delayed the loop is in getting back around to process work
+- [ ] Memory usage
+- [ ] Number of active database connections
+**Why:** High legitimate load and a blocked event loop can both look like "the server feels slow," but only event loop lag directly measures whether the loop itself is stuck processing something synchronous.
+
+### MCQ: What is a classic symptom that indicates a Node process has a memory leak?
+- [ ] CPU usage spikes briefly during garbage collection
+- [x] The heap grows over time and never returns to its previous baseline after a garbage collection cycle
+- [ ] The process restarts automatically every few hours
+- [ ] Response latency increases linearly with request count
+**Why:** A healthy process's heap grows and shrinks with GC cycles; a leaking process's heap ratchets upward because something (an unbounded cache, unremoved listeners, retained closures) keeps objects alive that should have been collected.
+
+### MCQ: Why does raising `UV_THREADPOOL_SIZE` help with bcrypt-related latency under concurrent login load, specifically?
+- [ ] It makes each individual bcrypt hash computation faster
+- [x] It increases the number of threads available in the pool that bcrypt calls queue behind, reducing how often concurrent hash operations have to wait for a free thread
+- [ ] It moves bcrypt operations to the network I/O path instead
+- [ ] It's unrelated to bcrypt and only affects file I/O
+**Why:** bcrypt (and other CPU-ish built-ins) run through the same libuv thread pool as file I/O and DNS — with only 4 threads by default, a burst of concurrent logins can bottleneck there even though the CPU work itself isn't slow.
 
 ---
 

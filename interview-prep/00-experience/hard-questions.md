@@ -8,6 +8,26 @@ Over-explaining is what turns a neutral fact into a red flag.
 
 ---
 
+## In brief
+
+- Why you left / why you aren't working right now: two or three sentences,
+  no criticism of the former employer, ending on what you want next.
+- "Tell me about yourself": a 60–90 second walk from role to role that ends
+  at *why this job*, not a recitation of the resume.
+- Biggest weakness: a real one, with the concrete thing you're doing about
+  it — not a disguised strength.
+- Conflict with a colleague: pick one with a resolution, focus on what you
+  did to move it forward, not who was right.
+- A time you failed: own the mistake plainly, then what changed afterward.
+- Why this company: specific to them — their product, team, or problem — not
+  generic enthusiasm that would work for any employer.
+- Salary: have a range ready and know whether you'll give it first or ask
+  theirs first.
+- Always have 2–3 real questions to ask them; "no questions" reads as
+  disengaged.
+
+---
+
 ## "Why did you leave Contentstack?" / "Why aren't you working right now?"
 
 **Guaranteed.** Your resume shows Aug 2026, and it's now September 2026. Every

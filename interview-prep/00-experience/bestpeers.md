@@ -11,6 +11,27 @@ monolith split get real questions.
 
 ---
 
+## In brief
+
+- Story 1 — de facto technical lead across concurrent client projects with
+  no formal title: ran ceremonies, owned delivery, 80%+ on-time. State it
+  plainly; don't qualify the missing title unless asked.
+- Story 2 — split a monolith into 3 microservices by domain, not by layer,
+  and stood up E2E + unit suites (85%+ coverage) to make the change safe.
+  Know the boundary criteria and why layer-splitting is the anti-pattern.
+- Story 3 — Xtensio editor performance: rebuilt heavy components into
+  lightweight ones, cut render time 30%. Know what actually made components
+  heavy and how you measured the win.
+- Story 4 — Pinzon (remote patient monitoring: vitals ingestion, alerts) and
+  Clipboard Health (nurse shift search: geolocation, apply logic) — two
+  products in one story, each with its own reliability and concurrency
+  questions.
+- The unresolved specifics (the one unblocking anecdote, the actual 3
+  services, the compliance scope, the geo approach used) are `FILL IN`
+  markers — fill them before this story gets drilled.
+
+---
+
 ## Story 1 — Technical leadership without the title
 
 *Covers bullet 1.*

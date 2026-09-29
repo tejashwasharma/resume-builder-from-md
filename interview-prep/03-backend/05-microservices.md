@@ -6,6 +6,38 @@ can articulate the **cost**.
 
 ---
 
+## In brief
+
+- **Microservices solve an organizational problem more than a technical
+  one**: letting teams deploy independently without coordinating. "The
+  codebase is messy" or "microservices are modern" are not real reasons to
+  split — a modular monolith fixes messiness with none of the operational
+  cost.
+- **Splitting by technical layer creates a distributed monolith**: every
+  feature crosses API/logic/data services, so you still deploy them
+  together, paying network complexity for zero independence. Splitting by
+  domain (Orders, Billing, Shipping) means a feature usually touches one
+  service.
+- **Data ownership is the sharpest test of a correct boundary**: if two
+  services write the same table, they're actually one service. The
+  practical question — "can you deploy this without coordinating with
+  another team?" — decides whether the boundary is right.
+- **The cost list has to be named unprompted**: every in-process call
+  becomes a network call that can fail or hang, debugging needs
+  distributed tracing instead of a stack trace, data consistency becomes
+  your problem (sagas, outbox), and local development gets meaningfully
+  harder. Listing only benefits is the tell of enthusiasm over experience.
+- **Sync vs. async communication is decided by one question**: does the
+  caller need the answer to continue? A welcome email failing shouldn't be
+  able to fail user registration. Avoid synchronous chains (A→B→C→D) —
+  latency adds up and any single failure kills the whole request.
+- **A service mesh is worth its operational weight only past a certain
+  scale** — many services in several languages benefit from consistent
+  retries/mTLS/tracing at the infrastructure layer; a handful of services
+  in one language gets the same behavior from a library, more cheaply.
+
+---
+
 ## What they actually buy you
 
 Microservices solve an **organisational** problem more than a technical one:
@@ -265,6 +297,80 @@ for one customer" is undiagnosable otherwise.
 - **Shared database across services.** The anti-pattern.
 - **Listing only benefits.** Every architecture question wants the cost.
 - **No tracing story.** Debugging is the biggest day-to-day cost.
+
+---
+
+## Quiz
+
+### MCQ: According to this chapter, what problem do microservices primarily solve?
+- [ ] A purely technical scalability problem
+- [x] An organizational problem — letting teams deploy independently without coordinating with each other
+- [ ] A code readability problem
+- [ ] A cost-reduction problem
+**Why:** The genuine reasons to split are organizational (teams blocked on each other's deploys, differing scaling needs, fault isolation) — "the codebase is messy" or "it's modern" are explicitly named as not reasons.
+
+### MCQ: Why does splitting services by technical layer (API service → logic service → data service) create a "distributed monolith"?
+- [ ] It requires more servers than splitting by domain
+- [x] Every feature crosses all three layers, so the services still have to deploy together — you get network complexity with none of the independence benefit
+- [ ] Technical-layer splits are always slower at runtime
+- [ ] It's impossible to implement with modern frameworks
+**Why:** The alternative — splitting by domain (Orders, Billing, Shipping) — means adding a field to Shipping touches only Shipping, actually achieving independent deployability.
+
+### MCQ: What is "the classic anti-pattern" this chapter names for microservice data ownership?
+- [ ] Using a NoSQL database instead of SQL
+- [x] Two services writing to the same shared database table — if they do, they're effectively one service pretending to be two
+- [ ] Storing data in more than one region
+- [ ] Using an ORM instead of raw SQL
+**Why:** Sharing a table means neither service can change its schema independently, which removes the entire point of splitting — you get distributed deployment complexity with none of the actual independence.
+
+### MCQ: What's the practical test this chapter offers for whether a service boundary is correctly drawn?
+- [ ] Whether the service has fewer than 1,000 lines of code
+- [x] Whether you can deploy this service without coordinating with another team
+- [ ] Whether the service uses a different programming language
+- [ ] Whether the service has its own dedicated on-call rotation
+**Why:** This directly tests the organizational goal microservices are meant to serve — if deploying one service still requires coordinating with another team, the boundary hasn't actually achieved independence.
+
+### MCQ: Which of these is explicitly named as part of the real cost of microservices that should be volunteered unprompted?
+- [ ] Higher cloud hosting bills only
+- [x] Every in-process call becomes a network call that can fail or be slow, and debugging needs distributed tracing instead of a stack trace
+- [ ] The need to rewrite the entire codebase in a new language
+- [ ] Losing the ability to use version control
+**Why:** Listing only benefits is called out as a weak answer — naming these concrete costs (network calls that fail, harder debugging, consistency becoming your problem, harder local dev) is what separates experience from enthusiasm.
+
+### MCQ: What question decides whether a call between services should be synchronous or asynchronous?
+- [ ] Whether the two services are written in the same language
+- [x] Does the caller need the answer to continue — if yes, synchronous; if it's a side effect, asynchronous
+- [ ] Whether the call crosses a network boundary
+- [ ] How large the payload is
+**Why:** A welcome email failing shouldn't be able to fail user registration — that's the concrete example that makes the sync/async decision obvious in practice.
+
+### MCQ: Why should synchronous call chains (Service A → B → C → D) be avoided where possible?
+- [ ] Synchronous calls are always slower than asynchronous ones
+- [x] Latency compounds down the chain, and a failure anywhere in the chain kills the entire request
+- [ ] Chains longer than two services aren't supported by most frameworks
+- [ ] It's a purely stylistic preference with no real cost
+**Why:** Each additional synchronous hop adds both latency and a new point of failure — a shallow fan-out or event-based design avoids that compounding risk.
+
+### MCQ: For two services that both need access to the same underlying data, what's usually the preferred approach over having them share a database table?
+- [ ] Merging the two services back into one
+- [x] Each service maintains its own copy of the data it needs, kept eventually consistent through events
+- [ ] Using a distributed transaction across both services on every read
+- [ ] Granting one service direct read access to the other's database
+**Why:** This trades storage duplication and a consistency window for genuine independence — each service can evolve its own copy's schema without coordinating with the other.
+
+### MCQ: Why is a "correlation ID" described as solving "most of" the distributed debugging problem, even before proper distributed tracing is added?
+- [ ] It automatically fixes the underlying bug causing slow requests
+- [x] Generated at the edge and propagated through every call, it lets logs from all services involved in one request be pulled together, even without full span-based tracing
+- [ ] It replaces the need for logging entirely
+- [ ] It's only useful for security auditing, not debugging
+**Why:** Even a simple shared identifier across service logs dramatically narrows "which of these five services' logs relate to this one failing request" — full tracing (spans, parent/child relationships) adds more detail on top of that foundation.
+
+### MCQ: When is a service mesh (Istio, Linkerd) worth its operational complexity, according to this chapter?
+- [ ] Always — it should be the default for any service-to-service communication
+- [x] When there are many services written in several different languages, where consistent retry/mTLS/tracing behavior would otherwise need to be reimplemented per language
+- [ ] Only for public-facing APIs, never for internal services
+- [ ] Never — a service mesh is described as pure overhead in all cases
+**Why:** For a handful of services in one language, a shared library achieves the same cross-cutting behavior without taking on a sidecar proxy's operational weight — the mesh earns its cost specifically at multi-language scale.
 
 ---
 

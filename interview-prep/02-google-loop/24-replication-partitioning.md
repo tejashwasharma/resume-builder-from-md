@@ -11,6 +11,43 @@ Most real systems do both: split the data up, then keep copies of each piece.
 
 ---
 
+## In brief
+
+- **Replication and partitioning solve different problems, and most systems
+  need both.** Replication keeps copies of the *same* data (buys
+  availability + read throughput); partitioning splits *different* data
+  across nodes (buys write throughput + storage). Neither substitutes for
+  the other.
+- **Single-leader is the default for good reason** — multi-leader's whole
+  difficulty is write-conflict resolution, and leaderless trades a leader
+  for quorum math. `W + R > N` is the quorum condition that guarantees any
+  read set overlaps any write set.
+- **Async replication can lose acknowledged writes** — if the leader
+  confirms and dies before the follower receives it, that write is gone
+  even though the client was told it succeeded. Semi-synchronous (wait for
+  one follower) is the usual middle ground; the choice should have a stated
+  RPO, not be a default nobody examined.
+- **`hash(key) mod N` is the trap**: adding one node changes N, so nearly
+  every key remaps — roughly 80% of keys move going from 4 to 5 nodes.
+  Consistent hashing (keys and nodes on a ring) moves only ~1/N of keys.
+- **Even data distribution doesn't mean even load** — in a multi-tenant
+  system, access is always uneven: one customer generates far more traffic
+  than the rest combined. The fix is a composite key (`tenant + entity_id`)
+  so one tenant spreads across shards, or a dedicated shard for the
+  largest tenants.
+- **Failover is where most data loss actually happens**, not steady-state
+  operation — split brain (two nodes both accepting writes after a false
+  "leader died" signal) and promoting a follower that hadn't caught up are
+  the two concrete failure shapes, defended against with fencing tokens and
+  majority election.
+- **Never rebalance with `mod N`.** Fixed logical partitions (far more
+  partitions than nodes) mean growing the cluster reassigns partitions
+  rather than rehashing keys — and rebalancing should be throttled and
+  preferably manual, since automatic rebalancing during an incident can
+  turn a slow node into a dead cluster.
+
+---
+
 ## Replication
 
 ### The three topologies
@@ -417,6 +454,81 @@ moves ~1/N of the keys rather than remapping everything.
   the counterexample and they're your background.
 - **No answer for the hot tenant.**
 - **Not knowing that async replication can lose acknowledged writes.**
+
+---
+
+## Quiz
+
+### MCQ: What's the core difference between replication and partitioning?
+- [ ] They're two names for the same technique
+- [x] Replication keeps copies of the same data on multiple nodes; partitioning splits different data across nodes
+- [ ] Replication is for writes, partitioning is for reads
+- [ ] Partitioning always requires replication to work
+- [ ] Replication only works with SQL databases
+**Why:** Replication buys availability and read throughput (every node has everything); partitioning buys write throughput and storage capacity (each node owns a subset) — most real systems need both.
+
+### MCQ: Why is multi-leader replication harder to operate than single-leader?
+- [ ] It requires more hardware
+- [x] Multiple nodes can accept writes independently, so conflicting writes must be detected and reconciled
+- [ ] It doesn't support read replicas
+- [ ] It's incompatible with quorum reads
+**Why:** The double-headed arrow between leaders in a multi-leader topology represents writes accepted on both sides that now need conflict resolution — that's the entire added cost over single-leader.
+
+### MCQ: What quorum condition guarantees that any read set overlaps any write set?
+- [ ] W = N
+- [x] W + R > N
+- [ ] R = 1
+- [ ] W = R
+**Why:** With N replicas, W write acknowledgments, and R read replicas consulted, W + R > N ensures at least one node in any read set also received the most recent write.
+
+### MCQ: With asynchronous replication, what can happen if the leader confirms a write and then dies before the follower receives it?
+- [ ] Nothing — async replication guarantees delivery eventually
+- [x] The acknowledged write is permanently lost, even though the client was told it succeeded
+- [ ] The follower automatically becomes the new leader with the missing write
+- [ ] The write is queued and retried indefinitely
+**Why:** This is the fundamental trade of async replication — durability isn't guaranteed until the follower actually has the data, which is why semi-synchronous (wait for at least one follower) is a common middle ground.
+
+### MCQ: Why is `hash(key) mod N` a trap when adding a node to a cluster?
+- [ ] It's computationally too slow
+- [x] Changing N remaps nearly every key to a different node, causing massive unnecessary data movement
+- [ ] It only works with string keys, not numeric ones
+- [ ] It doesn't distribute keys evenly in the first place
+**Why:** Going from 4 to 5 nodes with naive mod-N hashing moves roughly 80% of keys; consistent hashing moves only about 1/N (the new node's share).
+
+### MCQ: What does consistent hashing achieve that `hash(key) mod N` doesn't?
+- [ ] Faster lookups
+- [x] Adding or removing a node only moves the keys belonging to that node's arc of the ring, not nearly all the keys
+- [ ] It eliminates the need for replication
+- [ ] It guarantees perfectly even load regardless of access patterns
+**Why:** By placing both keys and nodes on a hash ring, only the arc adjacent to a changed node is affected — virtual nodes further smooth the distribution across physical nodes.
+
+### MCQ: A multi-tenant system shards by tenant ID, and data is evenly distributed across shards. Is load necessarily even too?
+- [ ] Yes, even data distribution guarantees even load
+- [x] No — one large tenant can generate far more traffic than the rest combined, saturating its shard while others idle
+- [ ] Only if the database uses SSDs
+- [ ] This can only happen with range-based partitioning, not hash-based
+**Why:** Even data distribution assumes even access, which multi-tenant systems violate by nature — this is the hot-partition problem, fixed with composite keys or dedicated shards for large tenants.
+
+### MCQ: What does the Redis Cluster hash tag syntax `{tenantId}:sessions:userId` accomplish that a plain composite key doesn't?
+- [ ] It makes the key shorter
+- [x] It ensures all of a tenant's keys hash to the same cluster slot, so multi-key operations across them don't fail with CROSSSLOT
+- [ ] It encrypts the tenant ID
+- [ ] It disables sharding for that key entirely
+**Why:** Without the `{...}` hash tag, Redis Cluster hashes the whole key including the varying `userId`, scattering a tenant's keys across slots and breaking multi-key operations scoped to that tenant.
+
+### MCQ: What's a "split brain" failure in a replicated system?
+- [ ] A node running out of disk space
+- [x] The old leader wasn't actually dead, just unreachable — now two nodes both believe they're the leader and accept writes, causing divergence
+- [ ] A partition key that hashes unevenly
+- [ ] A replica that never catches up to the leader
+**Why:** Split brain is defended against with fencing tokens (a monotonic epoch storage checks, rejecting the stale leader's writes) and requiring a majority to elect a new leader.
+
+### MCQ: Why should cluster rebalancing be throttled and preferably manually triggered rather than fully automatic?
+- [ ] Manual rebalancing is always faster
+- [x] Automatic rebalancing during an incident adds migration load on top of an already-struggling node, potentially turning a slow node into a dead cluster
+- [ ] Automatic rebalancing isn't supported by most databases
+- [ ] Throttling eliminates the need for fixed logical partitions
+**Why:** Migration traffic competes with real traffic — rebalancing a cluster that's already under stress can make the situation dramatically worse rather than better.
 
 ---
 

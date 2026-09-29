@@ -6,6 +6,42 @@ database transactions when data lives in several services.
 
 ---
 
+## In brief
+
+- **"Exactly-once delivery" doesn't exist** — a sender can't distinguish
+  "request lost" from "reply lost," so it must either retry (risking
+  duplicates, at-least-once) or not (risking loss, at-most-once). The
+  precise, achievable formulation is **effectively-once**: at-least-once
+  delivery plus idempotent processing.
+- **The idempotency key pattern**: client sends a unique key per logical
+  operation; the server inserts the key, performs the side effect, and
+  stores the response **all in one transaction**. A retry hits the unique
+  violation and returns the *stored* response instead of repeating the
+  effect. Split the insert from the side effect across two transactions and
+  a crash between them leaves a key with no response — the retry returns
+  nothing while the money already moved.
+- **Wall-clock timestamps are not a valid ordering mechanism** across
+  machines — clocks drift, NTP can step time backwards. Logical clocks
+  (Lamport for total order, vector clocks when you need to distinguish
+  "happened before" from "concurrent") are the real tool. Last-write-wins
+  by timestamp silently discards data.
+- **2PC is rarely the answer for microservices** because it's blocking: if
+  the coordinator dies after "prepare," participants hold locks
+  indefinitely, unable to commit or abort. It trades availability for
+  consistency in a way most internet-facing systems can't afford.
+- **Sagas replace a distributed transaction with local transactions plus
+  compensating actions** — and compensation is not rollback: the charge
+  genuinely happened and is then refunded, both visible on the statement.
+  Order steps so the hardest-to-compensate action happens last.
+- **The outbox pattern solves the "update DB and publish an event
+  atomically" problem**: write the event to an outbox table in the *same*
+  local transaction as the state change, then a separate relay publishes
+  from there. This is inherently at-least-once (the relay can crash after
+  publishing but before marking sent) — which is exactly why consumers must
+  still be idempotent.
+
+---
+
 ## Foundations
 
 ### Time is not what you think
@@ -518,6 +554,80 @@ services reacting to each other's events.
   gap the outbox closes.
 - **Ordering events by wall-clock timestamps across machines.** Clocks drift
   and can step backwards.
+
+---
+
+## Quiz
+
+### MCQ: Why does "exactly-once delivery" not exist at the transport layer?
+- [ ] Network hardware doesn't support it
+- [x] A sender can't distinguish "the request never arrived" from "it arrived and worked but the reply was lost" — so it must either retry (risking duplicates) or not (risking loss)
+- [ ] It requires quantum networking
+- [ ] Only TCP-based protocols have this limitation
+**Why:** There's no third option at the transport layer — the achievable guarantee is "effectively-once": at-least-once delivery plus idempotent processing.
+
+### MCQ: In the idempotency-key pattern, why must inserting the key and performing the side effect happen in the same transaction?
+- [ ] It's faster to execute as one transaction
+- [x] If they're split, a crash between them leaves a key recorded with no stored response — the retry returns nothing while the effect (e.g. a charge) already happened
+- [ ] Databases don't support separate inserts to different tables
+- [ ] It's required by the HTTP specification
+**Why:** The whole safety property depends on atomicity — insert-key, do-the-work, and store-the-response must succeed or fail together.
+
+### MCQ: Why is wall-clock timestamp comparison across different machines unreliable for ordering events?
+- [ ] Timestamps are too large to compare efficiently
+- [x] Machine clocks drift and NTP corrections can step time backwards, so two events microseconds apart can carry timestamps in the wrong order
+- [ ] Timestamps don't include timezone information
+- [ ] This is only a problem with 32-bit systems
+**Why:** Logical clocks (Lamport, vector) are the correct tool for ordering events across machines — comparing wall-clock timestamps from different machines can produce an incorrect order.
+
+### MCQ: What's the key difference between a Lamport clock and a vector clock?
+- [ ] Lamport clocks are more accurate
+- [x] A vector clock can distinguish "happened before" from "concurrent"; a Lamport clock gives only a total order and can't tell the two apart
+- [ ] Vector clocks require synchronized wall-clock time
+- [ ] Lamport clocks only work with two nodes
+**Why:** This distinguishing power is exactly what's needed for conflict detection — a Lamport clock alone can't tell you whether two events were causally related or truly concurrent.
+
+### MCQ: Why is two-phase commit (2PC) rarely the right choice for cross-microservice transactions?
+- [ ] It's too slow for any use case
+- [x] It's blocking — if the coordinator dies after "prepare," participants hold locks indefinitely, unable to commit or abort
+- [ ] It doesn't support more than two participants
+- [ ] It requires all participants to use the same database engine
+**Why:** The coordinator becomes a single point of failure that can freeze the entire system, and locks held across the network scale badly — availability becomes the product of every participant's availability.
+
+### MCQ: In a saga, what happens to the "compensating action" for a step that already completed?
+- [ ] It's rolled back as if it never happened, invisibly
+- [x] It's a new, forward-moving action (e.g. a refund) that undoes the effect — the original action genuinely happened and remains visible (e.g. on a statement)
+- [ ] The entire saga is deleted from the database
+- [ ] Compensation only applies to the very last step of a saga
+**Why:** Compensation is not rollback — the charge really happened and is then refunded, both appearing on the customer's statement, and intermediate states were visible to other services in between.
+
+### MCQ: Why should a saga's steps be ordered so the hardest-to-compensate action happens last?
+- [ ] It makes the saga run faster overall
+- [x] It reduces exposure — most failures then compensate an easy step rather than needing to undo something that can't be cleanly reversed (like sending an email)
+- [ ] Database constraints require a specific step order
+- [ ] It's required for orchestrated sagas but not choreographed ones
+**Why:** Some actions (sending an email) can't be compensated at all — ordering the saga so the irreversible or hard-to-reverse step happens last minimizes how often compensation is actually needed.
+
+### MCQ: What problem does the outbox pattern solve?
+- [ ] Slow database writes
+- [x] Atomically updating a database AND publishing an event, when they're two different systems that can't share a transaction
+- [ ] Choosing between SQL and NoSQL databases
+- [ ] Encrypting messages in transit
+**Why:** Writing the event to an outbox table in the *same* local transaction as the state change means both succeed or fail together — a separate relay then publishes from the outbox.
+
+### MCQ: Why is the outbox pattern's publishing step still "at-least-once" rather than "exactly-once"?
+- [ ] Because outbox tables don't support unique constraints
+- [x] The relay can crash after publishing an event to the broker but before marking it as sent in the database, causing it to be republished on the next run
+- [ ] Because brokers never acknowledge successful publishes
+- [ ] Because the outbox table has no ordering guarantee
+**Why:** This crash window is exactly why every consumer of outbox-published events must still be idempotent — the outbox buys atomicity with the database write, not exactly-once delivery.
+
+### MCQ: A `PUT /orders/{client-generated-uuid}` request is naturally idempotent. Why?
+- [ ] PUT requests are always faster than POST requests
+- [x] It replaces a resource at a client-chosen URI — sending it twice leaves the resource in the same final state
+- [ ] PUT requests can't be retried by HTTP clients
+- [ ] It automatically uses an idempotency key header
+**Why:** Unlike POST (which by HTTP semantics is not idempotent), PUT's semantics of "replace this resource at this URI" mean repeated identical requests produce the same end state — though this only works when the client can legitimately assign the resource's identity.
 
 ---
 

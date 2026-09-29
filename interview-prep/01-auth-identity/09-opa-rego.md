@@ -7,6 +7,37 @@ Docs: [Open Policy Agent](https://www.openpolicyagent.org/docs/latest/)
 
 ---
 
+## In brief
+
+- OPA decouples authorization logic from application code: policy lives as
+  versioned, testable Rego instead of `if` statements scattered across
+  services. **PEP** (your service) asks; **PDP** (OPA) decides.
+- **Deployment shape drives latency.** Library/in-process is microseconds,
+  sidecar over localhost is ~1ms, a central OPA cluster is a network round
+  trip on every request — the latency trap, since authorization runs on
+  every request.
+- **`default allow := false`** — deny by default, always. Skipping it fails
+  open on any unmatched input, the wrong direction for security. Conditions
+  inside a rule AND together; multiple rules of the same name OR.
+- **Never fetch data during evaluation** (`http.send` inside policy) — that's
+  an N+1 against the policy store on every authorization decision, and it's
+  the classic cause of multi-second tails. Push data into OPA via bundles or
+  a push API instead.
+- **Cache the decision, not the inputs** — keyed on (principal, tenant,
+  permission, resource). A cached allow for a now-revoked permission is a
+  **security bug, not a stale read**, so invalidation needs versioned cache
+  keys (bump a counter on any role change), not just a TTL.
+- Diagnosing a slow policy starts by splitting "inside evaluation" (rules
+  that can't be indexed, deep comprehensions, a huge `data` document) from
+  "around evaluation" (a network hop to a central PDP) — the fix is
+  different depending on which one it is.
+- Test policy with a decision table weighted toward **negative** cases
+  (authorization bugs are overwhelmingly wrongly-*permitted*), explicit
+  cross-tenant denial tests, and shadow-mode evaluation on real traffic
+  before a new policy enforces anything.
+
+---
+
 ## Foundations
 
 **OPA** is a general-purpose policy engine. You hand it a JSON input and it
@@ -389,6 +420,81 @@ during a gradual RBAC rollout.
   waiting for a role change.
 - **"Rego is just like writing if statements."** It's declarative; treating it
   imperatively produces slow, unindexable policy.
+
+---
+
+## Quiz
+
+### MCQ: In the PDP/PEP vocabulary, what is OPA?
+- [ ] The Policy Enforcement Point
+- [x] The Policy Decision Point — it evaluates policy and returns a decision
+- [ ] A caching layer in front of the database
+- [ ] The API gateway itself
+**Why:** Your service is the PEP — it asks the question and applies the answer. OPA is the PDP — it evaluates policy against input and returns allow/deny.
+
+### MCQ: Why is running OPA as a central service on the authorization hot path considered a latency trap?
+- [ ] Central OPA instances can't be load-balanced
+- [x] Authorization runs on every single request, so a network round trip per decision lands directly in your p99
+- [ ] Central OPA doesn't support Rego's full feature set
+- [ ] It requires a separate database
+**Why:** Library or sidecar deployment keeps evaluation local (microseconds to ~1ms); a central cluster adds a network hop that's paid on every request, not occasionally.
+
+### MCQ: What does omitting `default allow := false` from a Rego policy risk?
+- [ ] A syntax error at build time
+- [x] An input that no rule matches has no guaranteed decision, instead of a safe, explicit deny
+- [ ] Slower policy evaluation
+- [ ] The policy simply won't compile
+**Why:** Without an explicit default, "no rule matched" isn't the same as "denied" — deny-by-default has to be stated, not assumed, and the wrong assumption fails in the dangerous direction.
+
+### MCQ: Within a single Rego rule body, how do multiple conditions combine?
+- [x] AND — every condition in the body must hold
+- [ ] OR — any one condition holding is enough
+- [ ] They're evaluated in the order written, first match wins
+- [ ] XOR — exactly one may hold
+**Why:** Conditions inside one rule body AND together; it's separate rules sharing the same name (e.g. multiple `allow` blocks) that OR — each is an alternative ground for allowing.
+
+### MCQ: Why is calling `http.send` (an external fetch) inside a Rego policy dangerous on a hot path?
+- [ ] Rego doesn't support HTTP calls at all
+- [x] It turns every authorization decision into a synchronous external call during evaluation — the classic N+1 shape behind multi-second tails
+- [ ] It bypasses the `default allow := false` rule
+- [ ] It only works with the sidecar deployment shape
+**Why:** Data should be pushed into OPA (bundles, push API) ahead of time; fetching during evaluation means every single decision pays a network round trip.
+
+### MCQ: What should be cached to speed up repeated authorization checks — and what's the danger if it's done wrong?
+- [ ] Cache the raw Rego policy text; re-evaluate it each time
+- [x] Cache the decision itself, keyed on (principal, tenant, permission, resource) — a stale cached "allow" for a revoked permission is a security bug, not just a stale read
+- [ ] Cache the `input` document only
+- [ ] Caching authorization decisions is never safe
+**Why:** The output (allow/deny) is what's expensive to recompute and safe to reuse — as long as invalidation is correct, since an incorrect cached allow is an active vulnerability, not a UX annoyance.
+
+### MCQ: Why are versioned cache keys (a per-user/tenant counter bumped on role change) preferred over a short TTL alone for authorization decisions?
+- [ ] They're simpler to implement
+- [x] A TTL alone means a revoked permission stays cached-allowed for up to the TTL window; versioned keys invalidate everything derived from a role change at once, with nothing to enumerate
+- [ ] TTLs aren't supported by most cache stores
+- [ ] Versioned keys use less memory
+**Why:** A short TTL is a deliberate, bounded staleness trade; a version bump is immediate and exact — no missed keys, no waiting out a window.
+
+### MCQ: Policy evaluation is fast at the median but has a multi-second p99. What does that pattern usually indicate?
+- [ ] A network misconfiguration unrelated to policy
+- [x] Fan-out — a specific request shape (many roles, deep resource hierarchy) is taking a different, more expensive code path through the policy
+- [ ] The policy is missing `default allow := false`
+- [ ] OPA's WASM compiler has a bug
+- [ ] The database connection pool is exhausted
+**Why:** A slow median points at a systemic issue; a slow tail with a fast median points at specific inputs multiplying the work — a different code path, not a uniformly slower one.
+
+### MCQ: When testing Rego policy, why should negative test cases (denial) get more weight than positive ones?
+- [ ] Rego's test framework only supports asserting denial
+- [x] Authorization bugs are overwhelmingly cases of wrongly *permitting* access, so proving the policy correctly denies is the higher-value test
+- [ ] Positive cases can't be expressed in `opa test`
+- [ ] Negative cases run faster
+**Why:** The failure mode that actually causes incidents is unintended access, not unintended denial — a decision table weighted toward "this must be denied" catches the costlier class of bug.
+
+### MCQ: What does shadow-mode (dark-launch) policy evaluation in production actually test?
+- [ ] Whether the new policy compiles correctly
+- [x] Whether the new policy's decisions match the old policy's decisions on real traffic, before the new one enforces anything
+- [ ] The raw latency of policy evaluation under load
+- [ ] Whether `opa test` coverage is complete
+**Why:** Running old and new policy side-by-side without enforcing the new one surfaces divergences on real-world inputs nobody thought to write as a unit test — the highest-value technique beyond unit tests.
 
 ---
 

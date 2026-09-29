@@ -6,6 +6,37 @@ definition questions.
 
 ---
 
+## In brief
+
+- Three models answer "may this principal do this to this resource?"
+  differently: **RBAC** by role, **ABAC** by attributes of principal/
+  resource/environment, **ReBAC** by relationships in a graph. Most real
+  systems land on **RBAC with attribute conditions** — roles for the shape,
+  policy for the "…but only if."
+- **Permissions are the atoms, never role names.** Code should ask "does this
+  principal hold `entry:publish`?", never `if user.role === 'admin'` —
+  hard-coding role names into the app blocks customer-defined roles and
+  drifts between services as the check gets copied.
+- **Role explosion** is the tell of pure RBAC breaking down: a role name that
+  encodes a condition (`editor-eu-readonly-contractor`) means that dimension
+  belongs in policy, not in the role.
+- **In multi-tenancy, "can this user publish?" is not a well-formed
+  question** — the same user can be admin in org A and viewer in org B.
+  Every check carries a tenant, resolved *before* roles are gathered, and
+  membership is verified in shared middleware so no single endpoint can
+  forget it.
+- A missing authorization check **fails silently** — nothing errors, it just
+  permits. That's why per-endpoint checks are dangerous and centralizing the
+  check (shared middleware, one enforcement point) is the real defense.
+- **ReBAC** (Zanzibar, OpenFGA, SpiceDB) is the right model when permissions
+  flow through containment or sharing — Drive, GitHub — not when they map to
+  job function, where RBAC-plus-conditions stays simpler.
+- Revoking a role is a security question, not a performance one: a stale
+  "allow" for a removed role is a vulnerability, so cache invalidation needs
+  versioned keys, not just a TTL.
+
+---
+
 ## Foundations
 
 Three authorization models, each answering "may this principal do this to this
@@ -468,6 +499,81 @@ most candidates only get as far as "we added a roles table."
   view on it suggests you haven't operated RBAC at scale.
 - **Treating a revoked role as eventually-consistent** without recognising the
   security implication.
+
+---
+
+## Quiz
+
+### MCQ: "Editors in the EU may publish EU content during business hours" is a rule for which model?
+- [ ] RBAC alone
+- [x] ABAC — the decision depends on attributes of principal, resource, and environment
+- [ ] ReBAC alone
+- [ ] None of these models can express it
+**Why:** The rule can't be expressed as a single role without encoding region and time into the role name — that's exactly ABAC's territory.
+
+### MCQ: What is "role explosion"?
+- [ ] Too many users assigned to the same role
+- [x] A new role created for every combination of conditions, until nobody can say what any role means
+- [ ] A role with too many permissions bundled into it
+- [ ] Deleting a role that's still in use
+**Why:** Role names that encode conditions (`editor-eu-readonly-contractor`) are the tell — that dimension belongs in policy/attributes, not in a proliferating set of roles.
+
+### MCQ: Why should authorization code check `perms.has('entry:publish')` rather than `user.role === 'admin'`?
+- [ ] The permission check is faster
+- [x] Checking permissions rather than role names is what makes customer-defined, data-driven roles possible
+- [ ] Role name checks aren't supported in most frameworks
+- [ ] It removes the need for a database
+- [ ] It's an API convention with no real functional difference
+**Why:** If code has to know role names in advance, you can't ship custom roles — permissions-as-atoms lets roles be data added, edited, or defined by a customer without a deploy.
+
+### MCQ: In a multi-tenant platform, why must the tenant be resolved *before* a user's roles are gathered?
+- [ ] It's required for database indexing performance
+- [x] A user's roles are scoped per tenant — "is this user an editor" is meaningless without knowing in which org
+- [ ] Tenants must be alphabetically sorted first
+- [ ] It's only needed for audit logging
+**Why:** The same user can be admin in one org and viewer in another; gathering roles before resolving the tenant produces a meaningless or wrong answer.
+
+### MCQ: An endpoint takes the tenant/org id from the URL path rather than the token. What must every such endpoint do?
+- [ ] Nothing extra — the token already proves identity
+- [x] Explicitly verify the requesting user is actually a member of that org, ideally in shared middleware
+- [ ] Rate-limit requests to that endpoint
+- [ ] Re-issue a new token scoped to that org
+**Why:** When the tenant comes from the request rather than being baked into the token, a missing membership check lets a user in org A simply supply org B's id and read its data.
+
+### MCQ: What makes a missing authorization check especially dangerous compared to most other bugs?
+- [ ] It always throws a visible error
+- [x] It fails silently — nothing errors, it just permits access that should have been denied
+- [ ] It only affects performance, not security
+- [ ] It's caught automatically by most test suites
+**Why:** An authorization bug that fails open produces no stack trace or alert — the request just succeeds — which is why centralizing the check matters more than catching it in review.
+
+### MCQ: A product's core feature is nested folders and documents where access flows through sharing and containment, like Google Drive. Which model fits best?
+- [ ] RBAC
+- [ ] ABAC
+- [x] ReBAC — permissions derive from relationships in a graph, including inherited ones like "editor of a folder is editor of everything in it"
+- [ ] None of these; this requires a custom model
+**Why:** ReBAC (Zanzibar-style) is designed exactly for this shape — permission flowing through containment and sharing rather than mapping to job function.
+
+### MCQ: What is the real cost of adopting ReBAC (Zanzibar/OpenFGA/SpiceDB) over RBAC?
+- [ ] It cannot express deny rules
+- [x] You maintain a consistency-sensitive relationship graph, and every permission change is a write to it that must stay consistent under concurrent reads
+- [ ] It requires abandoning role-based thinking entirely
+- [ ] It only works for single-tenant systems
+**Why:** Zanzibar's own design spends significant effort on consistency (the "new enemy" problem — a stale read after a permission change leaking data) — that complexity is the real trade for ReBAC's expressiveness.
+
+### MCQ: A role is revoked from a user, but their access decision is served from a cache with a fixed TTL. Why is this treated as a security issue, not just a performance one?
+- [ ] Because caches are always insecure
+- [x] A stale "allow" decision for an already-revoked role lets the user keep acting with permissions they no longer have
+- [ ] Because TTLs are slower than no caching at all
+- [ ] It isn't a real issue if the TTL is under 5 minutes
+**Why:** Unlike a stale product listing, a stale authorization decision is an active vulnerability window — which is why versioned, invalidatable cache keys matter more than just picking a short TTL.
+
+### MCQ: What's the key difference between "compute effective permissions at check time" and "materialize them on write"?
+- [ ] Compute-at-check-time is always faster
+- [x] Compute-at-check-time is always correct but costs a traversal per check; materializing is a flat, fast read but every write must fan out and a missed invalidation becomes a security bug
+- [ ] Materializing removes the need for a permissions table entirely
+- [ ] They produce different final answers, so the choice is purely about which is "more correct"
+**Why:** Both approaches should reach the same correct answer — the trade is where the cost lands: read-time traversal cost, or write-time fan-out risk with invalidation as the failure mode.
 
 ---
 

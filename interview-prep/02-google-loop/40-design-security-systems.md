@@ -45,6 +45,47 @@ would satisfy the rubric, drawn from public frameworks named in
 
 ---
 
+## In brief
+
+- **Every security-platform design is the same loop**: discover → evaluate
+  → findings → remediate → verify, continuously. State this shape out loud
+  at the start — the prompts differ in what's discovered and how
+  remediation happens, not in the loop itself.
+- **Four things separate a senior answer on every one of these prompts**:
+  inventory is the hard part (you can't secure what you can't list, and the
+  list is never complete); findings need owners (a finding with no owner is
+  a report nobody reads); false positives are the actual failure mode (5%
+  FP on a million assets is 50,000 ignored tickets); and rollout is itself
+  a security control (audit mode first, every gate has an expiring
+  break-glass).
+- **A finding's identity should be a stable dedup key** (e.g. hash of rule
+  id + asset id + violating attribute), not a new row per scan — so
+  re-evaluation upserts the same finding through open → acknowledged →
+  fixed/suppressed, with `regressed` as its own tracked state.
+- **Auto-remediation needs the same guardrails everywhere it appears**:
+  dry-run first, an allow-list of what's safe to auto-fix, rate limiting,
+  logged before/after state, and a kill switch — because "the system just
+  fixes it" is a system that will eventually delete a production IAM
+  binding.
+- **Key by content digest, not by name or version tag**, whenever integrity
+  matters — SBOMs, provenance, package registry caches. A tag is mutable
+  and can be re-pointed by mistake or attack; a digest is the content
+  itself, so a claim about a digest is a claim about exactly those bytes,
+  forever.
+- **The security system itself is always the most privileged thing in the
+  design and needs to say so**: it typically holds read access to
+  everything and write access for auto-fix, or every leaked secret, or
+  every access grant in the company — separating read/write identities,
+  scoping the write identity narrowly, and auditing access to the findings
+  store itself is part of every one of these designs, not an afterthought.
+- **Prompt injection cannot be filtered out of agent guardrails — it can
+  only be contained.** The controls that hold are the ones that don't need
+  to understand the content: identity scoping, egress allow-lists,
+  approval for irreversible actions, and reviewing the output exactly like
+  human-authored code.
+
+---
+
 ## 1. Cloud security posture
 
 ### Design: We have thousands of cloud projects across several providers. Design a system that continuously finds misconfigurations — public buckets, over-broad IAM roles, unencrypted disks — and gets them fixed.
@@ -1221,6 +1262,80 @@ pipeline from prompt 3.
 - Claims prompt injection can be filtered out.
 - Builds a system that holds every secret and every weakness in the company
   and never mentions securing the system itself.
+
+---
+
+## Quiz
+
+### MCQ: What is the shared shape underlying every security-platform design in this chapter?
+- [ ] A single centralized scanning service
+- [x] A continuous loop: discover → evaluate → findings → remediate → verify
+- [ ] A one-time audit followed by a report
+- [ ] A machine-learning model that classifies risk automatically
+**Why:** Stating this loop out loud at the start of the round shows the interviewer you recognize the pattern — the prompts differ in what's discovered and how remediation happens, not in the underlying shape.
+
+### MCQ: Why is "inventory" called the hard part of a security posture system, rather than the rule engine or scanning logic?
+- [ ] Inventory data is more expensive to store than findings
+- [x] You cannot secure what you cannot list, and the list is never complete — coverage itself has to be measured and monitored, not assumed
+- [ ] Inventory systems require more code than rule engines
+- [ ] Rules are always simpler to write than collectors
+**Why:** A rule engine evaluating an incomplete inventory silently misses entire categories of risk — measuring coverage (what's known vs. what actually exists) is itself a design requirement.
+
+### MCQ: Why does a finding with no owner get described as "a report nobody reads"?
+- [ ] Findings without owners are automatically deleted
+- [x] Without clear attribution to the team or person responsible for fixing it, a finding has no one accountable to act on it — it just accumulates
+- [ ] Owners are required by most compliance frameworks
+- [ ] Unowned findings can't be stored in most databases
+**Why:** Attribution (which team owns this project, this app, this token) is often the actual bottleneck in these systems — a finding is only actionable once it has an owner.
+
+### MCQ: Why are false positives called "the failure mode" for security controls, rather than just an accuracy nuisance?
+- [ ] False positives always indicate a bug in the detection code
+- [x] At scale, even a small false-positive rate produces overwhelming ticket volume (e.g. 5% of a million assets = 50,000 tickets) that nobody can action, training people to ignore the control entirely
+- [ ] False positives are more expensive to fix than true positives
+- [ ] They only matter for automated remediation, not manual review
+**Why:** This is why precision metrics, suppression with expiry, and a feedback loop are treated as core design requirements rather than nice-to-haves — an imprecise control gets switched off by someone senior after the first bad incident.
+
+### MCQ: Why should a finding's identity be a stable dedup key (e.g. hash of rule id + asset id + violating attribute) rather than a new row per scan?
+- [ ] It saves database storage space
+- [x] It lets re-evaluation upsert the same finding through its lifecycle (open → acknowledged → fixed/suppressed) instead of creating duplicate, disconnected records for the same underlying issue
+- [ ] Dedup keys are required by most ticketing systems
+- [ ] It's only necessary for high-severity findings
+**Why:** Without a stable identity, the same underlying problem would generate a new finding on every scan, making lifecycle tracking (and metrics like "regressed") impossible.
+
+### MCQ: What guardrails does this chapter say auto-remediation needs, regardless of which design it appears in?
+- [ ] None — if a fix is safe enough to automate, it needs no additional controls
+- [x] Dry-run first, an allow-list of what's safe to auto-fix, rate limiting, logged before/after state, and a kill switch
+- [ ] Only a rollback log, since dry-run and allow-lists slow down remediation
+- [ ] Manual approval for every single automated action
+**Why:** "The system just fixes it" without these guardrails is described as a system that will eventually delete a production IAM binding — auto-remediation needs the same discipline as any other high-privilege automated action.
+
+### MCQ: Why should artifacts and SBOMs be keyed by content digest rather than by version tag or name?
+- [ ] Digests are shorter and easier to index
+- [x] A tag is mutable and can be re-pointed at different content (by mistake or attack), while a digest is the content itself — a claim about a digest is a claim about exactly those bytes, forever
+- [ ] Version tags aren't supported by most package registries
+- [ ] Digests are required for SLSA compliance specifically
+**Why:** If a tag is re-pointed, every attestation made about the old content would falsely appear to apply to the new content — digest-keying makes the deployment inventory and vulnerability queries exact rather than approximate.
+
+### MCQ: Why is the security system itself described as "the most privileged thing in the design" across nearly every prompt in this chapter?
+- [ ] Security systems are always the most complex to build
+- [x] It typically holds broad read access to everything it monitors (or every leaked secret, or every access grant) plus write access for remediation — making it a uniquely high-value target
+- [ ] Security teams require more infrastructure budget than other teams
+- [ ] It's the only system that interacts with external vendors
+**Why:** This is why separating read/write identities, scoping the write identity to an explicit allow-list, and auditing access to the findings store itself are treated as first-class design requirements, not afterthoughts.
+
+### MCQ: Why does the agentic-coding-assistant design conclude that prompt injection "cannot be filtered out," only contained?
+- [ ] Filtering technology doesn't exist yet
+- [x] An agent's instructions and the untrusted content it reads (READMEs, comments, fetched pages) arrive through the same channel, making injection a structural property rather than a bug a filter can catch — so the design relies on controls that don't need to understand content at all
+- [ ] Injection attacks are too rare to justify filtering
+- [ ] Filtering would make the agent too slow to be useful
+**Why:** The controls that actually hold are identity scoping, egress allow-lists, approval for irreversible actions, and reviewing output exactly like human-written code — none of which depend on correctly recognizing an injection attempt.
+
+### MCQ: In the global authorization service design, why is a "zookie" (snapshot token) returned from a write rather than the check simply always reading the latest data?
+- [ ] Always reading the latest data would be too slow for any system
+- [x] It lets most checks be served from a cache or a slightly-stale replica for speed, while still guaranteeing correctness exactly when causality demands it — the caller can prove freshness only when it actually matters
+- [ ] Zookies are required by the check API's authentication scheme
+- [ ] It eliminates the need for replication entirely
+**Why:** Because the snapshot timestamp is part of the cache key, a cached result is never *wrong* — only potentially unavailable for a request demanding something fresher — which is what makes correctness compatible with aggressive caching.
 
 ---
 

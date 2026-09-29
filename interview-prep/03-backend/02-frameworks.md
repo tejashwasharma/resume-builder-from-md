@@ -5,6 +5,39 @@ Three frameworks on your resume. The useful thing to know is what each is
 
 ---
 
+## In brief
+
+- **NestJS isn't a competitor to Express or Fastify — it's a layer on top**,
+  using one of them as its underlying HTTP adapter. Choosing between them
+  is really a question of team size and application lifetime, not raw
+  capability.
+- **In Express 4, errors thrown in async handlers are not caught** — the
+  request just hangs until it times out, with no error surfaced at all.
+  This is the most common real bug in Express apps; Express 5 fixes it by
+  forwarding rejected promises automatically.
+- **Passport authenticates; it has no opinion on authorization** —
+  confusing the two is the single most common Passport mistake. For a
+  token-authenticated API, `{ session: false }` matters on every call,
+  otherwise Passport quietly mints a server-side session per request,
+  recreating the state JWTs were chosen to avoid.
+- **Fastify's speed mostly comes from schema-based serialization**, not
+  just routing — declaring a response schema compiles a purpose-built
+  serializer instead of generic `JSON.stringify`. The security bonus:
+  response serialization only emits declared fields, so a forgotten
+  password hash or internal flag simply never gets sent.
+- **NestJS's request pipeline order matters**: middleware → guards
+  (authn/authz) → interceptors (before) → pipes (validate/transform) →
+  handler → interceptors (after), with exceptions diverted to filters.
+  Guards are where authorization belongs — declarative, next to the route,
+  enforced centrally — rather than an `if` check a handler author can
+  forget to write.
+- **A missing authorization check fails silently** — nothing errors, it
+  just permits. This is the concrete reason to centralize authz in guards
+  rather than scatter it across handlers: one implementation, changed in
+  one place, impossible to skip by accident on a new endpoint.
+
+---
+
 ## The three in one table
 
 | | **Express** | **Fastify** | **NestJS** |
@@ -343,6 +376,80 @@ should be the same either way.
 - **Authorization inside handlers** rather than in guards or middleware —
   it's the pattern that leads to a forgotten check.
 - **"Fastify is faster"** with no idea why.
+
+---
+
+## Quiz
+
+### MCQ: What is NestJS's relationship to Express and Fastify?
+- [ ] It's a completely independent HTTP server implementation
+- [x] It's a structural layer built on top of one of them — you pick Express or Fastify as its underlying HTTP adapter
+- [ ] It replaces the need for either one
+- [ ] It's only compatible with Fastify, not Express
+**Why:** "NestJS vs Express" is a category error — NestJS adds modules, DI, and decorators on top of whichever adapter you choose underneath.
+
+### MCQ: What happens when an async Express 4 route handler throws or rejects, with no explicit error handling added?
+- [ ] Express automatically forwards it to the error-handling middleware
+- [x] The rejection is not caught — the request simply hangs until it times out, with no error surfaced
+- [ ] The server crashes immediately
+- [ ] The response returns a generic 500 automatically
+**Why:** This is the most common real bug in Express 4 apps — every async handler needs to be wrapped (or use a catching helper) to forward rejections to `next(err)`; Express 5 fixes this automatically.
+
+### MCQ: How does Express identify a function as an error-handling middleware rather than a regular one?
+- [ ] By its position at the very top of the middleware stack
+- [x] By its arity — an error handler takes exactly four arguments: `(err, req, res, next)`
+- [ ] By a special `isErrorHandler` property
+- [ ] By its function name containing the word "error"
+**Why:** Express inspects the function's parameter count to decide whether to treat it as an error handler — this is a common source of confusion since it's based on arity, not naming convention.
+
+### MCQ: What does Passport.js actually provide, and what is it explicitly silent on?
+- [ ] It provides both authentication and authorization out of the box
+- [x] It authenticates (verifies a credential and attaches a user) but has no opinion at all on authorization — no roles, no permissions, no policy
+- [ ] It only handles authorization, not authentication
+- [ ] It provides neither and is purely a session management library
+**Why:** Confusing the two is described as the single most common Passport mistake — authorization is a separate concern the application must implement (e.g. via a guard or middleware) on top of Passport's authentication.
+
+### MCQ: Why does `{ session: false }` matter for a Passport strategy used in a token-authenticated API?
+- [ ] It disables the strategy entirely
+- [x] Without it, Passport establishes a server-side login session by default, quietly recreating the stateful storage that JWTs were chosen specifically to avoid
+- [ ] It's only relevant for OAuth strategies, not JWT
+- [ ] It improves the performance of credential verification
+**Why:** Passport's default behavior assumes session-based login; a stateless, token-authenticated API needs to explicitly opt out of session creation on every authenticated call.
+
+### MCQ: What is the primary source of Fastify's performance advantage over a framework using generic JSON serialization?
+- [ ] Fastify uses a different, faster JavaScript engine
+- [x] Schema-based serialization — declaring a response schema lets Fastify compile a purpose-built serializer for that exact shape, instead of using generic `JSON.stringify`
+- [ ] Fastify doesn't support middleware
+- [ ] Fastify caches all responses by default
+**Why:** For a JSON API, serialization is a significant share of per-request cost — a compiled, shape-specific serializer is substantially faster than generic stringification.
+
+### MCQ: Beyond raw speed, what security benefit does Fastify's response schema provide?
+- [ ] It automatically encrypts sensitive response fields
+- [x] Response serialization only emits fields declared in the schema — a forgotten field like a password hash or internal flag is simply never sent, even if present on the object
+- [ ] It validates that all responses use HTTPS
+- [ ] It prevents SQL injection in query parameters
+**Why:** This turns "remember to strip sensitive fields before responding" from a manual discipline into something the framework enforces structurally.
+
+### MCQ: In NestJS's request pipeline, in what order does a request pass through guards, pipes, and interceptors (before the handler)?
+- [ ] Pipes → Guards → Interceptors
+- [x] Guards → Interceptors (before) → Pipes
+- [ ] Interceptors → Pipes → Guards
+- [ ] All three run simultaneously
+**Why:** This ordering matters — guards (authn/authz) run first so unauthorized requests never reach validation or business logic, and interceptors wrap around pipes and the handler.
+
+### MCQ: Why is a NestJS guard described as the natural place for authorization logic, rather than an `if` check inside the handler?
+- [ ] Guards execute faster than in-handler checks
+- [x] A guard declared via a decorator (e.g. `@UseGuards(PermissionGuard)`) is enforced centrally and can't be silently omitted on a new endpoint the way an in-handler `if` check can be forgotten
+- [ ] Handlers in NestJS cannot access the request's user object
+- [ ] Guards are required by the NestJS framework and can't be bypassed
+**Why:** A missing authorization check fails silently — nothing errors, it just permits — which is exactly the failure mode centralizing the check in a guard, declared next to the route, is designed to prevent.
+
+### MCQ: For most typical applications, is choosing Fastify over Express primarily justified by raw request-handling speed?
+- [ ] Yes, framework overhead is always the dominant cost
+- [x] Usually not — for most applications the database is the bottleneck, not the framework; Fastify's schema-driven validation and serialization benefits often matter more than raw throughput
+- [ ] No, Fastify and Express have identical performance characteristics
+- [ ] Yes, but only for applications with fewer than 100 users
+**Why:** The honest caveat is that framework choice rarely dominates real-world latency — the schema-enforced validation and output-shaping benefits are often the stronger practical argument than throughput alone.
 
 ---
 

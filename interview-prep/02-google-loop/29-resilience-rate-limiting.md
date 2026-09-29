@@ -6,6 +6,41 @@ platform.
 
 ---
 
+## In brief
+
+- **Every remote call needs a timeout, and its real purpose is bounding
+  resource consumption, not user experience** — a call without one can hold
+  a thread/connection forever, and enough of those exhaust the service
+  while the dependency is merely slow. **Deadline propagation** passes the
+  remaining time budget down the call chain rather than giving each hop a
+  fresh timeout.
+- **Retries need all three safeguards together**: only idempotent
+  operations (or an idempotency key), exponential backoff **with jitter**
+  (the part people omit — without it clients retry in a synchronized
+  pulse), and a retry budget capping retries as a percentage of traffic.
+  Never retry a 4xx.
+- **A circuit breaker's Open state is the whole value**: it fails calls
+  instantly with no timeout and no waiting thread, protecting *both* the
+  struggling dependency and the caller's own resources — not just the
+  callee.
+- **Rate limiting: token bucket is the usual default** because real
+  traffic is bursty (bucket size = burst tolerance, refill rate = sustained
+  throughput). The fixed-window boundary problem is the classic follow-up:
+  100 requests at 11:59:59 and 100 at 12:00:00 is 200 in one second, never
+  technically exceeding the "100/minute" limit.
+- **The token bucket's refill-check-decrement must be atomic** (a Lua
+  script in Redis) — otherwise two concurrent requests can both read "9
+  tokens left" before either writes back, and both think they won.
+- **Multi-tenancy's noisy-neighbor problem needs per-tenant limits, not
+  just a global one** — a global limit doesn't stop one tenant consuming
+  all of it. Layered defenses: per-tenant quotas, fair queuing, isolation
+  for the largest tenants, and per-tenant observability (you can't diagnose
+  "the platform is slow" without slicing by tenant).
+- **Never degrade to fail-open on authorization**, even under load-shedding
+  pressure — availability doesn't outrank access control.
+
+---
+
 ## Resilience patterns
 
 ### Timeouts — the foundation
@@ -472,6 +507,81 @@ consume all of it.
   all of it.
 - **Degrading to fail-open on authorization.** Availability doesn't outrank
   access control.
+
+---
+
+## Quiz
+
+### MCQ: A remote call has no timeout set. What's the primary danger?
+- [ ] It will always use more bandwidth than necessary
+- [x] It can hang indefinitely, holding a thread, connection, and memory — enough of these exhaust the service's own resources
+- [ ] It will automatically retry forever
+- [ ] The response will be cached incorrectly
+**Why:** A timeout's real purpose is bounding resource consumption, not just user experience — without one, a slow dependency can exhaust your service's capacity even though the dependency itself never technically "fails."
+
+### MCQ: What does "deadline propagation" mean in a multi-hop call chain?
+- [ ] Each service in the chain gets its own independent full timeout
+- [x] The remaining time budget is passed down the chain, so a downstream service knows how much time is actually left for its work to be useful
+- [ ] Only the first service in the chain has a timeout
+- [ ] Deadlines are only enforced at the very last hop
+**Why:** Without propagation, a 3-hop call with 1s timeouts at each hop can take 3s total while the original caller gave up after 1s — two of those hops did work nobody will ever read.
+
+### MCQ: Which of these is NOT one of the three requirements for safe retries?
+- [ ] Only retry idempotent operations, or ones with an idempotency key
+- [ ] Exponential backoff with jitter
+- [ ] A retry budget capping retries as a percentage of traffic
+- [x] Always retry immediately to minimize latency
+**Why:** Retrying immediately with no backoff or jitter is exactly what causes a retry storm — a slow service gets hit even harder right when it's already struggling.
+
+### MCQ: Why is jitter (randomized delay) as important as exponential backoff itself in a retry strategy?
+- [ ] Jitter makes each individual retry faster
+- [x] Without jitter, many clients failing at the same moment all wait the same backoff duration and retry simultaneously, producing a synchronized load spike
+- [ ] Jitter is required by most HTTP libraries
+- [ ] It reduces the total number of retries needed
+**Why:** Backoff alone still leaves clients retrying in lockstep; jitter spreads the retries across the window so they arrive as a manageable trickle instead of a synchronized pulse.
+
+### MCQ: What does a circuit breaker's "Open" state actually do, and why is that its whole value?
+- [x] It fails calls instantly with no timeout and no thread held — protecting both the struggling dependency and the caller's own resources
+- [ ] It queues calls until the dependency recovers
+- [ ] It automatically retries with exponential backoff
+- [ ] It redirects calls to a backup dependency
+**Why:** Without the Open state, every request would sit in a full timeout waiting on a dependency that's already failing — piling up threads and resources on the caller's side too.
+
+### MCQ: Why does a circuit breaker need a minimum sample size (e.g. `min = 20`) before it can trip open?
+- [ ] To reduce memory usage
+- [x] Without it, the very first failed call would represent a 100% failure rate and trip the breaker open immediately, even on a healthy dependency with one transient blip
+- [ ] It's required by the half-open state transition
+- [ ] Larger samples make the breaker respond faster
+**Why:** A meaningful failure-rate threshold needs enough calls to be statistically real — one failure out of one call isn't evidence the dependency is actually down.
+
+### MCQ: With a fixed-window rate limit of 100 requests/minute, what's the classic boundary problem?
+- [ ] The limit resets randomly instead of on the minute
+- [x] A client can send 100 requests at the end of one window (e.g. 11:59:59) and 100 more at the start of the next (12:00:00) — 200 requests within one actual second, never exceeding the stated per-window limit
+- [ ] Fixed windows can never enforce more than 60 requests/minute
+- [ ] The limit only applies to the first request in each window
+**Why:** This is exactly why sliding window counters or token buckets, which have no hard window boundary to exploit, are usually preferred over fixed windows for real limits.
+
+### MCQ: Why does a token bucket's refill-check-decrement sequence need to be atomic (e.g. via a Redis Lua script)?
+- [ ] Atomicity makes the algorithm run faster
+- [x] Without it, two concurrent requests could both read "9 tokens left" before either writes back the decrement, letting both requests through when only one token was actually available
+- [ ] Lua scripts are required for any Redis rate limiter
+- [ ] It's only needed when the bucket capacity exceeds 100
+- [ ] Non-atomic operations aren't supported by Redis
+**Why:** A Lua script executes as one atomic unit on Redis — nothing else runs on that instance while it executes, closing the race where concurrent requests could both "win."
+
+### MCQ: In a multi-tenant platform, why is a single global rate limit insufficient to stop the "noisy neighbour" problem?
+- [ ] Global limits are always set too high to matter
+- [x] A global limit doesn't stop one tenant from consuming the entire allowance, starving every other tenant sharing the same capacity
+- [ ] Global limits only apply to unauthenticated requests
+- [ ] Noisy neighbours only affect database performance, not rate limits
+**Why:** Per-tenant quotas are what actually stop one customer's spike from degrading everyone else — a global cap alone can be entirely consumed by a single tenant.
+
+### MCQ: Under severe overload, why should an authorization service never degrade to "fail open" (allow by default)?
+- [ ] Fail-open is technically impossible to implement
+- [x] Availability doesn't outrank access control — failing open under load means potentially granting access that should have been denied, which is a security failure, not just a service degradation
+- [ ] Fail-open always causes more downtime than fail-closed
+- [ ] It would violate rate-limiting headers
+**Why:** Other systems can reasonably degrade gracefully (serve cached/stale data), but authorization degrading to "allow everyone" turns an availability problem into a security breach.
 
 ---
 

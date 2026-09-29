@@ -6,6 +6,37 @@ in the book.
 
 ---
 
+## In brief
+
+- **Authentication and authorization are two different systems sharing a
+  name** — say so early. Auth (login, SSO, SCIM) is low-volume and needs
+  strong consistency; authz (every request) is ~30,000 RPS and is the
+  entire engineering problem. Splitting them is the design.
+- **The 1000:1 read/write split is the single most useful fact**: ~30 RPS
+  of writes (login, role change, revoke) versus ~30,000 RPS of reads
+  (validate token, check permission). The write path is easy; the read
+  path is everything.
+- **Stateless token validation (a locally-verified JWT) is what makes 30k
+  RPS affordable** — no network call, no DB hit. The cost is you can't
+  un-issue a token, which is why access tokens stay short-lived (5-15 min)
+  paired with a server-tracked refresh token.
+- **Cache the decision, keyed with a version counter** —
+  `authz:v{version}:{tenant}:{user}:{permission}:{resource}`. Bumping the
+  version on a role change makes every old cache key unreachable instantly,
+  because a stale "allow" for a revoked user is a security bug, not a
+  stale read.
+- **Every check must resolve the tenant before gathering roles** — "can
+  this user publish?" has no answer without knowing which org, since the
+  same user can be admin in one tenant and viewer in another. If the
+  tenant comes from the request, membership must be verified in shared
+  middleware, not per-endpoint.
+- **Don't choose between fail-open and fail-closed — degrade**: serve from
+  cache during an outage, refuse anything not already cached, and always
+  fail closed on sensitive operations. Auth is tier-0 — if it's down,
+  everything is down.
+
+---
+
 ## The prompt
 
 > Design an authentication and authorization service for a multi-tenant SaaS
@@ -346,3 +377,77 @@ old key becomes unreachable at once, without having to hunt them down.
   gap.
 - **Forgetting multi-tenancy.** It's on your resume; they will ask.
 - **Failing open**, or not having thought about what happens when auth is down.
+
+---
+
+## Quiz
+
+### MCQ: Why should authentication and authorization be treated as two separate systems in this design, despite sharing the word "auth"?
+- [ ] They're actually the same system and shouldn't be separated
+- [x] They have completely different volumes and requirements — authentication is low-volume and needs strong consistency, while authorization runs at ~30,000 RPS and is latency-critical
+- [ ] Separating them is only necessary for multi-tenant systems
+- [ ] Authorization doesn't need a database at all
+**Why:** Designing them as one system means either over-engineering the low-volume login path or under-engineering the massive authorization read path — splitting them is the core design insight.
+
+### MCQ: In this design, what is "the most useful fact in the whole design"?
+- [ ] The total number of tenants on the platform
+- [x] The ~1000:1 read/write ratio — the write path (login, role change, revoke) is trivial while the read path (validate, check permission) is the entire engineering problem
+- [ ] The average JWT size in bytes
+- [ ] The number of microservices in the platform
+**Why:** Nearly every subsequent design decision — caching, stateless validation, invalidation strategy — follows directly from this asymmetry; missing it leads to designing a generic CRUD service instead.
+
+### MCQ: What makes stateless JWT validation affordable at 30,000 requests per second?
+- [ ] JWTs are compressed to reduce network overhead
+- [x] Validation happens locally (a signature check) with no network call and no database hit
+- [ ] Tokens are cached in a global CDN
+- [ ] The authorization service pre-computes all possible decisions
+**Why:** Eliminating the network round trip and database lookup from the hot path is what makes this volume tractable — the cost is that a token, once issued, can't be un-issued before it expires.
+
+### MCQ: Why does a locally-validated JWT need a short lifetime (5-15 minutes) rather than a long one?
+- [ ] Short tokens are cryptographically more secure per-bit
+- [x] A stateless token can't be "un-issued" — revoking access doesn't invalidate a token already handed out, so the lifetime bounds how long a revoked token stays valid
+- [ ] Long tokens exceed typical HTTP header size limits
+- [ ] It's required by the JWT specification
+**Why:** This is the direct cost of stateless validation — the design pairs a short-lived access token with a server-tracked refresh token to bound the damage while still getting the performance benefit most of the time.
+
+### MCQ: What does the `version` component in the cache key `authz:v{version}:{tenant}:{user}:{permission}:{resource}` accomplish?
+- [ ] It tracks which API version made the request
+- [x] Bumping it on a role change makes every previously-cached decision for that user unreachable at once, without needing to find and delete individual keys
+- [ ] It's used for cache compression
+- [ ] It determines the cache entry's TTL
+**Why:** This is the versioned-key pattern — a role change increments a counter, and every derived cache entry from before that change simply becomes unaddressable, which is faster and more reliable than enumerating and deleting keys.
+
+### MCQ: Why is a stale "allow" decision for a revoked user described as fundamentally different from ordinary cache staleness?
+- [ ] It never actually happens in a well-designed system
+- [x] It's a security bug — the user retains access they should no longer have — not merely a UX inconvenience like slightly outdated content
+- [ ] It only matters for financial transactions
+- [ ] It's equivalent in severity to any other stale cache read
+**Why:** This is why ordinary caching intuition (a TTL is good enough) doesn't apply to authorization decisions — the versioned-key approach exists specifically because the consequence of staleness here is qualitatively worse.
+
+### MCQ: Why must the tenant be resolved before a user's roles are gathered in a multi-tenant authorization check?
+- [ ] It's required for database indexing performance
+- [x] The same user can hold different roles in different tenants (admin in one org, viewer in another), so "can this user do X?" is meaningless without first knowing which tenant
+- [ ] Tenants must be processed in alphabetical order
+- [ ] It's only relevant for audit logging purposes
+**Why:** Gathering roles before resolving the tenant could produce a wrong or ambiguous answer — the tenant scopes which set of roles is even relevant to check.
+
+### MCQ: If the tenant is taken from the request (e.g. a URL parameter) rather than embedded in the token, what must every endpoint do?
+- [ ] Nothing extra — the token already proves identity
+- [x] Explicitly verify the requesting user actually belongs to that tenant, ideally enforced in shared middleware rather than per-endpoint
+- [ ] Re-authenticate the user on every request
+- [ ] Cache the tenant ID for faster subsequent lookups
+**Why:** Putting this check in shared middleware means it can't be individually forgotten on a new endpoint — a missing per-endpoint check is exactly the kind of silent cross-tenant leak this design guards against.
+
+### MCQ: When the authorization service itself is unavailable, what's the recommended behavior — strictly fail-open, strictly fail-closed, or something else?
+- [ ] Always fail open to preserve availability
+- [x] Degrade: serve from cache what's already cached, refuse anything not cached, and always fail closed on the most sensitive operations
+- [ ] Always fail closed for every single request, with no cache fallback
+- [ ] Return a random decision until the service recovers
+**Why:** Treating this as a binary choice loses nuance — degrading gracefully (serving known-good cached decisions while still refusing uncertain new ones) balances availability against the security risk of failing open.
+
+### MCQ: Why is auth specifically called a "tier-0" dependency, and what does that imply for its design?
+- [ ] It's the first service that was ever built on the platform
+- [x] If auth is down, every other service that depends on it is effectively down too — it sits in front of everything, so its failure modes and availability requirements are the strictest in the whole platform
+- [ ] It's the smallest and simplest service to operate
+- [ ] Tier-0 only refers to services with no external dependencies
+**Why:** This framing is what justifies the heavy investment in caching, degradation strategies, and careful rollout (canary deploys, shadow mode) — an outage here isn't a degraded feature, it's a platform-wide outage.

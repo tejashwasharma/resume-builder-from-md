@@ -18,6 +18,37 @@ Every follow-up has a model answer. Two kinds:
 
 ---
 
+## In brief
+
+- Story 1 (flagship) — took RBAC from 2 fixed roles to a full granular model
+  across multi-org, multi-tenant accounts. Rehearse team size, your specific
+  surface, and one design that didn't survive contact with reality.
+- Story 2 — unified OAuth, SSO and SCIM into one flow, shipped in both the
+  Okta and Entra ID marketplaces. Know the protocol differences you had to
+  reconcile, not just that it shipped.
+- Story 3 — drove a third-party security audit from ~150 findings down to
+  10, then cleared a separate audit with zero critical findings. Know the
+  triage method, not just the before/after number.
+- Story 4 — turned auth into a platform: a gRPC npm package adopted by 9
+  product teams, removing duplicated, inconsistent enforcement.
+- Story 5 — redesigned Rego/OPA policy evaluation and Redis caching, cutting
+  the slowest requests from ~13s to under 200ms (~65x at the tail). Know
+  what the 13 seconds was actually doing.
+- Story 6 — hardened session governance and 2FA (self-serve session control,
+  moved off SMS), cleared a separate audit with zero critical findings.
+- Story 7 — owned auth incidents as the highest-severity class in the
+  platform: 3x more resolved, ~30% faster, consistently within SLA.
+- Story 8 — drove AI tooling adoption: 2–3x more PRs per sprint alongside
+  coverage rising 75%→85%+ — always pair the throughput number with the
+  quality number.
+- Story 9 (design 2 only) — migrated the auth service from Node.js to Go
+  alongside Story 5's redesign. Credit the split between the language change
+  and the Rego/Redis redesign honestly; don't attribute the whole 65x to Go.
+- Story 10 (design 2 only) — built a RAG-based Slack support bot over docs
+  and ticket history, live in production with the support team.
+
+---
+
 ## Story 1 — RBAC from 0 to 1 *(flagship)*
 
 *Covers bullets 1, 2, 3.*

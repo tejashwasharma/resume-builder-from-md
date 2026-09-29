@@ -16,6 +16,42 @@ what the boxes are.
 
 ---
 
+## In brief
+
+- **A design prompt is never a request for the literal thing** — "design a
+  URL shortener" tests whether you reason like someone trustworthy with
+  real architecture: clarifying before building, sizing things, naming
+  trade-offs, and knowing what breaks. Naming trade-offs — *this, therefore
+  not that, and here's the cost I accepted* — is what separates a senior
+  answer from a junior one.
+- **The most common way to fail is silence** — the interviewer can't grade
+  thinking they can't hear, so narrate constantly, including dead ends and
+  rejected options.
+- **The scaling ladder is forced one rung at a time, never skipped**: one
+  server → split the database → load balancer + stateless app servers →
+  cache the reads → replicate the database → queue slow work off the
+  request path → shard → CDN/multi-region/services. Proposing Kafka and
+  sharding for 200 requests/second is the clearest signal of
+  pattern-matching rather than reasoning.
+- **A load balancer's value depends entirely on statelessness** — any
+  server can take any request only if nothing lives in one server's memory
+  that a later request needs. Sessions move to Redis or a signed token;
+  uploaded files move to object storage.
+- **Sharding goes last because it's the hardest to reverse** — the shard
+  key decides everything, a bad one creates a hot shard, and you give up
+  cross-shard joins and transactions. Consistent hashing beats `hash(key)
+  mod N` because the latter remaps nearly every key when N changes.
+- **Estimation is about reasoning at the right order of magnitude, not
+  precision** — the one conversion worth memorizing: 1 million/day ≈ 12/s,
+  100 million/day ≈ 1,200/s, 1 billion/day ≈ 12,000/s. Peak traffic is
+  roughly 2-3x average; reads typically outnumber writes 10:1 or more.
+- **Three questions earn their time in any prompt**: what scale, what has
+  to be consistent vs. what can be stale, and what's explicitly in/out of
+  scope — agreeing to defer search or DMs on "design Twitter" is a senior
+  move, not a dodge.
+
+---
+
 ## What the question actually is
 
 "Design a URL shortener" is not a request for a URL shortener. Nobody in the
@@ -490,6 +526,80 @@ of it.
   outcome, and entirely fixable.
 - **Refusing to estimate.** "It depends on the data" instead of a rough number.
   Nobody wants precision; they want to see you reason about magnitude.
+
+---
+
+## Quiz
+
+### MCQ: When an interviewer says "design Twitter" and stops talking, what should genuinely come first?
+- [ ] Drawing the database schema
+- [x] Clarifying scope and scale — what's in/out of scope, roughly how many users, what the read/write ratio looks like
+- [ ] Naming which cloud provider you'd use
+- [ ] Picking the programming language for the backend
+**Why:** A design for a thousand users and one for a hundred million are different designs entirely — drawing boxes before establishing scale means the design is a guess.
+
+### MCQ: What's the single most common cause of a bad outcome in a design interview, according to this chapter?
+- [ ] Choosing the wrong database
+- [x] Going silent while thinking — the interviewer can't grade reasoning they can't hear
+- [ ] Drawing too many diagrams
+- [ ] Taking too long on estimation
+**Why:** Narrating constantly, including dead ends and rejected options, is what lets the interviewer actually assess how you think, not just what you land on.
+
+### MCQ: What distinguishes a senior-level answer from a junior one in a design round?
+- [ ] Using more advanced technology names
+- [x] Naming the trade-off explicitly — "this, therefore not that, and here's the cost I accepted" — rather than just listing components
+- [ ] Drawing the diagram faster
+- [ ] Avoiding any mention of what could go wrong
+**Why:** "Load balancer, cache, database, queue" with no justification is a vocabulary test passed, not a design round passed — the reasoning behind each choice is what's actually being graded.
+
+### MCQ: Why does adding a load balancer in front of multiple app servers force those servers to be stateless?
+- [ ] Load balancers technically cannot route to stateful servers
+- [x] The load balancer's value is that any server can serve any request — state held in one server's memory destroys that interchangeability, requiring sticky routing instead
+- [ ] Stateless servers are required by HTTP itself
+- [ ] It's a security requirement, not an architectural one
+**Why:** If a session lives on instance 2, every one of that user's requests must reach instance 2 — undermining the very flexibility a load balancer was added to provide.
+
+### MCQ: Why should sharding typically be the last move on the scaling ladder, not an early one?
+- [ ] Sharding is technically difficult to implement in code
+- [x] It's the hardest move to reverse — the shard key decision shapes everything downstream, and you give up cross-shard joins and transactions
+- [ ] Sharding only works with NoSQL databases
+- [ ] It requires a consensus algorithm to set up
+**Why:** Cheaper, more reversible options (caching, read replicas, a bigger instance) should be exhausted first — sharding is the step you don't want to undo.
+
+### MCQ: Why is `hash(key) mod N` considered a trap for choosing which shard owns a key?
+- [ ] It's too slow to compute at request time
+- [x] Adding or removing a node changes N, which remaps nearly every key to a different shard
+- [ ] It only works with string keys
+- [ ] It produces predictable, therefore insecure, shard assignments
+**Why:** Consistent hashing avoids this by moving only about 1/N of the keys when the node count changes, instead of nearly all of them.
+
+### MCQ: Roughly how many requests per second does "100 million requests per day" translate to?
+- [ ] About 120/second
+- [x] About 1,200/second
+- [ ] About 12,000/second
+- [ ] About 100/second
+**Why:** The conversion (86,400 seconds/day, rounded to ~100,000) gives 1 million/day ≈ 12/s, so 100 million/day ≈ 1,200/s — a number worth having memorized rather than recomputed each time.
+
+### MCQ: Why is proposing Kafka and database sharding for a system handling 200 requests/second considered a red flag in an interview?
+- [ ] Kafka can't actually handle low request volumes
+- [x] It signals pattern-matching on "impressive" technology rather than reasoning from the actual bottleneck the system has
+- [ ] Sharding requires at least 1,000 requests/second to function
+- [ ] Interviewers always prefer the simplest possible architecture regardless of scale
+**Why:** The scaling ladder exists because each rung is forced by a specific, nameable bottleneck — proposing heavyweight infrastructure for a system that would run comfortably on one server skips that reasoning entirely.
+
+### MCQ: A user writes data, then immediately reads it from a database replica that hasn't caught up yet. What problem is this?
+- [ ] Cache stampede
+- [x] Replication lag — commonly fixed with read-your-writes consistency (routing that user's reads to the leader briefly)
+- [ ] A hot shard
+- [ ] A sticky session bug
+**Why:** Replication takes real time to propagate, so a follower can briefly lag behind the leader — read-your-writes consistency is the standard fix so the user doesn't see their own write "disappear."
+
+### MCQ: Why should a queued background job (like sending a welcome email) be designed to be idempotent?
+- [ ] Idempotent jobs run faster
+- [x] A worker can crash after completing the job but before acknowledging it, causing the job to run again — without idempotency, this means duplicate side effects (e.g. two welcome emails)
+- [ ] Queues require idempotency by protocol
+- [ ] It reduces the queue's storage requirements
+**Why:** At-least-once delivery is the normal guarantee for queued work — the job itself must tolerate being executed more than once for the same logical event.
 
 ---
 

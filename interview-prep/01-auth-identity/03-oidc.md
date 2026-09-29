@@ -8,6 +8,28 @@ Spec: [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0
 
 ---
 
+## In brief
+
+- OAuth authorizes; OIDC authenticates. OIDC adds the `openid` scope, an ID
+  token (a JWT about the user, addressed to your client via `aud`), a
+  UserInfo endpoint, and discovery — layered on the exact same code+PKCE flow.
+- The `aud` check is the one that matters most: without it, an attacker's own
+  valid token from the same provider can be replayed at your app (confused
+  deputy). Skipping it is the most damaging shortcut in the whole protocol.
+- `nonce` (OIDC, replay protection for the ID token) and `state` (OAuth, CSRF
+  protection for the flow) look alike but protect different layers — you
+  need both, neither substitutes for the other.
+- Never key user records on email; key on `(iss, sub)`. Email is mutable and
+  reassignable; `sub` is only guaranteed unique within one issuer.
+- ID token claims are a frozen snapshot at auth time; UserInfo is a live call
+  with the access token. Put the stable identifier in the token, fetch
+  volatile profile data from UserInfo.
+- Cache JWKS with a TTL and refetch on an unknown `kid` — caching forever
+  breaks every login on key rotation; never caching adds a hard dependency
+  and a network call per login.
+
+---
+
 ## Foundations
 
 OAuth 2.0 gives a client an access token so it can *act on a user's behalf*.
@@ -460,6 +482,80 @@ grants someone else's access.
   attack.
 - **"We match users on email."** Emails change and get reassigned. `(iss, sub)`.
 - **Conflating `nonce` and `state`**, or asserting one replaces the other.
+
+---
+
+## Quiz
+
+### MCQ: What does OIDC add to OAuth 2.0 that makes login safe?
+- [ ] Longer-lived access tokens
+- [x] A signed ID token addressed to the client via the `aud` claim
+- [ ] A stronger encryption algorithm
+- [ ] A second redirect_uri
+**Why:** The ID token is what turns "the user authorised something" into "here is who authenticated, verifiably addressed to you."
+
+### MCQ: A client decodes an access token to read the user's email. What's wrong with this?
+- [ ] Access tokens can't contain email
+- [x] Access tokens are opaque to the client and their format isn't a contract — use the ID token or UserInfo instead
+- [ ] Access tokens are always encrypted
+- [ ] This is the correct approach
+**Why:** Even when an access token happens to be a JWT, the provider can change its format at any time; clients should never depend on it.
+
+### MCQ: Which ID token check specifically prevents a confused-deputy attack?
+- [ ] `exp`
+- [ ] `iat`
+- [x] `aud` matching your own client_id
+- [ ] `nonce`
+**Why:** Without checking `aud`, a validly-signed token minted for a different app can be replayed at yours.
+
+### MCQ: `nonce` and `state` are both random values echoed back during the flow. What's the difference?
+- [ ] They're interchangeable
+- [x] `state` defends the OAuth flow against CSRF; `nonce` defends the ID token against replay
+- [ ] `nonce` is deprecated in favor of `state`
+- [ ] `state` is OIDC-only, `nonce` is OAuth-only
+**Why:** They protect different layers — dropping either leaves a real gap even though both "look like" the same mechanism.
+
+### MCQ: Why should user records be keyed on `(iss, sub)` rather than email?
+- [x] Email is mutable and can be reassigned; `sub` is only guaranteed unique within one issuer, so both parts are needed
+- [ ] Email addresses can't be verified
+- [ ] `sub` is globally unique across all providers
+- [ ] Email is slower to look up
+**Why:** A changed or reassigned email can orphan an account or hand it to someone else; `sub` alone collides across different issuers.
+
+### MCQ: A user's account is auto-linked across two identity providers based on matching email, with no verification step. What's the risk?
+- [ ] None — email match is sufficient proof
+- [x] Account takeover — an attacker registers at a sloppy IdP using someone else's unverified email
+- [ ] It only works if both providers are OIDC-compliant
+- [ ] The risk only applies to SAML, not OIDC
+**Why:** Auto-linking on unverified email is a known takeover vector; linking should require `email_verified` plus explicit confirmation.
+
+### MCQ: The authorization server rotates its signing keys. A client with JWKS cached forever will:
+- [ ] Continue working normally
+- [x] Fail all new ID token validations, causing a total login outage
+- [ ] Automatically refetch the new keys
+- [ ] Only fail for users who log in during the rotation window
+**Why:** Signature verification fails against stale keys; the fix is caching with a TTL and refetching on an unknown `kid`.
+
+### MCQ: Should a client use ID token claims or the UserInfo endpoint for a user's current job title, which changes occasionally?
+- [ ] ID token — it's already in hand
+- [x] UserInfo — the ID token is a frozen snapshot at authentication time
+- [ ] Neither — store it in a JWT the client controls
+- [ ] Both, and merge the results
+**Why:** Volatile profile data should come from a live call; putting it in the ID token means every session carries stale data until re-authentication.
+
+### MCQ: In a multi-tenant OIDC setup using "tenant-per-connection" (each customer has a separate IdP connection), how is the tenant identified?
+- [ ] An `org_id` claim the client must trust
+- [x] The issuer itself — a token from tenant A's issuer can't be mistaken for tenant B's
+- [ ] The redirect_uri
+- [ ] The client_id
+**Why:** Tenant-per-connection fails safe because the issuer is structurally tied to the tenant, unlike a single-issuer claim that depends on the provider populating it correctly.
+
+### MCQ: `alg: none` appears in a JWT header, and the client's verification logic reads the algorithm from that header. What's the vulnerability?
+- [x] An attacker can craft an unsigned token and have it accepted as valid
+- [ ] The token will always fail validation
+- [ ] This only affects OAuth, not OIDC
+- [ ] It's a performance issue, not a security one
+**Why:** Letting the token's own header choose the verification algorithm is the classic JWT bypass — the expected algorithm must be fixed by the verifier, never read from attacker-controlled input.
 
 ---
 

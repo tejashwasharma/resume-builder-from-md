@@ -9,6 +9,41 @@ them in before being asked.
 
 ---
 
+## In brief
+
+- **Senior design questions test whether you can *own* the system, not
+  just build it**: say the SLO, what you measure, how you roll out, and
+  what happens when it breaks — unprompted, in the first two minutes after
+  the high-level design.
+- **SLI → SLO → error budget is one chain**: the SLI is the measurement
+  (good events ÷ total), the SLO is the target, and the error budget (100%
+  minus the SLO) is that same number reframed as *permission to fail*. When
+  the budget's gone, the team stops shipping features and fixes reliability
+  — that's the actual answer to "velocity vs. stability."
+- **The four golden signals — latency, traffic, errors, saturation — are
+  what you measure if you can only measure four things**, and each has a
+  specific trap: latency as an average hides a slow success behind a fast
+  failure; errors counted only by HTTP status miss a 200 with wrong
+  content; saturation waited out to 100% ignores that most systems degrade
+  well before that.
+- **Page on symptoms (SLI breaching), never on causes (CPU at 80%)** — a
+  page for something with no user impact teaches people to ignore pages.
+  Burn-rate alerting (is the error budget being consumed faster than even
+  spend?) is the refinement that keeps alerts quiet until something
+  actually matters.
+- **Rollback is the first response to an incident, not the last** — when a
+  deploy correlates with an SLI regression, roll back, then investigate.
+  This only works if schema changes go out expand/contract (add, dual-
+  write, backfill, read-new, drop-old) rather than as one irreversible
+  step.
+- **A blameless postmortem is a technical requirement, not a nicety**: the
+  moment a postmortem assigns fault, people stop reporting near-misses —
+  and near-misses are where the next outage is visible in advance. Action
+  items change the system or process ("add a canary stage"), never just
+  "be more careful."
+
+---
+
 ## Why L5 is graded on "can you run it"
 
 At mid-level, the design round tests whether you can build the thing. At
@@ -411,6 +446,80 @@ the moment what to drop, I have already lost the five minutes.
    redundancy has no headroom, and a retry storm will find that out for you.
 
    </details>
+
+---
+
+## Quiz
+
+### MCQ: At the senior level, what does a design round primarily test beyond "can you build this"?
+- [ ] Whether you know the most trendy technologies
+- [x] Whether you can *own* the system — define what "working" means in numbers, notice when it breaks, change it safely, and understand incidents
+- [ ] Whether you can complete the design in the shortest time
+- [ ] Whether you avoid mentioning operational concerns
+**Why:** The pattern senior candidates follow is covering SLO, measurement, rollout, and incident response unprompted, in the first couple of minutes after the high-level design.
+
+### MCQ: What is the relationship between an SLO and an error budget?
+- [ ] They measure completely unrelated things
+- [x] The error budget is 100% minus the SLO, reframed as an allowed amount of failure (in time or events) rather than a target
+- [ ] The error budget is always larger than what the SLO permits
+- [ ] SLOs are set by customers; error budgets are set by engineers
+**Why:** A 99.9% SLO over 30 days gives roughly 43 minutes of error budget — the same number, viewed as permission to fail rather than a target to hit.
+
+### MCQ: When a team's error budget is fully consumed for the month, what's the standard policy response?
+- [ ] Nothing changes — the SLO is just a suggestion
+- [x] The team stops shipping risky features and focuses on reliability work until the budget recovers
+- [ ] The SLO is automatically lowered to match actual performance
+- [ ] All on-call engineers are replaced
+**Why:** This is the SRE book's core policy — the error budget is what actually decides the trade-off between velocity and stability, rather than leaving it as an ad-hoc negotiation.
+
+### MCQ: Why is measuring latency as an average considered a trap for one of the four golden signals?
+- [ ] Averages are computationally expensive
+- [x] Mixing in the latency of failed requests hides the problem — a fast failure (500) can mask a slow success, and an average hides the tail entirely
+- [ ] Averages can't be graphed over time
+- [ ] Latency should never be measured at all
+**Why:** Percentiles (p50, p99, p99.9) reveal the tail that an average conceals — this is the same principle behind alerting on p99 rather than mean latency elsewhere in the book.
+
+### MCQ: For a queue-based pipeline, why is "age of the oldest unprocessed item" a better saturation signal to page on than queue length?
+- [ ] Queue length is harder to measure
+- [x] Age is what the user actually feels ("my finding took an hour to show up"), while queue length can spike from a burst that would have drained fine on its own
+- [ ] Age is always a smaller number than length
+- [ ] Length doesn't apply to queue-based systems
+**Why:** Paging on length would fire for harmless bursts; age rises specifically when something is actually wrong — a slow consumer, a stuck partition — matching the real user-facing symptom.
+
+### MCQ: Why should you page on "error rate above 1% for 5 minutes" but not on "CPU above 80%"?
+- [ ] CPU metrics are unreliable
+- [x] CPU is a potential cause, not a user-facing symptom — paging on it with no actual user impact trains people to ignore pages
+- [ ] Error rate is always more accurate than CPU usage
+- [ ] CPU should never be monitored at all
+**Why:** Symptom-based paging (the SLI is breaching or will breach) keeps alerts meaningful; cause-based signals like CPU belong on a dashboard the on-call checks after being paged for an actual symptom.
+
+### MCQ: What does "burn-rate alerting" add beyond a simple SLI threshold?
+- [ ] It replaces the need for an SLO entirely
+- [x] It alerts based on how fast the error budget is being consumed relative to even spending — a high burn rate (e.g. the whole month's budget in 3 days) pages, a slow one just creates a ticket
+- [ ] It only works for latency-based SLIs, not availability
+- [ ] It eliminates the need for a dashboard
+**Why:** Two thresholds and windows keep alerts quiet until something actually threatens the SLO — distinguishing "burning fast, real incident" from "burning slowly, worth a ticket" rather than treating every SLI dip the same.
+
+### MCQ: When a deploy correlates with an SLI regression, what's the recommended first response?
+- [ ] Immediately begin root-cause investigation before taking any action
+- [x] Roll back first, then investigate — mitigation before diagnosis
+- [ ] Wait to see if the regression resolves itself
+- [ ] Page the entire engineering team simultaneously
+**Why:** Restoring the SLI for users takes priority over understanding why it broke — this is only possible if the previous version is still deployable, which is why schema changes must be backward compatible.
+
+### MCQ: Why must schema changes go out via "expand/contract" (add column, dual-write, backfill, read-new, drop-old) rather than as one step?
+- [ ] It's faster to execute in stages
+- [x] It's what makes rollback possible — a one-step schema change means the previous code version can no longer run against the new schema, eliminating the option to roll back
+- [ ] Database engines require multi-step migrations
+- [ ] It reduces the total amount of data migrated
+**Why:** Rollback being the default incident response only works if the old code still functions against the current schema — a single irreversible migration removes that safety net.
+
+### MCQ: Why is a blameless postmortem described as "a technical requirement, not a nicety"?
+- [ ] Blame slows down the postmortem meeting
+- [x] The moment a postmortem assigns fault, people stop reporting near-misses — and near-misses are exactly where the next outage is visible in advance
+- [ ] It's a legal requirement in most jurisdictions
+- [ ] Blameless postmortems are faster to write
+**Why:** The people closest to a failure have the most useful information, and they only share it honestly if doing so is safe — assigning blame directly costs future incident prevention.
 
 ---
 

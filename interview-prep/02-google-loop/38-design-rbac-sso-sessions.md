@@ -5,6 +5,47 @@ service chapter because they share its foundations — read that one first.
 
 ---
 
+## In brief
+
+- **Prompt A's whole point is the binding step**: a role binding belongs to
+  a (user, org) pair, never to a user alone — "the user is an editor" is
+  never true on its own, only "an editor *in Acme*." Permissions are the
+  atoms code checks against, never role names, which is what makes
+  customer-defined roles possible at all.
+- **Permission inheritance trades correctness for cost differently
+  depending on where you compute it**: walking the hierarchy at check time
+  is always correct but can be a real source of multi-second p99s at
+  depth; materializing effective permissions on write is a flat, fast
+  read, but a missed invalidation on write becomes a security bug. Start
+  with compute-plus-cache.
+- **Prompt B: SSO and SCIM are two separate systems that answer different
+  questions** — SSO is "can this person log in right now?" (synchronous,
+  one user); SCIM is "who exists and what are they entitled to?"
+  (continuous, all users). SSO alone means a terminated employee can't log
+  in *again*, but their existing account, sessions, and tokens all still
+  work.
+- **Certificate expiry is the number one real-world SSO support ticket** —
+  it breaks SSO for an entire company at once. The fix is monitoring
+  expiry with weeks of lead time, overlapping two valid certs during
+  rotation, and giving every tenant a break-glass local admin exempt from
+  SSO.
+- **Prompt C: stateless tokens are fast but can't be un-issued; server-side
+  sessions revoke instantly but need a lookup on every request.** The
+  resolution is short-lived access tokens plus a per-user version counter
+  — bumping it on termination invalidates every existing token immediately,
+  via a tiny, highly cacheable lookup instead of a full session-store hit.
+- **Idle and absolute timeouts defend against different things** — idle
+  timeout (resets on activity) handles someone walking away from a logged-
+  in machine; absolute timeout (never resets) handles a stolen session
+  being deliberately kept alive. You need both.
+- **Zanzibar's zookie is the same trade as a versioned cache key by another
+  name**: return a token from every permission write, store it with the
+  protected resource, and require checks to be at least that fresh —
+  consistency exactly where causality demands it, staleness everywhere
+  else.
+
+---
+
 ## Prompt A — Multi-tenant RBAC with policy evaluation
 
 > Design role-based access control for a platform where users belong to
@@ -338,3 +379,77 @@ wording or in the design.
 - **No answer for cert expiry** — the most common real SSO failure.
 - **Deactivating without revoking sessions.** They're still logged in.
 - **Claiming instant revocation** with stateless tokens and no mechanism.
+
+---
+
+## Quiz
+
+### MCQ: In the multi-tenant RBAC model, why is "the role binding belongs to a (user, org) pair, not to a user" described as the whole point?
+- [ ] It's simpler to implement in a database schema
+- [x] "The user is an editor" is meaningless on its own — the same user can be an editor in one org and a viewer in another, so dropping the org from the binding creates a cross-tenant hole
+- [ ] It reduces the number of database tables needed
+- [ ] It's only relevant for platforms with fewer than 10 tenants
+**Why:** Every link in the chain from user to permission must carry the org — omitting it anywhere means a binding could silently apply across tenant boundaries.
+
+### MCQ: Why does checking `perms.has('entry:publish')` rather than `user.role === 'admin'` matter for supporting customer-defined roles?
+- [ ] Permission checks execute faster at runtime
+- [x] If code branches on specific role names, you can't ship custom roles — the code has to work with whatever permissions a role bundles, not a fixed set of known role names
+- [ ] It's required by most RBAC libraries
+- [ ] Role names are harder to store in a database than permission strings
+**Why:** Permissions-as-atoms is what lets a customer define a brand-new role with a chosen permission set and have the system correctly enforce it, since the code never needed to know that role's name in advance.
+
+### MCQ: What's the trade-off between computing permission inheritance at check time versus materializing it on write?
+- [ ] Materializing is always strictly better
+- [x] Compute-at-check-time is always correct but can cause slow p99s at deep nesting; materializing on write is a fast flat read, but a missed invalidation becomes a security bug
+- [ ] Both approaches have identical performance characteristics
+- [ ] Compute-at-check-time doesn't support permission hierarchies at all
+**Why:** This is why the chapter recommends starting with compute-plus-cache — correctness is easier to reason about, and caching absorbs the read cost without introducing the write-fan-out risk of materialization.
+
+### MCQ: What's the fundamental difference between what SSO and SCIM each answer?
+- [ ] They're two names for the same underlying mechanism
+- [x] SSO answers "can this person log in right now?" (synchronous, one user, at login); SCIM answers "who exists and what are they entitled to?" (continuous, all users, in the background)
+- [ ] SSO handles authorization; SCIM handles authentication
+- [ ] SCIM is only used for password resets
+**Why:** SSO alone leaves a terminated employee's existing account, sessions, and API tokens all still functional — only SCIM's continuous provisioning/deprovisioning actually removes that access.
+
+### MCQ: What is described as "the number one SSO support ticket" in real-world operation?
+- [ ] Users forgetting their password
+- [x] Certificate expiry — breaking SSO for an entire company at once, often because nobody read the renewal notification
+- [ ] Incorrect attribute mapping on first setup
+- [ ] Browser incompatibility with SAML redirects
+**Why:** This is why monitoring expiry with weeks of lead time and supporting two valid certificates during rotation (rather than a hard cutover) are named as concrete operational fixes.
+
+### MCQ: What does a "break-glass local admin" account protect against?
+- [ ] Database corruption
+- [x] A broken or misconfigured SSO integration locking a customer completely out of their own tenant, since the break-glass account is exempt from the SSO requirement
+- [ ] DDoS attacks against the login page
+- [ ] Losing the SCIM provisioning connection
+**Why:** Without an SSO-independent fallback, any SSO misconfiguration becomes a total lockout for that customer — mentioning this unprompted signals real operational experience.
+
+### MCQ: Why does the design in Prompt C use a per-user version counter instead of just relying on short-lived tokens alone?
+- [ ] Version counters are required by the JWT specification
+- [x] Short-lived tokens alone still leave a revoked session valid for up to the token's remaining lifetime; a version counter bumped on termination invalidates every existing token immediately via a small, cacheable check
+- [ ] Version counters eliminate the need for token expiration entirely
+- [ ] It reduces the token's size on the wire
+**Why:** The version check gives near-immediate revocation without paying for a full session-store lookup on every request — a middle ground between pure statelessness and full server-side sessions.
+
+### MCQ: Why are both idle and absolute timeouts needed, rather than just one?
+- [ ] Using both is required by security compliance standards
+- [x] They defend against different threats — idle timeout catches someone walking away from a logged-in machine; absolute timeout catches a stolen session being kept alive deliberately (which resets idle timers on its own)
+- [ ] Absolute timeout is just a longer version of idle timeout
+- [ ] Idle timeout is deprecated in favor of absolute timeout
+**Why:** An attacker making periodic requests to keep a stolen session alive would never trigger an idle timeout — only an absolute timeout, which never resets regardless of activity, catches that case.
+
+### MCQ: Why must a SCIM deprovision request result in immediate session and token revocation, not just marking the account inactive?
+- [ ] Marking an account inactive automatically revokes tokens in most systems
+- [x] Marking inactive only stops *new* logins — an already-issued session or API token continues to work until it's explicitly revoked, so the person stays logged in
+- [ ] SCIM doesn't support session revocation as a concept
+- [ ] It's only necessary for admin-level accounts
+**Why:** This is described as "the step most implementations skip" — deactivation alone leaves existing access fully functional, defeating the purpose of offboarding.
+
+### MCQ: What is the conceptual similarity between Zanzibar's "zookie" and a versioned authorization cache key?
+- [ ] They're unrelated techniques solving different problems
+- [x] Both return a token/version from a write, store it alongside the protected data, and require later checks to be at least that fresh — consistency exactly where causality demands it, staleness everywhere else
+- [ ] Zookies are used only for authentication, never authorization
+- [ ] Versioned cache keys are strictly less powerful than zookies
+**Why:** The chapter explicitly frames "return a version from every permission write, store it with the protected resource, and require checks to be at least that fresh" as a zookie by another name — the same mechanism solving the same revocation-race problem.

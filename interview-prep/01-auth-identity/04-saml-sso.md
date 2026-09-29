@@ -8,6 +8,34 @@ Spec: [SAML 2.0 Technical Overview (OASIS)](https://docs.oasis-open.org/security
 
 ---
 
+## In brief
+
+- SAML delivers SSO the way OIDC does, but as signed XML riding browser
+  redirects and auto-submitting forms — no back channel to fall back on, so
+  every check on the assertion is load-bearing.
+- SP-initiated (your app redirects to the IdP) is the common, safer case;
+  IdP-initiated (the user clicks a tile in their IdP dashboard) is weaker —
+  there's no `InResponseTo` to correlate, so injection is easier to attempt.
+- The two checks you must never skip: the **signature** (covering the exact
+  element you read, not just verifying somewhere in the document) and
+  **`AudienceRestriction`** — SAML's equivalent of OIDC's `aud`, and skipping
+  it lets an assertion minted for another SP work on yours.
+- XML Signature Wrapping (XSW) is the named attack: a validly-signed
+  assertion stays in the document while a forged one is added elsewhere, and
+  a naive parser reads the wrong node. Defense is a maintained library, never
+  a hand-rolled one.
+- Enterprises want SAML for control, not elegance: OIDC is technically
+  better-engineered, but SAML is the fifteen-year corporate standard, so most
+  B2B platforms ship both.
+- SSO only controls authentication at login time — it doesn't deprovision
+  accounts, revoke sessions, or kill API tokens. That's SCIM's job plus your
+  own session/token revocation.
+- Certificate expiry is the number one real-world SSO failure: monitor
+  expiry per tenant and alert weeks ahead, and give every tenant a
+  break-glass local admin so a misconfiguration doesn't lock them out.
+
+---
+
 ## Foundations
 
 **SSO** is the outcome: authenticate once with your organisation's identity
@@ -479,6 +507,56 @@ having thought about identity.
 
 ---
 
+## Workshop: SP-initiated vs IdP-initiated
+
+**SP-initiated** — the user starts at your app:
+
+```
+GET /dashboard (no session)
+  → 302 to IdP with SAMLRequest + RelayState
+  → IdP authenticates (password, MFA, Conditional Access)
+  → IdP POSTs SAMLResponse to /acs
+  → SP checks InResponseTo matches the request it sent
+  → session established, redirect to RelayState
+```
+
+Because the SP generated the request, it holds an expected `InResponseTo`
+value to correlate against — a concrete, verifiable link between "we asked"
+and "here's the answer." An assertion arriving without a matching
+`InResponseTo` is rejected outright.
+
+**IdP-initiated** — the user starts in their IdP's dashboard and clicks your
+app's tile:
+
+```
+(no prior request from the SP — none exists)
+  → IdP authenticates the user against its own session
+  → IdP POSTs an unsolicited SAMLResponse to /acs
+  → SP has no InResponseTo to check — only Issuer, Audience, signature, time window
+  → session established
+```
+
+There's nothing to correlate the response against, because the SP never
+asked. That's not just a missing convenience — it's a missing defense: the
+`InResponseTo` check is what makes an injected, replayed, or forged response
+easy to reject in the SP-initiated case. Remove it and replay defense rests
+entirely on the assertion-ID cache and the time window, which is strictly
+weaker.
+
+**Why enterprises use IdP-initiated anyway:** convenience. Employees live in
+their IdP dashboard (Okta, MyApps) and expect to click a tile, not be routed
+through your login page first. Rejecting IdP-initiated flows outright breaks
+that expectation for every enterprise customer.
+
+**The practical answer, not the purist one:** support both, but treat
+IdP-initiated with tighter compensating controls — a short assertion validity
+window, aggressive assertion-ID replay caching, and (where the IdP supports
+it) requiring `RelayState` to carry a value you can still sanity-check. Don't
+present "we only support SP-initiated" as a security win in an interview
+without acknowledging it isn't what most enterprise buyers will accept.
+
+---
+
 ## Worked example: role mapping at login, and how far to trust the IdP
 
 Once SSO is live, the recurring design question is: **when a user signs in
@@ -519,6 +597,81 @@ sessions over stateless ones on an enterprise product.
   yourself, that's a red flag, not a credential.
 - **Treating SSO as complete identity integration.** Without deprovisioning,
   leavers keep accounts.
+
+---
+
+## Quiz
+
+### MCQ: Why is IdP-initiated SAML SSO strictly weaker than SP-initiated?
+- [ ] It doesn't use signatures
+- [x] There's no `InResponseTo` to correlate against, since the SP never sent a request
+- [ ] It doesn't support attribute mapping
+- [ ] It requires a different signing certificate
+- [ ] It's not standardized
+**Why:** SP-initiated has a concrete link between the request and the response; IdP-initiated relies only on Issuer, Audience, signature, and the time window.
+
+### MCQ: What is SAML's equivalent of OIDC's `aud` claim check?
+- [ ] `NameID`
+- [x] `AudienceRestriction`
+- [ ] `Issuer`
+- [ ] `RelayState`
+**Why:** Both name which single relying party/client may consume the token; skipping either lets an assertion or token minted for someone else work on your app.
+
+### MCQ: An XML signature verifies successfully, but the application extracts claims from a different node than the one that was signed. What attack is this?
+- [ ] Replay attack
+- [x] XML Signature Wrapping (XSW)
+- [ ] Confused deputy
+- [ ] CSRF
+**Why:** XSW keeps a validly-signed element in the document while a forged one is added elsewhere; the gap between "verify" and "consume" is the vulnerability.
+
+### MCQ: What does the `NotBefore`/`NotOnOrAfter` window on a SAML assertion prevent?
+- [ ] Signature forgery
+- [ ] Cross-tenant assertion reuse
+- [x] Replay of an expired assertion
+- [ ] XML signature wrapping
+**Why:** The validity window bounds how long an assertion can be presented, closing off indefinite replay.
+
+### MCQ: A customer's entire company is suddenly locked out of SSO at 9am. What's the most likely single-tenant cause?
+- [ ] The OIDC provider is down
+- [x] An expired signing certificate
+- [ ] A `nonce` mismatch
+- [ ] The user's browser cache
+**Why:** Certificate expiry is by far the most common real-world SAML SSO failure, and it takes down an entire tenant at once.
+
+### MCQ: What should a well-run multi-tenant SAML setup give every tenant, in case SSO misconfigures?
+- [ ] A shared admin login across all tenants
+- [x] A break-glass local admin account exempt from the SSO requirement
+- [ ] A second IdP as automatic failover
+- [ ] Unlimited session length
+**Why:** Without a break-glass account, a misconfigured or broken SSO integration locks a customer entirely out of their own tenant.
+
+### MCQ: Why do most B2B platforms ship both SAML and OIDC rather than just the better-engineered OIDC?
+- [ ] SAML is required by law for enterprise software
+- [x] Enterprise customers' identity teams and procurement are already built around SAML, even though OIDC is simpler to implement
+- [ ] OIDC doesn't support enterprise SSO
+- [ ] SAML is faster to validate
+**Why:** The choice is about what the buyer's IdP and security questionnaire expect, not which protocol is technically cleaner.
+
+### MCQ: An employee is deactivated in the company's IdP. What does SAML SSO alone guarantee happens next?
+- [ ] Their existing session is immediately terminated
+- [ ] Their account is deleted from your product
+- [x] Only that they can no longer complete a *new* SSO login — nothing about existing sessions or tokens
+- [ ] Their API tokens are revoked
+**Why:** SSO controls authentication at login time only; session and token revocation on deactivation is a separate responsibility, usually driven by SCIM.
+
+### MCQ: A SAML assertion's signature is valid, `Issuer` is correct, but `AudienceRestriction` names a different service provider than yours. What should happen?
+- [ ] Accept it — the signature is what matters
+- [x] Reject it — the assertion was minted for a different SP
+- [ ] Accept it, but log a warning
+- [ ] Re-request a new assertion automatically
+**Why:** `AudienceRestriction` names which SP may consume the assertion; accepting one meant for another SP is exactly the replay vulnerability the check prevents.
+
+### MCQ: What is a `binding` in SAML terms?
+- [ ] The certificate used to sign an assertion
+- [x] How a SAML message rides HTTP — Redirect, POST, or Artifact
+- [ ] The mapping from IdP groups to application roles
+- [ ] The tenant's unique entityID
+**Why:** HTTP-Redirect carries the AuthnRequest in a query string; HTTP-POST auto-submits the larger SAMLResponse; HTTP-Artifact passes a reference fetched over a back channel.
 
 ---
 

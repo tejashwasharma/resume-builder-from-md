@@ -5,6 +5,30 @@ shaky, the protocol files won't stick.
 
 ---
 
+## In brief
+
+- Authentication is *who are you*; authorization is *what may you do*. They
+  fail differently — an authn bug lets the wrong person in, an authz bug
+  lets the right person do the wrong thing, and authz bugs are far more
+  common because authz is hand-written business logic, not a library.
+- Scope and permission are not the same thing: scope constrains what the
+  *client app* may request; permission constrains what the *user* may do.
+  Both must pass, or a low-privilege user inherits admin capability through
+  their client's scope.
+- Sessions give instant revocation at the cost of a lookup on every request
+  and a shared store. Stateless tokens remove the lookup but hand out a
+  credential you can't take back.
+- The standard resolution: short-lived access tokens (5–15 min, stateless)
+  plus a long-lived, server-tracked refresh token — statelessness on the hot
+  path, real revocation at the refresh step.
+- A trust boundary is enforced at every hop, not just the edge. Trusting the
+  internal network because a gateway already checked is the mistake Zero
+  Trust exists to reject.
+- In a multi-tenant system, every permission check has a third dimension:
+  not just "may this user do X" but "in which org."
+
+---
+
 ## Foundations
 
 **Authentication (authn)** — *who are you?* Proving identity. Password,
@@ -149,6 +173,38 @@ await redis.set(`refresh:${refreshToken}`, userId, 'EX', 60 * 60 * 24 * 30);
 The access token is never looked up; the refresh token is nothing *but* a
 lookup key. Revoking a user is one `DEL` on the refresh side — the access
 token they're still holding simply expires within the window you chose.
+
+---
+
+## Workshop: sessions vs tokens
+
+The diagram above already shows the mechanics; here's the same choice as a
+decision you have to defend out loud.
+
+**Pick sessions when:** one deployable (or a small trusted cluster sharing
+one store), a hard requirement for instant logout (banking, admin panels),
+and you're not trying to scale reads horizontally without a shared cache.
+
+**Pick stateless tokens when:** many independent services need to verify
+identity without calling a shared store, horizontal scale matters more than
+instant revocation, and you can tolerate a bounded staleness window (or
+you've read [jwt](06-jwt.md) and added a cheap revocation check for the
+operations that need it).
+
+**Pick the hybrid (what most senior candidates should default to):**
+short-lived stateless access token + server-tracked refresh token. This is
+the only option that doesn't force you to choose between the two failure
+modes — you accept staleness on the access token in exchange for
+statelessness on the hot path, and keep real revocation at the refresh step,
+which fires far less often than the access path.
+
+**The question that exposes a shallow answer:** "your session/token approach
+— what's the actual revocation latency, in seconds, for a compromised
+account?" A candidate who has only read about JWTs says "it expires
+eventually." A candidate who has operated one names the access-token TTL and
+the refresh-revocation path in the same breath — see
+[contentstack](../00-experience/contentstack.md) §6 for what "instant
+termination" had to mean in practice.
 
 ---
 
@@ -302,6 +358,80 @@ is the ceiling on delegation; permission is the actual grant.
 - **Not mentioning tenancy** when the role you're interviewing for is
   multi-tenant. Your entire background is multi-tenant auth; bring it in
   yourself.
+
+---
+
+## Quiz
+
+### MCQ: An endpoint checks that a bearer token has a valid signature and hasn't expired, then serves the request. What's missing?
+- [ ] Nothing — a valid signature is sufficient
+- [x] An authorization check for this specific user, action, and resource
+- [ ] A second signature from a different key
+- [ ] Rate limiting
+**Why:** Verifying a token proves authentication, not authorization — you still need to decide whether this principal may do this action on this resource.
+
+### MCQ: Why do authorization bugs outnumber authentication bugs in production?
+- [ ] Authorization is cryptographically harder
+- [ ] Authentication libraries are less mature
+- [x] Authorization is bespoke business logic scattered across the app, and a missing check fails silently
+- [ ] Authorization always requires a database call
+**Why:** Authentication is usually delegated to a well-tested library or IdP; authorization is hand-written per feature, and a missing check permits rather than erroring.
+
+### MCQ: A token carries `scope=admin:write`. What does that alone guarantee?
+- [ ] The user has admin privileges
+- [x] The client application may attempt admin-write actions on the user's behalf
+- [ ] The request will succeed
+- [ ] The user's role is admin
+**Why:** Scope constrains the client application's delegated capability, not the user's actual permission — conflating them lets a low-privilege user inherit admin capability via their client's scope.
+
+### MCQ: What is the main operational cost of server-side sessions?
+- [ ] They can't be revoked
+- [ ] They don't work across services
+- [x] A lookup on every request against a store every service depends on
+- [ ] They require asymmetric cryptography
+**Why:** Every request needs a state lookup, and the session store becomes a shared dependency and single point of failure.
+
+### MCQ: What can't you do with a stateless JWT that you can do with a server-side session?
+- [ ] Verify it without a database call
+- [ ] Scale it horizontally
+- [x] Revoke it before its natural expiry
+- [ ] Include custom claims
+**Why:** A stateless token is self-contained; once issued, there is no server-side record to delete, so it stays valid until it expires.
+
+### MCQ: In the standard hybrid resolution, what is short-lived and what is server-tracked?
+- [ ] The refresh token is short-lived and stateless; the access token is server-tracked
+- [x] The access token is short-lived and stateless; the refresh token is server-tracked
+- [ ] Both are short-lived and stateless
+- [ ] Both are long-lived and server-tracked
+**Why:** The access token handles the high-volume hot path statelessly; the low-volume refresh step retains real, server-side revocation.
+
+### MCQ: A user's role is downgraded from admin to viewer while holding a 15-minute stateless access token. When does the downgrade take effect for that token?
+- [ ] Immediately
+- [ ] On their next page refresh
+- [x] Not until the token expires, unless you add an explicit revocation check
+- [ ] Never
+**Why:** A stateless token carries the claims it was issued with; nothing revisits them until expiry unless you add a version/revocation check on top.
+
+### MCQ: The classic senior-level authorization mistake is:
+- [ ] Using RBAC instead of ABAC
+- [ ] Storing permissions in a database instead of a token
+- [x] Enforcing authorization only at the API gateway and trusting internal services implicitly
+- [ ] Using short-lived tokens
+**Why:** Anything that reaches the internal network then inherits full trust — exactly the assumption Zero Trust rejects.
+
+### MCQ: In a multi-tenant system, why is "may this user delete this entry?" an incomplete question?
+- [ ] It should ask about scope instead of permission
+- [x] It's missing which organization the check applies in — the same user can hold different roles in different orgs
+- [ ] It should check authentication instead
+- [ ] Multi-tenancy makes authorization checks unnecessary
+**Why:** Permission is meaningless without tenant context; the real question is always "may this user do this action on this resource in this org."
+
+### MCQ: "JWTs are better because they're stateless" is a weak interview answer because:
+- [ ] JWTs aren't actually stateless
+- [x] It names only the benefit and ignores the revocation trade-off, signalling you haven't operated one in production
+- [ ] Stateless tokens are strictly worse than sessions
+- [ ] It's factually incorrect
+**Why:** Statelessness is a trade, not a virtue — a senior answer names what you give up (revocation) in the same breath as what you gain.
 
 ---
 

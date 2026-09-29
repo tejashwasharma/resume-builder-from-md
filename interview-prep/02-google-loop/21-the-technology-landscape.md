@@ -15,6 +15,43 @@ Two rules for reading it:
 
 ---
 
+## In brief
+
+- **A technology is an answer to a question — learn the question first.**
+  "What is Kafka" is a much worse thing to know than "what problem makes you
+  reach for Kafka rather than a database table." Seven categories (edge,
+  compute, data, caches, async, coordination, observability) cover almost
+  every box you'll ever draw.
+- **The database choice isn't "SQL vs NoSQL"** — that framing is a decade
+  out of date. It's what the data looks like and what has to be true about
+  it: ACID transactions when a partial write would be *wrong* not just
+  stale (money, permissions); document stores for varying shape; wide-
+  column/key-value for write volume beyond one leader.
+- **Redis is disproportionately high-leverage**: a 20ms database query
+  becomes a 0.5ms lookup, and because it holds real data structures it
+  covers caching, sessions, rate limiting, locks, and pub/sub in one
+  system. But it's a second copy of the truth, and invalidation/TTLs/
+  stampedes are the actual content, not the `GET`/`SET` API.
+- **Queue vs. log is the distinction that actually gets asked**: a queue
+  (RabbitMQ, SQS) is a to-do list — one consumer takes a job and it's gone;
+  a log (Kafka) is a diary — events stay for a retention window regardless
+  of who read them, and each consumer group tracks its own offset. Choose a
+  log for fan-out to unrelated consumers or replay; a queue for one worker,
+  one job.
+- **Coordination problems (leader election, shared config) always mean
+  etcd/ZooKeeper/Consul — never a hand-rolled solution.** A Redis lock is
+  convenient but isn't a consensus system; a failover can hand the same
+  lock to two holders.
+- **The three observability pillars answer different questions**: metrics
+  say something is wrong, traces say where, logs say why. Investigations
+  run metric → trace → log, and alerting on percentiles (p95/p99) matters
+  because averages hide exactly the users you're losing.
+- **One system of record; everything else is a derived, rebuildable copy.**
+  If losing your search index or cache means losing data, the design has a
+  durability problem nobody noticed yet.
+
+---
+
 ## The map
 
 Every box in a system diagram is a category, and every category has two or three
@@ -566,6 +603,81 @@ price and it should buy something specific.
   should be rebuildable from the real store.
 - **No observability in the design.** A multi-service architecture with no
   metrics, traces or correlation IDs is one you've never had to debug at 3am.
+
+---
+
+## Quiz
+
+### MCQ: What's the recommended way to learn a new infrastructure technology, per this chapter?
+- [ ] Memorize its full feature list before using it
+- [x] Learn the question it answers first — what problem makes you reach for it rather than the alternatives
+- [ ] Only learn tools that appear on your current resume
+- [ ] Learn the newest, most popular tool in each category
+- [ ] Start with its internal implementation details
+**Why:** "What is Kafka" is a much worse thing to know than "what problem makes you reach for Kafka rather than a database table" — the category and the question matter more than the brand.
+
+### MCQ: Why is "SQL vs NoSQL" considered an outdated framing for choosing a database?
+- [ ] NoSQL databases no longer exist
+- [x] "NoSQL" covers stores as different from each other (document, wide-column, graph) as they are from a relational database — the real question is what guarantees the data needs
+- [ ] All modern databases support SQL syntax now
+- [ ] The distinction was never meaningful
+**Why:** A document store, a wide-column store, and a graph database share only the "not SQL" label — the decision should be driven by required guarantees and data shape, not that category.
+
+### MCQ: When do you genuinely need ACID transactions, per the distinction this chapter draws?
+- [ ] Whenever performance isn't the top priority
+- [x] When a partial write would be *wrong*, not just stale — e.g. moving money between accounts, where a debit without a credit is money destroyed
+- [ ] Only for systems with fewer than 1000 users
+- [ ] Never — eventual consistency is always sufficient with enough retries
+**Why:** The distinction is stale vs. wrong — a view counter can tolerate staleness; a bank transfer cannot tolerate a half-applied state, which is exactly what atomicity prevents.
+
+### MCQ: Why shouldn't Elasticsearch typically be a system's primary database?
+- [ ] It's too slow for read-heavy workloads
+- [x] Its consistency model is near-real-time rather than immediate, it lacks multi-document transactions, and it's designed to be a derived, rebuildable index
+- [ ] It doesn't support full-text search
+- [ ] It requires a paid license for production use
+**Why:** The safe pattern is a system of record (like Postgres) feeding Elasticsearch as a derived index — a total Elasticsearch loss should mean a rebuild, not data loss.
+
+### MCQ: What's the key structural difference between a queue (like RabbitMQ/SQS) and a log (like Kafka)?
+- [ ] Queues are always faster than logs
+- [x] In a queue the broker owns the read position and deletes messages after consumption; in a log the consumer owns its own offset and events persist for a retention window regardless of who's read them
+- [ ] Logs can only have one consumer at a time
+- [ ] Queues support replay; logs do not
+**Why:** This ownership difference is what enables a log's fan-out (five teams read the same events independently) and replay (rewind and reprocess), which a queue's delete-on-acknowledge model can't offer.
+
+### MCQ: A "user signed up" event needs to reach email, analytics, CRM, and a search indexer independently, and a bug in one consumer should be fixable by reprocessing history. Which fits better?
+- [ ] A simple queue like SQS
+- [x] A log like Kafka — multiple independent consumer groups, each with replay capability
+- [ ] A database table with a status column
+- [ ] A direct synchronous call to all four systems
+**Why:** This is exactly the two conditions favoring Kafka: multiple independent consumers of the same event, and the need to replay history — a queue's single-consumption model makes this awkward.
+
+### MCQ: Why is a Redis-based lock not a substitute for a real coordination system like etcd?
+- [ ] Redis locks are too slow for production use
+- [x] Redis isn't a consensus system — a failover can hand the same lock to two different holders
+- [ ] Redis doesn't support any locking primitives
+- [ ] etcd is always faster than Redis
+**Why:** Coordination problems (leader election, config that must be consistent) need actual consensus guarantees; a Redis lock is convenient but can break under failover in ways a Raft-based system like etcd is specifically designed to prevent.
+
+### MCQ: In the "three pillars" of observability, what does a trace answer that a metric doesn't?
+- [ ] Whether the system has any problem at all
+- [x] *Where* in a multi-service request the time was spent — which of several services in the call path was slow
+- [ ] The exact line of code that failed
+- [ ] The total request volume over the last hour
+**Why:** Metrics tell you something is wrong (e.g. rising p99 latency); traces follow one request across services to show where; logs then explain why — investigations typically run in that order.
+
+### MCQ: Why alert on p95/p99 latency rather than average latency?
+- [ ] Percentiles are cheaper to compute than averages
+- [x] An average can look fine while a meaningful fraction of users experience much worse latency — percentiles surface exactly the users an average hides
+- [ ] Averages aren't supported by most monitoring tools
+- [ ] p99 is always numerically higher and therefore more conservative
+**Why:** An average latency of 100ms is compatible with one user in twenty waiting four seconds — averaging masks the tail that percentile-based alerting is designed to catch.
+
+### MCQ: What's the "rule that keeps you out of trouble" regarding a search index or a cache?
+- [ ] They should always be backed up separately from the primary database
+- [x] There should be exactly one system of record, and everything else (search index, cache) is a derived copy that can be rebuilt from it
+- [ ] Caches and search indexes should never be used together
+- [ ] They should be updated synchronously with every database write
+**Why:** If losing your search index or cache means losing real data, that's a sign the system of record isn't actually where the truth lives — derived copies should always be reconstructable.
 
 ---
 

@@ -5,6 +5,42 @@ up, and each one teaches a pattern you can reuse.
 
 ---
 
+## In brief
+
+- **Rate limiter**: the real problem is counting across many servers
+  without a network hop per request. Most large systems enforce locally and
+  reconcile counters asynchronously in the background, accepting slight
+  over-admission, reserving an exact central counter only for contractual
+  limits.
+- **URL shortener**: read-heavy like most systems (100:1), and the actual
+  design question is generating the short code — a pre-generated key pool
+  usually wins over hashing (needs collision handling) or a counter
+  (becomes a bottleneck, and sequential IDs are guessable) because it needs
+  no per-request coordination.
+- **News feed**: naming the celebrity problem (fan-out-on-write means 10M
+  writes for one post from a 10M-follower account) *and* the hybrid fix
+  (push for normal users, pull for celebrities, merge at read time) is the
+  whole test — either half alone reads as memorized.
+- **Notification system**: per-channel workers are a bulkhead (a slow SMS
+  provider must not stop email), at-least-once delivery needs an
+  idempotency key per (user, notification), and a dead-letter queue with
+  no owner is data loss with extra steps.
+- **Chat/messaging**: a socket lives on exactly one server, so without a
+  pub/sub backplane (Redis), server 1 simply cannot reach a client
+  connected to server 2 — the part candidates skip. Ordering uses sequence
+  numbers per conversation, never timestamps, since clocks differ between
+  clients.
+- **Distributed key-value store**: quorums (R + W > N) trade exactness for
+  latency; leaderless replication needs conflict resolution (last-write-
+  wins or vector clocks) while leader-based gives a single order per key at
+  the cost of failover complexity.
+- **Job scheduler**: "never runs twice" is impossible to guarantee in
+  general — the real offer is at-least-once execution plus a lease with a
+  fencing token, so two attempts are never *concurrently* running, with the
+  job itself required to be idempotent for true exactly-once effects.
+
+---
+
 ## Rate limiter / API gateway
 
 Closest to your world, so expect this one.
@@ -642,3 +678,77 @@ redirect gets cached by the browser and you stop seeing the clicks.
 - **A distributed counter** as the ID scheme with no note that it's a
   bottleneck.
 - **No failure story.** "What if this component dies?" always comes.
+
+---
+
+## Quiz
+
+### MCQ: In the classic rate-limiter design, what's the most common approach large systems use for counting requests across many servers?
+- [ ] An exact central Redis counter for every limit
+- [x] Enforce locally on each instance, reconcile counters asynchronously in the background, and accept slight over-admission
+- [ ] Give each instance a fixed, unchangeable share of the total budget
+- [ ] Route every request through one dedicated counting service
+**Why:** A round trip per request for exact counting adds real latency everywhere; local enforcement with async reconciliation is "close enough" at near-zero latency cost, reserving exact counting for contractual limits.
+
+### MCQ: Why is a "pre-generated key pool" usually the best answer for generating URL shortener codes, compared to hashing or a counter?
+- [ ] It produces shorter codes than the alternatives
+- [x] It requires no per-request coordination and has no collisions — a service hands out blocks of unused keys in advance
+- [ ] It's the only approach that supports custom aliases
+- [ ] Hashing and counters are both technically impossible to implement
+**Why:** Hashing needs collision handling; a shared counter becomes a bottleneck and produces guessable sequential IDs — pre-generating and distributing key blocks avoids coordination on the hot request path entirely.
+
+### MCQ: In the news feed design, what is "the celebrity problem"?
+- [ ] Celebrities' posts need extra content moderation
+- [x] Fan-out-on-write for an account with millions of followers means millions of writes for a single post
+- [ ] Celebrity accounts require a separate database
+- [ ] Feed ranking algorithms treat celebrity posts unfairly
+**Why:** This is why the "real answer is hybrid" — push (fan-out-on-write) for normal users keeps reads cheap, while pull (fan-out-on-read) for celebrities avoids the write explosion, merged at read time.
+
+### MCQ: Why are per-channel workers (email, SMS, push) in a notification system described as a "bulkhead"?
+- [ ] They reduce the total number of servers needed
+- [x] A slow or rate-limited provider on one channel (e.g. SMS) is isolated from affecting delivery on other channels (e.g. email)
+- [ ] They automatically retry failed notifications
+- [ ] They're required for at-least-once delivery
+**Why:** Isolating channels into separate worker pools means one provider's outage or slowness can't consume resources needed by unrelated channels — the same isolation principle as separate connection pools per dependency.
+
+### MCQ: In a chat/messaging system, why is a Redis pub/sub backplane necessary when a client connects to server 1 and wants to message a client on server 2?
+- [ ] Redis is required by the WebSocket protocol
+- [x] A WebSocket connection lives on exactly one server — server 1 has no way to directly reach a socket held open on server 2 without a shared mechanism to route through
+- [ ] It's needed only for group chats, not one-on-one messages
+- [ ] Redis provides message encryption
+**Why:** This is called out as "the part candidates skip" — without the backplane, cross-server delivery is simply impossible, regardless of how well the rest of the system is designed.
+
+### MCQ: Why does chat message ordering use sequence numbers per conversation rather than timestamps?
+- [ ] Sequence numbers are smaller and save bandwidth
+- [x] Clocks differ between clients, so timestamp-based ordering can produce an incorrect sequence even when messages actually arrived in order
+- [ ] Timestamps aren't supported in most chat protocols
+- [ ] Sequence numbers are required for end-to-end encryption
+**Why:** This is the same principle as logical clocks in distributed systems generally — wall-clock comparisons across independent machines can't be trusted for ordering.
+
+### MCQ: In the distributed key-value store design, what does the quorum condition W + R > N guarantee?
+- [ ] That writes are always faster than reads
+- [x] That any read set overlaps any write set, so a read is guaranteed to see the most recent acknowledged write
+- [ ] That the system tolerates N total node failures
+- [ ] That replication happens synchronously across all N replicas
+**Why:** With N=3, W=2, R=2, every possible read quorum and write quorum share at least one node, ensuring the read observes the latest write — the standard tunable-consistency trade.
+
+### MCQ: In a leaderless key-value store, what happens when two clients write to the same key at nearly the same time on different replicas?
+- [ ] The system rejects both writes and returns an error
+- [x] Both writes are accepted, creating a conflict that must be resolved — either by last-writer-wins (simple, silently discards one write) or vector clocks (detects the conflict, returns both for the application to merge)
+- [ ] The replicas automatically negotiate a winner using Raft
+- [ ] This scenario is impossible in a leaderless design
+**Why:** Leaderless replication trades a single-writer guarantee for availability — conflict resolution becomes the caller's or the system's explicit responsibility rather than being prevented outright.
+
+### MCQ: Why is "the job must never run twice" impossible to guarantee in general for a distributed job scheduler?
+- [ ] Job schedulers are inherently unreliable software
+- [x] A worker can complete the side effect of a job and then fail to report success before its lease expires, causing a retry to also run it — the system can prevent concurrent execution but can't guarantee the underlying action (e.g. sending an email) happens only once unless the job itself is idempotent
+- [ ] Distributed systems can't use locks at all
+- [ ] This only applies to jobs scheduled more than once
+**Why:** What's actually achievable is at-least-once execution with a lease and fencing token ensuring no two attempts run *concurrently* — true "exactly-once effects" require the job's own logic to be idempotent.
+
+### MCQ: What does a fencing token protect against in the job scheduler design, when a paused worker resumes after its lease has already expired and been reassigned?
+- [ ] It prevents the worker from being paused in the first place
+- [x] It ensures the store rejects a stale completion report from the paused worker, since its token no longer matches the current lease — protecting the store's recorded state even though the worker may have already performed a real side effect
+- [ ] It automatically retries the job a fixed number of times
+- [ ] It encrypts the job's payload during transit
+**Why:** The fencing token protects the *store's* state from being overwritten by a stale attempt; it cannot undo a real-world side effect the paused worker already performed — that's why the job's own idempotency is still required.

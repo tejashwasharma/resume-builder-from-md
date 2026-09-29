@@ -9,6 +9,33 @@ Spec: [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519) ·
 
 ---
 
+## In brief
+
+- A JWT is three base64url segments — header, payload, signature. The
+  signature gives **integrity and authenticity**, never confidentiality: the
+  payload is encoded, not encrypted, so anyone holding the token can read
+  every claim.
+- The two classic attacks — `alg: none` (an empty signature a naive library
+  accepts) and algorithm confusion (forging `HS256` using the RSA *public*
+  key as the HMAC secret) — both die to the same one-line fix: **the server
+  pins an algorithm allowlist; the token's own header never gets a vote.**
+- Asymmetric signing (`RS256`/`ES256`) is the right default once more than
+  one party verifies — verifiers need only the public key, so a compromised
+  verifier can't mint tokens. `HS256` is fine only when one party both signs
+  and verifies.
+- **There is no free revocation.** A stateless, offline-verified token is
+  valid until it expires by design; every "revoke it now" mechanism (short
+  TTL + refresh, `jti` denylist, token-version claim, server-side sessions)
+  trades hot-path cost against how fast "immediate" actually is.
+- **Token versioning is often the best trade**: a per-user counter travels
+  in the token; bumping it server-side invalidates every token that user
+  holds at once, with no enumeration and no fan-out to get wrong.
+- Never store a raw token in `localStorage` — any XSS exfiltrates it. An
+  `httpOnly` cookie (plus CSRF defenses) is safer; a backend-for-frontend
+  that keeps tokens server-side entirely is the strongest option.
+
+---
+
 ## Foundations
 
 A JWT is three base64url segments joined by dots:
@@ -382,6 +409,49 @@ sensitive paths.
 
 ---
 
+## Workshop: naive verify vs algorithm allowlist
+
+Same token, same secret material available to the server, one line of
+difference — and it's the difference between secure and forgeable.
+
+**Naive — reads the algorithm from the token itself:**
+
+```js
+const jwt = require('jsonwebtoken');
+// No `algorithms` option: the library trusts the header's own `alg`.
+const payload = jwt.verify(token, publicKeyOrSecretLookup(token));
+```
+
+If `publicKeyOrSecretLookup` returns the RSA public key regardless of what
+the header claims, an attacker who sets `alg: HS256` gets that public key
+used as an HMAC secret — the library happily verifies a token they forged
+themselves. If the header claims `alg: none`, some libraries return the
+payload with no verification at all.
+
+**Correct — the server pins what it will accept, unconditionally:**
+
+```js
+const { jwtVerify } = require('jose');
+const { payload } = await jwtVerify(token, publicKey, {
+  algorithms: ['RS256'],   // the ONLY line separating this from the naive version
+});
+```
+
+`jose` refuses outright to verify with anything but `RS256`, no matter what
+the token header says — `none` and `HS256` are rejected before the
+signature is even checked. The token stops being able to choose its own
+verification method, which is exactly the property both classic attacks
+depend on breaking.
+
+**What to say out loud:** the vulnerability was never really about the
+`jsonwebtoken` vs `jose` library choice — it's that *trusting the header's
+`alg` field at all* is the bug. A hand-rolled check that hard-codes the
+expected algorithm before ever inspecting the token is just as safe as
+`jose`; a library used without pinning `algorithms` is just as exploitable
+as the naive example, regardless of which package it is.
+
+---
+
 ## What a weak answer sounds like
 
 - **"JWTs are encrypted."** They're signed and base64-encoded. Anyone can read
@@ -394,6 +464,80 @@ sensitive paths.
   considered.
 - **Claiming instant revocation with stateless tokens** and no mechanism behind
   it.
+
+---
+
+## Quiz
+
+### MCQ: What does a JWT's signature actually guarantee?
+- [ ] Confidentiality — no one else can read the claims
+- [x] Integrity and authenticity — issued by the key holder, unaltered since
+- [ ] The token cannot be decoded without the signing key
+- [ ] The payload is compressed
+**Why:** The payload is base64-encoded, not encrypted — anyone holding the token can read every claim. The signature only proves who signed it and that it's unchanged.
+
+### MCQ: A token arrives with header `{"alg":"none"}` and an empty signature. What should happen?
+- [ ] Accept it — `none` is a valid algorithm choice
+- [x] Reject it — the server's allowlist decides the algorithm, never the token's own header
+- [ ] Accept it only if `exp` is still valid
+- [ ] Downgrade to HS256 automatically
+**Why:** A naive library that honours `alg: none` returns "valid" for an attacker-forged, unsigned token. The fix is the server pinning an algorithm allowlist that the token can't override.
+
+### MCQ: In the RS256→HS256 algorithm confusion attack, what does the attacker use as the HMAC secret?
+- [ ] A guessed shared password
+- [x] The server's own RSA public key, which is public by design
+- [ ] The `kid` value from the header
+- [ ] A brute-forced 256-bit key
+**Why:** The RSA public key is meant to be public. If a library takes `alg` from the token header, an attacker can sign with `HS256` using that public key as the HMAC secret, and a naive verifier accepts it.
+
+### MCQ: Why is asymmetric signing (RS256/ES256) the right default once more than one service verifies tokens?
+- [ ] It's faster than HMAC
+- [x] Verifiers only need the public key, so a compromised verifier can't mint valid tokens
+- [ ] It produces shorter tokens
+- [ ] HS256 cannot be used with JWKS
+**Why:** With HS256, every verifying service must hold the same shared secret — any one of them can also forge tokens. Asymmetric keys separate "can verify" from "can mint."
+
+### MCQ: What's the fundamental reason a signed JWT can't be revoked "for free"?
+- [ ] JWTs don't have an expiry field
+- [x] Verification is local and offline by design — there's no built-in check against server-side state
+- [ ] Only symmetric tokens can be revoked
+- [ ] Revocation requires a second signature
+**Why:** Statelessness is the point of JWTs and also the cost — any revocation mechanism reintroduces some form of server-side state or lookup.
+
+### MCQ: A per-user token-version claim is bumped on a forced logout. What happens to that user's other existing tokens?
+- [ ] Nothing — only new tokens are affected
+- [x] All of them become invalid on their next use, with no need to enumerate or track them individually
+- [ ] They're automatically re-signed with the new version
+- [ ] Only the token that triggered the logout is affected
+**Why:** The version check compares the token's carried version against the current server-side value — one increment invalidates every existing token for that user at once.
+
+### MCQ: Which revocation approach gives the fastest cutoff with the least per-request cost?
+- [ ] Server-side sessions
+- [ ] Short TTL with a revocable refresh token
+- [x] There's a genuine trade — immediate options (denylist, token version) all add a lookup; the zero-lookup option (short TTL) is bounded by the access-token lifetime, not instant
+- [ ] JWTs cannot be revoked faster than their `exp`
+**Why:** Every approach picks a point on the same trade-off — hot-path cost versus how long a stolen or revoked token keeps working. There's no option that's both free and instant.
+
+### MCQ: A user's admin role is revoked, but their JWT still says `admin` and doesn't expire for 12 minutes. With plain stateless validation, what's true?
+- [ ] The token is automatically invalidated
+- [x] They retain admin access for up to those 12 minutes unless a revocation mechanism is in place
+- [ ] The server rejects all further requests from that user
+- [ ] `aud` validation blocks the request
+**Why:** Stateless verification only checks the token's own claims and signature — it has no way to know the role changed server-side unless something like a version check or denylist is added.
+
+### MCQ: Why is storing a JWT in `localStorage` risky?
+- [ ] It exceeds the browser's storage quota
+- [x] Any script running on the page via XSS can read it and exfiltrate the token
+- [ ] `localStorage` is cleared on every page load
+- [ ] It can't be sent in an Authorization header
+**Why:** `localStorage` is readable by any JavaScript running in that origin — one XSS vulnerability anywhere on the page compromises every token stored there.
+
+### MCQ: What does a backend-for-frontend (BFF) architecture change about JWT storage risk?
+- [ ] It encrypts the JWT before storing it in the browser
+- [x] Tokens never reach the browser at all — it holds only an opaque session cookie, so the XSS exfiltration path disappears
+- [ ] It stores the JWT in a Web Worker instead of localStorage
+- [ ] It shortens the token's TTL automatically
+**Why:** If the token never leaves the server, there's nothing in the browser's reach for XSS to steal — the BFF also gets real revocation as a side effect, since it holds server-side state.
 
 ---
 

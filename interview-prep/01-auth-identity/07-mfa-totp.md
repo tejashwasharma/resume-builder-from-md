@@ -10,6 +10,34 @@ Spec: [TOTP, RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) ·
 
 ---
 
+## In brief
+
+- MFA needs evidence from **more than one category** — know, have, are. Two
+  passwords, or a password plus a security question, are both "something you
+  know" twice, not MFA.
+- Strength ladder: SMS OTP < TOTP app < push with number matching < WebAuthn/
+  passkeys. **Only WebAuthn is phishing-resistant by design** — the
+  credential is bound to the origin and simply won't sign for a fake domain;
+  everything else can be relayed in real time by a convincing fake page.
+- TOTP's security property is that **nothing is transmitted at login** — both
+  sides independently compute `HMAC(secret, time_step)` from a secret shared
+  once at enrolment. There's no channel to intercept, which is exactly what
+  SMS gets wrong.
+- **Be precise on SMS's standards status**: NIST SP 800-63B calls it a
+  *restricted* authenticator — permitted with a documented risk assessment
+  and migration plan, not banned. Overstating this ("NIST banned SMS") is a
+  tell in an IAM interview.
+- Accept a small clock-drift window (±1 step) and reject replay of an
+  already-accepted step — otherwise a shoulder-surfed code works twice.
+- **Push notifications need number matching** to avoid MFA fatigue —
+  attackers spamming approval prompts until a user taps yes to make it stop.
+  Without number matching, plain push is arguably weaker than TOTP.
+- **Recovery is where security actually lands.** Hardening the front door
+  just moves the attacker to account recovery — a weak "email a reset link"
+  flow makes your MFA only as strong as the user's email.
+
+---
+
 ## Foundations
 
 Multi-factor authentication requires evidence from more than one category:
@@ -415,6 +443,80 @@ keychain.
 - **Ignoring recovery.** Hardening the factor while leaving a weak reset moves
   the attack.
 - **Not mentioning replay** — accepting a code twice within its window.
+
+---
+
+## Quiz
+
+### MCQ: A user enters two different passwords to log in. Is this MFA?
+- [ ] Yes, two credentials is multi-factor
+- [x] No — both are "something you know", so it's one factor twice
+- [ ] Yes, as long as they're different lengths
+- [ ] Only if one is a PIN
+**Why:** MFA requires evidence from more than one category (know/have/are); repeating the same category never counts, no matter how many times.
+
+### MCQ: What is the core security property of TOTP that SMS OTP lacks?
+- [ ] TOTP codes are longer
+- [x] Nothing is transmitted at login — both sides compute the code locally, so there's no channel to intercept
+- [ ] TOTP requires internet access
+- [ ] TOTP codes never expire
+**Why:** SMS sends the code over a channel (the carrier network) that can be intercepted or redirected; TOTP's code is computed independently on both ends from a shared secret.
+
+### MCQ: Which factor is phishing-resistant *by design*, not by user vigilance?
+- [ ] SMS OTP
+- [ ] TOTP app codes
+- [ ] Push notification without number matching
+- [x] WebAuthn / passkeys
+**Why:** WebAuthn credentials are bound to the origin — the authenticator simply won't produce a signature for a fake domain. Everything else can be relayed in real time by a convincing phishing page.
+
+### MCQ: According to NIST SP 800-63B, what is the status of SMS/PSTN OTP?
+- [ ] Prohibited entirely
+- [x] A "restricted authenticator" — permitted with a documented risk assessment, migration roadmap, and user notification
+- [ ] The recommended default for all new systems
+- [ ] Only allowed for internal, non-customer-facing systems
+**Why:** Saying "NIST banned SMS" overstates the guidance — it remains permitted under specific conditions, and getting this precise is a credibility signal in an IAM interview.
+
+### MCQ: Why does TOTP still use HMAC-SHA1 by default despite SHA-1 being "broken"?
+- [ ] It isn't actually still used
+- [x] SHA-1's known weakness is collision resistance, which HMAC's security doesn't depend on
+- [ ] SHA-1 is faster than SHA-256 on mobile devices
+- [ ] RFC 6238 forbids other hash algorithms
+**Why:** HMAC's security rests on the pseudorandomness of the keyed construction, not on the underlying hash's collision resistance — there's no practical attack on HMAC-SHA1.
+
+### MCQ: What must a TOTP server check to prevent a shoulder-surfed code from being used twice?
+- [ ] The user's IP address hasn't changed
+- [x] That the specific time step the code corresponds to hasn't already been accepted
+- [ ] The code was typed within 5 seconds
+- [ ] The user's device fingerprint matches
+**Why:** Without a replay check, a code intercepted or observed during its ~30-second validity window could be submitted again and would still verify successfully.
+
+### MCQ: What attack does "MFA fatigue" describe?
+- [ ] Brute-forcing a 6-digit TOTP code
+- [x] Spamming push-approval prompts with valid credentials until the user taps approve just to stop them
+- [ ] Intercepting an SMS code via SS7
+- [ ] Cloning a hardware security key
+**Why:** With a valid password but no code, an attacker can trigger repeated push prompts, betting the user eventually approves one out of annoyance rather than vigilance.
+
+### MCQ: How does number matching defend against MFA fatigue?
+- [ ] It rate-limits how often prompts can be sent
+- [x] It requires the user to read a number from the login screen and type it into the prompt, making blind approval impossible
+- [ ] It sends the prompt only once per day
+- [ ] It replaces push with SMS
+**Why:** Number matching forces the approver to actively correlate the prompt with a real login attempt in front of them, rather than tapping a bare "approve" button.
+
+### MCQ: A platform hardens its second factor to WebAuthn but keeps "email a reset link" as account recovery. What's the actual security level of the account?
+- [ ] As strong as WebAuthn, since that's the primary factor
+- [x] Only as strong as the recovery path — the weak reset flow becomes the real attack surface
+- [ ] Undefined until the recovery flow is used
+- [ ] Stronger, because recovery adds a layer
+**Why:** Hardening the front door just moves attackers to account recovery; a weak reset flow means the strong second factor never actually gets tested by an attacker.
+
+### MCQ: Why should MFA re-prompt on every single login be avoided, in general?
+- [ ] It's technically impossible to implement
+- [x] Constant prompting trains users to approve reflexively — exactly the behavior MFA fatigue exploits
+- [ ] It violates NIST guidance
+- [ ] It requires storing the password in plaintext
+**Why:** Risk-based prompting (new device, new location, sensitive action) keeps challenges meaningful; challenging every login turns MFA into a habit users stop scrutinizing.
 
 ---
 

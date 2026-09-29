@@ -10,6 +10,40 @@ first time. Same ideas, slower.
 
 ---
 
+## In brief
+
+- A distributed system is one program running across multiple machines that
+  coordinate over a network — and everything hard about the field follows
+  from one fact: **the computers can fail independently, and the network
+  between them is unreliable.**
+- You leave a single machine only when forced: too much traffic, too much
+  data, too far away geographically, or you can't afford the downtime of
+  one machine being a single point of failure. **Scale up first** — it's
+  free engineering-wise — and only scale out when you hit a real ceiling or
+  need to survive a machine dying.
+- **Adding machines improves throughput, not latency** — a single request
+  still takes as long as the work in its critical path, and crossing a
+  network to another machine can make it *slower*. Conflating the two is
+  the most common beginner error.
+- **Stateless is what makes scaling out cheap**: if a node remembers
+  nothing between requests, any instance can serve any request. You don't
+  eliminate state, you relocate it — into Redis, a database, or object
+  storage, systems purpose-built to hold it safely across machines.
+- **Partial failure is the field's central problem**: a silent call has at
+  least three explanations (never arrived / arrived and worked but the
+  reply was lost / just slow) that demand opposite responses, and the
+  caller can't tell them apart. This is why idempotency and consensus
+  exist.
+- **A network call costs roughly 5,000 memory reads** — a loop making 100
+  service calls isn't untidy, it's a different order of magnitude of slow,
+  which is also why caching pays off so dramatically.
+- Every design decision trades consistency, availability, and latency
+  against each other — none is "correct" in the abstract; a payments
+  ledger and a "like" counter should make opposite choices, and saying so
+  is the senior signal.
+
+---
+
 ## The one-sentence version
 
 A **distributed system** is a program that runs on more than one computer, where
@@ -494,6 +528,80 @@ routing, but that's a deliberate exception with a stated reason.
   distributed system — you've described a diagram.
 - **Treating consistency as obviously correct.** A "like" counter and a bank
   ledger want opposite trades; not knowing that is the gap.
+
+---
+
+## Quiz
+
+### MCQ: What is the one consequence that makes distributed systems hard?
+- [ ] Multiple programming languages are usually involved
+- [x] Computers can fail independently, and the network between them is unreliable
+- [ ] Distributed systems always cost more to run
+- [ ] Databases can't be shared between services
+**Why:** Every hard problem in the field — partial failure, consensus, retries, consistency trade-offs — traces back to this one fact.
+
+### MCQ: According to the "senior instinct" on scaling, which should you generally try first?
+- [ ] Scale out immediately, since it has no ceiling
+- [x] Scale up (a bigger machine) — it's free in engineering time and adds no new failure modes
+- [ ] Both simultaneously, to be safe
+- [ ] Neither — always redesign around a queue first
+**Why:** Scaling out buys throughput and fault tolerance, but also buys every problem in the distributed-systems field — most teams scale out too early for load they never actually see.
+
+### MCQ: A team adds 10 more application servers. What's the most accurate expectation?
+- [ ] Every individual request will now complete faster
+- [x] The system can handle more requests per second (throughput), but a single request's latency is unaffected or possibly worse
+- [ ] Both latency and throughput improve equally
+- [ ] Nothing changes until the servers are manually load-balanced
+**Why:** A wider motorway doesn't make your car faster, it lets more cars through — throughput and latency are different axes, and conflating them is the classic beginner mistake.
+
+### MCQ: Why does making a service "stateless" make horizontal scaling easier?
+- [ ] Stateless services use less memory per request
+- [x] Any instance can serve any request, so instances can be added, removed, or restarted freely with nothing lost
+- [ ] Stateless services don't need a database at all
+- [ ] It eliminates the need for a load balancer
+**Why:** If a node remembers nothing between requests, the load balancer needs no knowledge of "who talked to whom" — scaling becomes an infrastructure operation instead of a design problem.
+
+### MCQ: When an app server becomes "stateless," what actually happens to the state it used to hold?
+- [ ] It's discarded — stateless means no state exists anywhere
+- [x] It's relocated to a system purpose-built to hold it across machines — Redis, a database, or object storage
+- [ ] It's duplicated on every server for redundancy
+- [ ] It's only kept in the client's browser
+**Why:** You don't eliminate state, you move it into something designed for replication and durability — the app tier becomes interchangeable because the state moved elsewhere.
+
+### MCQ: Service A calls Service B and gets no response at all. What's the fundamental problem?
+- [ ] The request definitely failed and should be retried immediately
+- [x] There are multiple possible explanations (never arrived, arrived but the reply was lost, B is just slow) that call for opposite responses, and A cannot tell which occurred
+- [ ] This can only happen if the network cable is physically cut
+- [ ] Service B's logs will always clarify what happened within seconds
+**Why:** This ambiguity — partial failure — is the reason idempotency and consensus algorithms exist; naively retrying could double-charge a customer if the request actually succeeded.
+
+### MCQ: What is a "retry storm"?
+- [ ] A burst of legitimate traffic during a marketing campaign
+- [x] Callers timing out against a slow service, retrying, which doubles the load on that already-struggling service, causing a feedback loop
+- [ ] A database replication failure
+- [ ] An attack technique targeting rate limiters
+**Why:** Retries are a feedback loop — a two-second blip can become a two-hour outage, which is exactly why backoff, jitter, and circuit breakers matter.
+
+### MCQ: Roughly how much more expensive is a call to another service in the same datacenter compared to a main-memory read?
+- [ ] About the same
+- [ ] Roughly 10x
+- [x] Roughly 5,000x
+- [ ] Roughly 100x
+**Why:** This number is why a loop making 100 service calls inside it is a different order-of-magnitude problem, and why caching (turning a service call into a memory read) pays off so dramatically.
+
+### MCQ: What's the correct senior framing when comparing consistency, availability, and latency?
+- [ ] Consistency is always the right choice for any serious system
+- [x] None of the three is universally "correct" — a payments ledger and a "like" counter should reasonably make opposite trade-offs
+- [ ] Availability should always be prioritized over consistency
+- [ ] These three concerns don't actually conflict in well-designed systems
+**Why:** Every design decision in the field trades these against each other; the interviewer is listening for whether you can name the trade for your specific system, not recite a universal preference.
+
+### MCQ: In the standard "shape" of a distributed system (load balancer → app servers → cache/database/queue), what is the queue for?
+- [ ] Storing the primary source of truth
+- [x] Work the user doesn't need to wait for (sending an email, resizing an image) — a worker picks it up later so a slow task doesn't become a slow response
+- [ ] Caching frequently-read data for fast access
+- [ ] Routing traffic between app server instances
+**Why:** The queue turns a task that would otherwise block the response into background work, decoupling "the user gets an answer" from "the work is fully done."
 
 ---
 
