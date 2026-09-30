@@ -125,6 +125,17 @@
       ]
     },
     {
+      "id": "lld",
+      "title": "Low-level design",
+      "level": "reference",
+      "blurb": "Object modeling, SOLID and design patterns, and the classic LLD problem pool — for companies that run a dedicated round.",
+      "chapters": [
+        "09-lld/01-lld-start-here.md",
+        "09-lld/02-oop-solid-and-patterns.md",
+        "09-lld/03-classic-lld-problems.md"
+      ]
+    },
+    {
       "id": "stories",
       "title": "Your stories & Googleyness",
       "level": "behavioural",

@@ -56,6 +56,7 @@ except ImportError:
 MODULE_DIRS = [
     "00-experience", "01-auth-identity", "02-google-loop", "03-backend",
     "04-data-cache", "05-testing", "06-cloud-devops", "07-ai-tooling", "08-frontend",
+    "09-lld",
 ]
 
 

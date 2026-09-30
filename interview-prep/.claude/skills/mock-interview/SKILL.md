@@ -18,6 +18,7 @@ grade after each answer — a real interviewer doesn't. Feedback comes at the en
 | `/mock-interview distributed` | Distributed systems — `02-google-loop/20`–`30` |
 | `/mock-interview security` | Role-related security knowledge — `02-google-loop/41` |
 | `/mock-interview googleyness` | Googleyness & Leadership — `02-google-loop/42` + `00-experience/` |
+| `/mock-interview lld` | Low-level design / OOD round — `09-lld/` |
 | `/mock-interview backend` | Implementation/backend — `03-backend/` |
 | `/mock-interview behavioral` | Experience and hard questions — `00-experience/` |
 | `/mock-interview` (bare) | Ask which, or run a mixed screen |

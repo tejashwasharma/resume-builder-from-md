@@ -162,6 +162,14 @@ design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 | --- | --- |
 | React, Hooks, Redux, TypeScript, SCSS, Styled-Components, micro-frontends | ✅ [react and typescript](08-frontend/01-react-and-typescript.md) |
 
+## 09 — Low-Level Design *(all written)* — not part of the Google loop; for companies that run a dedicated LLD/OOD round
+
+| Topic / keyword | File |
+| --- | --- |
+| what LLD tests, method, HLD vs LLD, concurrency follow-ups | ✅ [lld start here](09-lld/01-lld-start-here.md) |
+| OOP pillars, SOLID, Strategy, Factory, Observer, Singleton, Decorator, State, Command, Builder, Adapter | ✅ [oop, solid and patterns](09-lld/02-oop-solid-and-patterns.md) |
+| parking lot, LRU cache, elevator, vending machine, Splitwise/expense sharing, movie ticket booking, seat locking | ✅ [classic LLD problems](09-lld/03-classic-lld-problems.md) |
+
 ## Cross-cutting
 
 | Need | File |
