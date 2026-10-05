@@ -37,80 +37,79 @@ jump straight to a concept.
 | Zero Trust, Okta, Entra ID, Ping Identity | ✅ [zero trust idps](01-auth-identity/10-zero-trust-idps.md) |
 | PassportJS, strategies, `session: false` | ✅ [frameworks](03-backend/02-frameworks.md) §Passport.js |
 
-## 02 — Google Loop *(the whole Senior SWE loop, zero to onsite)*
+## 02 — Interview Core *(the whole Senior SWE loop, zero to onsite)*
 
-One self-contained part, numbered `01`–`43` in reading order: `01`–`02` the process and the roles,
+One self-contained part, numbered `01`–`43` in reading order: `01` the process,
 `03`–`19` coding, `20`–`30` distributed-systems foundations, `31`–`40` system
-design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
+design, `41`–`43` the security round, behavioural & leadership, the schedule.
 
-### A. The loop and the roles
+### A. The process
 
 | Topic / keyword | File |
 | --- | --- |
-| stages, phone screen, onsite, hiring committee, team match, the four attributes (GCA, RRK, Leadership, Googleyness), L4 vs L5, what to ask the recruiter | ✅ [the loop](02-google-loop/01-the-loop.md) |
-| Safe Coding, Cloud & Third-Party Platform Security, the two JDs line by line, Singapore hub, questions to ask, team match | ✅ [the two roles](02-google-loop/02-the-two-roles.md) |
+| stages, phone screen, onsite, hiring committee, team match, the four attributes (problem solving, role knowledge, leadership, collaboration), mid-level vs senior, what to ask the recruiter | ✅ [the interview process](02-interview-core/01-the-interview-process.md) |
 
 ### B. Coding — Big-O to 60+ solved problems
 
 | Topic / keyword | File |
 | --- | --- |
-| the 45-minute shape, speaking script, what gets written down, L5 downgrades, JS in a plain doc, mock transcript | ✅ [the coding round](02-google-loop/03-coding-round-how-google-runs-it.md) |
-| patterns, complexity, auth-flavoured problems, counting loop iterations, Big-O rules, TLE from constraints, space complexity, overflow, count factors, prime check, sieve, integer sqrt, AP/GP sums, modular arithmetic, N! mod p, number mod p, divisibility rules | ✅ [patterns and complexity](02-google-loop/04-patterns-and-complexity.md) |
-| how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](02-google-loop/05-choosing-the-approach.md) |
-| arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals, reverse/rotate array, range-sum queries, equilibrium index, special index, leaders, carry forward, contribution technique, sum of all subarray sums, min swaps, frequency queries, distinct in window, zero-sum subarray, equal 0s and 1s, noble integers, elements removal, comparator sort, majority element (Boyer–Moore), max consecutive ones, increasing triplets | ✅ [arrays and two pointers](02-google-loop/06-arrays-and-two-pointers.md) |
-| strings, hashing, frequency counts, longest substring without repeats, minimum window, group anagrams, palindromes, toggle case, reverse words, counting sort, count 'ag' pairs, count palindromic substrings, HashMap vs HashSet | ✅ [strings and hashing](02-google-loop/07-strings-and-hashing.md) |
-| linked lists, dummy head, fast/slow pointers, reverse in k-groups, merge k lists, random pointer copy, cycle start, build/traverse/search, insert at head/tail/k, delete head/tail/k/value, print in reverse | ✅ [linked lists](02-google-loop/08-linked-lists.md) |
-| stacks, queues, monotonic stack/deque, largest rectangle, sliding window maximum, min stack, calculator | ✅ [stacks, queues, monotonic](02-google-loop/09-stacks-queues-monotonic.md) |
-| trees, BST, traversals, LCA, serialize/deserialize, validate BST, max path sum | ✅ [trees and BST](02-google-loop/10-trees-and-bst.md) |
-| heaps, priority queues, MinHeap from scratch, kth largest in stream, top-k frequent, median from stream, meeting rooms II | ✅ [heaps and top-k](02-google-loop/11-heaps-and-top-k.md) |
-| graphs, BFS vs DFS, topological sort, course schedule, union-find, word ladder, Dijkstra, network delay | ✅ [graphs](02-google-loop/12-graphs.md) |
-| matrices, grids, multi-source BFS, rotten oranges, rotate image, search 2-D matrix, grid DP, row/column sums, diagonals, anti-diagonals, transpose, rotate anticlockwise, boundary, spiral order | ✅ [matrices and grids](02-google-loop/13-matrices-and-grids.md) |
-| recursion, backtracking, subsets, permutations, combination sum, N-Queens, generate parentheses, the three steps of recursion, sum/factorial/Fibonacci, recursion complexity, fast power, a^n mod m, Josephus, subarray vs subsequence vs subset, count subsequences with sum K, bitmask enumeration | ✅ [recursion and backtracking](02-google-loop/14-recursion-and-backtracking.md) |
-| dynamic programming, memoisation vs tabulation, house robber, coin change, LIS, LCS, edit distance, knapsack, word break | ✅ [dynamic programming](02-google-loop/15-dynamic-programming.md) |
-| binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR, decimal↔binary, add binary, bitwise operators, check/set/unset/toggle i-th bit, count set bits, two's complement | ✅ [binary search and bits](02-google-loop/16-binary-search-and-bits.md) |
-| trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-google-loop/17-tries-intervals-and-design-structures.md) |
-| IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-google-loop/18-security-flavoured-problems.md) |
-| drill, the pattern problem banks: every problem type from the Scaler DSA track, with algorithm + TypeScript, tagged `scaler` for coding practice | ✅ `## Problem bank` sections in [04](02-google-loop/04-patterns-and-complexity.md), [06](02-google-loop/06-arrays-and-two-pointers.md), [07](02-google-loop/07-strings-and-hashing.md), [08](02-google-loop/08-linked-lists.md), [13](02-google-loop/13-matrices-and-grids.md), [14](02-google-loop/14-recursion-and-backtracking.md), [16](02-google-loop/16-binary-search-and-bits.md) |
-| what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-google-loop/19-the-drill-plan.md) |
+| the 45-minute shape, speaking script, what gets written down, senior-level downgrades, JS in a plain doc, mock transcript | ✅ [the coding round](02-interview-core/03-the-coding-round.md) |
+| patterns, complexity, auth-flavoured problems, counting loop iterations, Big-O rules, TLE from constraints, space complexity, overflow, count factors, prime check, sieve, integer sqrt, AP/GP sums, modular arithmetic, N! mod p, number mod p, divisibility rules | ✅ [patterns and complexity](02-interview-core/04-patterns-and-complexity.md) |
+| how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](02-interview-core/05-choosing-the-approach.md) |
+| arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals, reverse/rotate array, range-sum queries, equilibrium index, special index, leaders, carry forward, contribution technique, sum of all subarray sums, min swaps, frequency queries, distinct in window, zero-sum subarray, equal 0s and 1s, noble integers, elements removal, comparator sort, majority element (Boyer–Moore), max consecutive ones, increasing triplets | ✅ [arrays and two pointers](02-interview-core/06-arrays-and-two-pointers.md) |
+| strings, hashing, frequency counts, longest substring without repeats, minimum window, group anagrams, palindromes, toggle case, reverse words, counting sort, count 'ag' pairs, count palindromic substrings, HashMap vs HashSet | ✅ [strings and hashing](02-interview-core/07-strings-and-hashing.md) |
+| linked lists, dummy head, fast/slow pointers, reverse in k-groups, merge k lists, random pointer copy, cycle start, build/traverse/search, insert at head/tail/k, delete head/tail/k/value, print in reverse | ✅ [linked lists](02-interview-core/08-linked-lists.md) |
+| stacks, queues, monotonic stack/deque, largest rectangle, sliding window maximum, min stack, calculator | ✅ [stacks, queues, monotonic](02-interview-core/09-stacks-queues-monotonic.md) |
+| trees, BST, traversals, LCA, serialize/deserialize, validate BST, max path sum | ✅ [trees and BST](02-interview-core/10-trees-and-bst.md) |
+| heaps, priority queues, MinHeap from scratch, kth largest in stream, top-k frequent, median from stream, meeting rooms II | ✅ [heaps and top-k](02-interview-core/11-heaps-and-top-k.md) |
+| graphs, BFS vs DFS, topological sort, course schedule, union-find, word ladder, Dijkstra, network delay | ✅ [graphs](02-interview-core/12-graphs.md) |
+| matrices, grids, multi-source BFS, rotten oranges, rotate image, search 2-D matrix, grid DP, row/column sums, diagonals, anti-diagonals, transpose, rotate anticlockwise, boundary, spiral order | ✅ [matrices and grids](02-interview-core/13-matrices-and-grids.md) |
+| recursion, backtracking, subsets, permutations, combination sum, N-Queens, generate parentheses, the three steps of recursion, sum/factorial/Fibonacci, recursion complexity, fast power, a^n mod m, Josephus, subarray vs subsequence vs subset, count subsequences with sum K, bitmask enumeration | ✅ [recursion and backtracking](02-interview-core/14-recursion-and-backtracking.md) |
+| dynamic programming, memoisation vs tabulation, house robber, coin change, LIS, LCS, edit distance, knapsack, word break | ✅ [dynamic programming](02-interview-core/15-dynamic-programming.md) |
+| binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR, decimal↔binary, add binary, bitwise operators, check/set/unset/toggle i-th bit, count set bits, two's complement | ✅ [binary search and bits](02-interview-core/16-binary-search-and-bits.md) |
+| trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-interview-core/17-tries-intervals-and-design-structures.md) |
+| IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-interview-core/18-security-flavoured-problems.md) |
+| drill, the pattern problem banks: every problem type from the Scaler DSA track, with algorithm + TypeScript, tagged `scaler` for coding practice | ✅ `## Problem bank` sections in [04](02-interview-core/04-patterns-and-complexity.md), [06](02-interview-core/06-arrays-and-two-pointers.md), [07](02-interview-core/07-strings-and-hashing.md), [08](02-interview-core/08-linked-lists.md), [13](02-interview-core/13-matrices-and-grids.md), [14](02-interview-core/14-recursion-and-backtracking.md), [16](02-interview-core/16-binary-search-and-bits.md) |
+| what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-interview-core/19-the-drill-plan.md) |
 
 ### C. Distributed-systems foundations
 
 | Topic / keyword | File |
 | --- | --- |
-| what is a distributed system, scale up vs out, stateless, beginner start | ✅ [start here](02-google-loop/20-distributed-start-here.md) |
-| which technology for which problem, Nginx, Envoy, Kubernetes, etcd, Prometheus, what to learn first | ✅ [the technology landscape](02-google-loop/21-the-technology-landscape.md) |
-| failure modes, fallacies of distributed computing | ✅ [failure modes and fallacies](02-google-loop/22-failure-modes-and-fallacies.md) |
-| CAP, PACELC, consistency models, read-your-writes, Spanner, TrueTime | ✅ [consistency, CAP, PACELC](02-google-loop/23-consistency-cap-pacelc.md) |
-| replication, leader-follower, quorum, partitioning, sharding, hot keys, Bigtable | ✅ [replication and partitioning](02-google-loop/24-replication-partitioning.md) |
-| consensus, Raft, Paxos, Chubby, leader election, distributed locks, Redlock | ✅ [consensus and coordination](02-google-loop/25-consensus-coordination.md) |
-| clocks, ordering, idempotency, exactly-once, 2PC, sagas, outbox | ✅ [idempotency and transactions](02-google-loop/26-idempotency-transactions.md) |
-| queues, logs, Kafka, Pub/Sub, delivery semantics, backpressure, DLQ | ✅ [messaging and streams](02-google-loop/27-messaging-streams.md) |
-| caching, invalidation, stampede, thundering herd | ✅ [caching at scale](02-google-loop/28-caching-at-scale.md) |
-| timeouts, retries, circuit breakers, bulkheads, rate limiting, noisy neighbour | ✅ [resilience and rate limiting](02-google-loop/29-resilience-rate-limiting.md) |
-| SLI, SLO, error budget, golden signals, alerting, canary, rollback, incidents, postmortems, load shedding | ✅ [observability, SLOs, operations](02-google-loop/30-observability-slos-and-operations.md) |
+| what is a distributed system, scale up vs out, stateless, beginner start | ✅ [start here](02-interview-core/20-distributed-start-here.md) |
+| which technology for which problem, Nginx, Envoy, Kubernetes, etcd, Prometheus, what to learn first | ✅ [the technology landscape](02-interview-core/21-the-technology-landscape.md) |
+| failure modes, fallacies of distributed computing | ✅ [failure modes and fallacies](02-interview-core/22-failure-modes-and-fallacies.md) |
+| CAP, PACELC, consistency models, read-your-writes, Spanner, TrueTime | ✅ [consistency, CAP, PACELC](02-interview-core/23-consistency-cap-pacelc.md) |
+| replication, leader-follower, quorum, partitioning, sharding, hot keys, Bigtable | ✅ [replication and partitioning](02-interview-core/24-replication-partitioning.md) |
+| consensus, Raft, Paxos, Chubby, leader election, distributed locks, Redlock | ✅ [consensus and coordination](02-interview-core/25-consensus-coordination.md) |
+| clocks, ordering, idempotency, exactly-once, 2PC, sagas, outbox | ✅ [idempotency and transactions](02-interview-core/26-idempotency-transactions.md) |
+| queues, logs, Kafka, Pub/Sub, delivery semantics, backpressure, DLQ | ✅ [messaging and streams](02-interview-core/27-messaging-streams.md) |
+| caching, invalidation, stampede, thundering herd | ✅ [caching at scale](02-interview-core/28-caching-at-scale.md) |
+| timeouts, retries, circuit breakers, bulkheads, rate limiting, noisy neighbour | ✅ [resilience and rate limiting](02-interview-core/29-resilience-rate-limiting.md) |
+| SLI, SLO, error budget, golden signals, alerting, canary, rollback, incidents, postmortems, load shedding | ✅ [observability, SLOs, operations](02-interview-core/30-observability-slos-and-operations.md) |
 
 ### D. System design
 
 | Topic / keyword | File |
 | --- | --- |
-| what a design round is, one server → 10M users, beginner start | ✅ [start here](02-google-loop/31-design-round-start-here.md) |
-| the method, how to run 45 minutes, how Google runs the design round, the L5 bar | ✅ [the method](02-google-loop/32-the-method.md) |
-| estimation, capacity, back-of-envelope, RPS | ✅ [estimation](02-google-loop/33-estimation.md) |
-| Postgres vs Mongo vs Dynamo, Kafka vs SQS, REST vs gRPC, SSE vs WebSockets, monolith vs microservices | ✅ [the technology toolbox](02-google-loop/34-the-technology-toolbox.md) |
-| building blocks, reference architectures to draw | ✅ [building blocks](02-google-loop/35-building-blocks.md) |
-| Zanzibar, BeyondCorp, Borg, Spanner, Bigtable, Colossus, Pub/Sub, SLSA, Sigstore, in-toto, SBOM — what to cite and how | ✅ [Google-scale vocabulary](02-google-loop/36-google-scale-vocabulary.md) |
-| design auth service, 2–3B req/day, multi-region, revocation, key rotation | ✅ [design auth service](02-google-loop/37-design-auth-service.md) |
-| design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design rbac sso sessions](02-google-loop/38-design-rbac-sso-sessions.md) |
-| URL shortener, notifications, feed, rate limiter, key-value store, log pipeline, job scheduler | ✅ [classics](02-google-loop/39-design-classics.md) |
-| cloud security posture, third-party access inventory, supply-chain integrity, authorization service, secrets detection, package registry proxy, agentic-AI guardrails | ✅ [design security systems](02-google-loop/40-design-security-systems.md) |
+| what a design round is, one server → 10M users, beginner start | ✅ [start here](02-interview-core/31-design-round-start-here.md) |
+| the method, how to run 45 minutes, how the design round runs, the senior bar | ✅ [the method](02-interview-core/32-the-method.md) |
+| estimation, capacity, back-of-envelope, RPS | ✅ [estimation](02-interview-core/33-estimation.md) |
+| Postgres vs Mongo vs Dynamo, Kafka vs SQS, REST vs gRPC, SSE vs WebSockets, monolith vs microservices | ✅ [the technology toolbox](02-interview-core/34-the-technology-toolbox.md) |
+| building blocks, reference architectures to draw | ✅ [building blocks](02-interview-core/35-building-blocks.md) |
+| Zanzibar, BeyondCorp, Borg, Spanner, Bigtable, Colossus, Pub/Sub, SLSA, Sigstore, in-toto, SBOM — what to cite and how | ✅ [Hyperscale vocabulary](02-interview-core/36-scale-vocabulary.md) |
+| design auth service, 2–3B req/day, multi-region, revocation, key rotation | ✅ [design auth service](02-interview-core/37-design-auth-service.md) |
+| design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design rbac sso sessions](02-interview-core/38-design-rbac-sso-sessions.md) |
+| URL shortener, notifications, feed, rate limiter, key-value store, log pipeline, job scheduler | ✅ [classics](02-interview-core/39-design-classics.md) |
+| cloud security posture, third-party access inventory, supply-chain integrity, authorization service, secrets detection, package registry proxy, agentic-AI guardrails | ✅ [design security systems](02-interview-core/40-design-security-systems.md) |
 
-### E. The security round, Googleyness & Leadership, the schedule
+### E. The security round, behavioural & leadership, the schedule
 
 | Topic / keyword | File |
 | --- | --- |
-| threat modelling, STRIDE, CWE classes, secure by design, Safe Coding, memory safety, SLSA, Sigstore, SBOM, xz, cloud IAM misconfig, CSPM, third-party risk, prompt injection, OWASP LLM Top 10 | ✅ [security domain knowledge](02-google-loop/41-security-domain-knowledge.md) |
-| Googleyness, emergent leadership, ambiguity, new hub 0→1, mentoring, pushed back, failure, conflict, why Google | ✅ [Googleyness and leadership](02-google-loop/42-googleyness-and-leadership.md) |
-| week-by-week schedule, mock pool, day-before checklist, hiring committee wait, team match, offer basics | ✅ [the schedule](02-google-loop/43-the-schedule.md) |
+| threat modelling, STRIDE, CWE classes, secure by design, safe coding, memory safety, SLSA, Sigstore, SBOM, xz, cloud IAM misconfig, CSPM, third-party risk, prompt injection, OWASP LLM Top 10 | ✅ [security domain knowledge](02-interview-core/41-security-domain-knowledge.md) |
+| emergent leadership, ambiguity, 0→1, mentoring, pushed back, failure, conflict, why this company | ✅ [behavioural and leadership](02-interview-core/42-behavioral-and-leadership.md) |
+| week-by-week schedule, mock pool, day-before checklist, hiring committee wait, team match, offer basics | ✅ [the schedule](02-interview-core/43-the-schedule.md) |
 
 ## 03 — Backend *(all written)*
 
@@ -162,7 +161,7 @@ design, `41`–`43` the security round, Googleyness & Leadership, the schedule.
 | --- | --- |
 | React, Hooks, Redux, TypeScript, SCSS, Styled-Components, micro-frontends | ✅ [react and typescript](08-frontend/01-react-and-typescript.md) |
 
-## 09 — Low-Level Design *(all written)* — not part of the Google loop; for companies that run a dedicated LLD/OOD round
+## 09 — Low-Level Design *(all written)* — not part of the interview-core loop; for companies that run a dedicated LLD/OOD round
 
 | Topic / keyword | File |
 | --- | --- |

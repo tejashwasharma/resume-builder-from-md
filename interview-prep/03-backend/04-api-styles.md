@@ -176,7 +176,7 @@ live dashboards.
 The hard part is that they're **stateful**: a connection lives on one server,
 so you need a pub/sub backplane (Redis) for any instance to reach any
 connection. See
-[messaging streams](../02-google-loop/27-messaging-streams.md).
+[messaging streams](../02-interview-core/27-messaging-streams.md).
 
 **Auth note:** authenticate at the handshake, then re-check periodically. A
 long-lived socket outlives token expiry and session revocation, so a terminated

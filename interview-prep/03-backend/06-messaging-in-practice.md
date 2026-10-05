@@ -1,6 +1,6 @@
 # Messaging in practice: Kafka, RabbitMQ, SQS and SNS
 
-[Messaging, queues and streams](../02-google-loop/27-messaging-streams.md)
+[Messaging, queues and streams](../02-interview-core/27-messaging-streams.md)
 teaches the theory: queue vs log, ordering per partition, ack timing and
 delivery semantics. This chapter is the other half — how the three brokers you
 will actually be asked about **work and are wired up**. Kafka and RabbitMQ are

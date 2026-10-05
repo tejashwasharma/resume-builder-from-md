@@ -651,7 +651,7 @@ booking on that seat's row.
    <details><summary>Answer</summary>
 
    Rate-limit `createBooking` per user (see
-   [rate limiting](../02-google-loop/29-resilience-rate-limiting.md)), and
+   [rate limiting](../02-interview-core/29-resilience-rate-limiting.md)), and
    keep the hold TTL short enough that abandonment is cheap to recover from —
    a few minutes, not a few hours. Some real systems also require a
    lightweight commitment (payment details captured, not charged) before

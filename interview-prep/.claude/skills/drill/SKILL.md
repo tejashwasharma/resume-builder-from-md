@@ -95,7 +95,7 @@ terminal version of it.
    the Hint, the Solution, or the chapter's Workshop walkthrough. Ask for a
    TypeScript solution with the exact signature in `**Function:**`.
 2. **Make them talk first.** Brute force and its complexity, then the better
-   idea and its complexity — the order a Google interviewer expects. If they
+   idea and its complexity — the order interviewers expect. If they
    are stuck after one nudge, give the `**Topic:**` and `**Hint:**` line —
    never more.
 3. **Run their code against the block's tests.** Write their code plus a small

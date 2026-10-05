@@ -101,7 +101,7 @@ ALIASES_LOWER = {k.lower(): v for k, v in ALIASES.items()}
 
 # Not on the resume, but expected of a senior candidate.
 ROLE_LEVEL = {
-    "Google loop (coding, distributed, design)": "02-google-loop",
+    "Interview core (coding, distributed, design)": "02-interview-core",
     "Low-level design (OOD, SOLID, patterns)": "09-lld",
 }
 

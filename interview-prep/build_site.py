@@ -54,7 +54,7 @@ except ImportError:
 # Directories whose .md files are chapters. Every one of them must be listed in
 # curriculum.json (as a chapter or an exclusion) so nothing silently drops out.
 MODULE_DIRS = [
-    "00-experience", "01-auth-identity", "02-google-loop", "03-backend",
+    "00-experience", "01-auth-identity", "02-interview-core", "03-backend",
     "04-data-cache", "05-testing", "06-cloud-devops", "07-ai-tooling", "08-frontend",
     "09-lld",
 ]

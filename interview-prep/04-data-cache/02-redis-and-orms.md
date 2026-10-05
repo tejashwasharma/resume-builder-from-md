@@ -109,7 +109,7 @@ end
 ```
 
 Without this, you can delete someone else's lock after yours expired. See
-[consensus coordination](../02-google-loop/25-consensus-coordination.md).
+[consensus coordination](../02-interview-core/25-consensus-coordination.md).
 
 ### Scaling
 

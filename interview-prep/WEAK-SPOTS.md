@@ -30,9 +30,6 @@ resolve here should be updated — strike it out and note the resolution.
   actually doing, and how you found it.
 - "2–3x more PRs" from AI adoption invites a quality challenge — pair it with
   the coverage number (75%→85%+) every time you say it.
-- Four Google-specific exposures (Go-vs-Node fit, "security software" framing,
-  the 0→1 culture story, design at 10× current scale) apply only if you're
-  interviewing there — see the Google-specific section below.
 
 ---
 
@@ -47,7 +44,7 @@ decisions in Redis — what happens when the cache and the policy store
 disagree?" is a completely fair question and it lands in consistency,
 invalidation, and stampede territory immediately.
 
-**What resolves it.** `02-google-loop/20`–`29`, especially
+**What resolves it.** `02-interview-core/20`–`29`, especially
 `28-caching-at-scale.md` and `23-consistency-cap-pacelc.md`. You need to be
 able to reach for this vocabulary without being asked — using it *before* you're asked
 is what signals the level.
@@ -96,8 +93,8 @@ layer sat in front of it; here is the architecture, here is specifically what
 I owned inside it, here is what I changed and what it did to the numbers.
 Precise about the boundary, unapologetic about the part that was yours.
 
-**What resolves it.** `02-google-loop/37-design-auth-service.md` works this
-exact system at this exact scale, and `02-google-loop/33-estimation.md`
+**What resolves it.** `02-interview-core/37-design-auth-service.md` works this
+exact system at this exact scale, and `02-interview-core/33-estimation.md`
 turns 2–3B/day into RPS you can say out loud (~30–35k average, and you should
 know your peak multiplier).
 
@@ -225,94 +222,6 @@ behind several of those — say those, not the slogan.
   [cicd and observability](06-cloud-devops/02-cicd-and-observability.md)
   §The day-to-day tooling) — the risk is not depth, it's being unable to say
   *when you last used it* on the ones you touched years ago.
-
----
-
-## Google-specific exposures
-
-The two Singapore postings ([decoded here](02-google-loop/02-the-two-roles.md))
-add four places where the resume and the job description don't line up
-cleanly. Each is a question you will get.
-
-### G1. "Strong proficiency in Go or Python" — and the evidence is Node
-
-**The gap.** The Cloud & Third Party posting names Go or Python; the Safe
-Coding team is polyglot with a Go-heavy toolchain. Item 2 above already
-covers Go on the resume; here it stops being a listing problem and becomes
-a *fit* question, because the interviewer is reading the JD next to your
-CV.
-
-**Why it bites.** "Which language would you build this in?" in the design
-round, and "what have you shipped in Go?" in the role-related round. An
-evasive answer to either reads as a gap in Role-Related Knowledge, which is
-one of the four attributes the committee scores.
-
-**What resolves it.** Decide route (a) or (b) from item 2, then rehearse
-the one-liner in [the two roles](02-google-loop/02-the-two-roles.md#q-the-posting-prefers-go-or-python-and-your-experience-is-node-how-do-you-handle-that).
-Coding solutions in this book are in JavaScript by your choice; confirm
-with the recruiter that it's acceptable for the rounds (it normally is).
-
-> **FILL IN:** the route, and the honest one-liner.
-
-### G2. "3 years building software for data privacy or security" — say it in those words
-
-**The gap.** The resume describes IAM platform work; it never uses the
-phrase "security software". The posting's minimum qualification does.
-
-**Why it bites.** A screener matching the CV against the qualification may
-not make the leap. An interviewer asking "what security software have you
-built?" needs the answer framed as threats addressed, not technologies
-used.
-
-**What resolves it.** One sentence naming the systems and what each
-protected against: the authorisation model (broken access control), the
-protocol unification (broken authentication, token lifecycle), session
-governance (session hijack, stale access), and the audit remediation. The
-map is in [bringing your own work in](02-google-loop/41-security-domain-knowledge.md#bringing-your-own-work-in).
-
-> **FILL IN:** the sentence, and one example where a fix eliminated a
-> *class* of bug — the bridge to the Safe Coding worldview.
-
-### G3. The new-hub 0→1 story
-
-**The gap.** Both postings say the hire will "establish the engineering
-culture" in a brand-new hub. The resume evidences building a system from
-nothing; it doesn't evidence building a *team's norms* from nothing.
-
-**Why it bites.** "What would you do in your first 90 days?" and "how would
-you set standards on a team that has none?" are near-certain, and the
-generic answer (design reviews, definition of done) is what everyone says.
-
-**What resolves it.** The RBAC 0→1 story told with the blank-page part
-vivid, plus a specific mechanism you actually used to set a norm at
-Contentstack or BestPeers — the review practice, the testing bar, the
-onboarding path. [The two roles](02-google-loop/02-the-two-roles.md#the-new-hub-theme)
-and [Googleyness & Leadership](02-google-loop/42-googleyness-and-leadership.md)
-have the skeletons.
-
-> **FILL IN:** the one norm you set, how, and what changed.
-
-### G4. System design at Google scale versus "~2–3B requests/day"
-
-**The gap.** Item 3 above is about defending the number. At Google the
-design round will *start* from that scale and ask what breaks at ten times
-it — multi-region, global consistency, the policy engine as a fail-closed
-dependency for the whole platform.
-
-**Why it bites.** A candidate who can describe the system they built but
-not what they'd change at 10× is graded mid-level on the design round
-regardless of how well the coding rounds went.
-
-**What resolves it.** [The design round at Google](02-google-loop/31-design-round-start-here.md),
-the [auth service design](02-google-loop/37-design-auth-service.md) with
-its "at 10×" section, and the vocabulary in
-[Google-scale systems](02-google-loop/36-google-scale-vocabulary.md).
-Rehearse the auth service design until the 10× answer — regional policy
-replicas, decision caching with bounded staleness, break-glass — is the
-first thing you say, not the thing you're led to.
-
-> **FILL IN:** the real peak-to-average ratio and read/write split (item 3),
-> because the 10× answer is built on them.
 
 ---
 

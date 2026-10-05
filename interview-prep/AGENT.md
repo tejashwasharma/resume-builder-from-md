@@ -93,22 +93,21 @@ Shape, adapted to what the chapter covers:
   non-obvious line is there (why a script must be atomic, why a check happens
   before a mutation) rather than just presenting it.
 
-System-design chapters (`02-google-loop/31`–`40`) get a lighter version —
+System-design chapters (`02-interview-core/31`–`40`) get a lighter version —
 "**Reference stack**": the libraries you'd name out loud when an interviewer
 asks what you'd build this with, no setup steps, no full pseudocode. Coding
-chapters (`02-google-loop/03`–`19`) get **Data structures** instead of
+chapters (`02-interview-core/03`–`19`) get **Data structures** instead of
 libraries — the standard structure per pattern, since a DSA round is
 explicitly testing that you don't reach for a dependency.
 
-## The Google Loop part
+## The interview-core part
 
-`02-google-loop/` is one self-contained part, numbered `01`–`43` in reading order: `01`–`02`
-the process and the two roles, `03`–`19` coding, `20`–`30` distributed-systems
+`02-interview-core/` is one self-contained part, numbered `01`–`43` in reading order: `01`
+the process, `03`–`19` coding, `20`–`30` distributed-systems
 foundations, `31`–`40` system design, `41`–`43` the security knowledge round,
-Googleyness & Leadership, and the schedule. Anything about Google's process
-must come from Google's public hiring pages, cited; anything about the two
-roles from the postings quoted in `02-the-two-roles.md`. Do not state loop
-details that are not public.
+behavioural & leadership, and the schedule. Keep it company-neutral: no
+employer-, team- or job-posting-specific content. Do not state process
+details you cannot source publicly.
 
 Never invent a fact about the candidate's own deployment to fill this in —
 generic implementation guidance doesn't carry the same risk as a specific

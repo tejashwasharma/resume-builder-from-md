@@ -93,7 +93,7 @@ Be able to list these — it's what separates experience from enthusiasm:
 - Every in-process call becomes a network call that can fail, or worse, be slow
 - Debugging needs distributed tracing instead of a stack trace
 - Data consistency becomes your problem (sagas, outbox — see
-  [idempotency transactions](../02-google-loop/26-idempotency-transactions.md))
+  [idempotency transactions](../02-interview-core/26-idempotency-transactions.md))
 - Per-service CI/CD, monitoring, on-call
 - Local development gets meaningfully harder
 - Versioning and compatibility across services
@@ -159,7 +159,7 @@ No new library beyond what the specific communication choice already needs:
 | Pattern | See |
 | --- | --- |
 | Synchronous (REST/gRPC) | [api-styles](04-api-styles.md) |
-| Asynchronous (queue/event) | [messaging-streams](../02-google-loop/27-messaging-streams.md) |
+| Asynchronous (queue/event) | [messaging-streams](../02-interview-core/27-messaging-streams.md) |
 | Service mesh sidecar | Infrastructure (Istio, Linkerd) — not application code; see [zero-trust-idps](../01-auth-identity/10-zero-trust-idps.md) |
 
 The design decision this chapter is actually testing — where the boundary

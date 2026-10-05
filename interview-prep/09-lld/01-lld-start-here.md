@@ -1,6 +1,6 @@
 # Low-level design — start here
 
-Not part of the Google loop (`02-google-loop/`), which folds "design a class
+Not part of the interview-core part (`02-interview-core/`), which folds "design a class
 for X" into the coding round rather than running it as its own 45-minute
 slot. This is here for companies that do run a dedicated round — Amazon,
 Uber, most product and service-based companies — where the prompt is
@@ -30,15 +30,15 @@ Uber, most product and service-based companies — where the prompt is
   on to look sophisticated reads as the opposite — see
   [OOP, SOLID and patterns](02-oop-solid-and-patterns.md).
 - **Concurrency is the differentiator at senior level.** "Two customers book
-  the last seat at the same second" is the follow-up that separates L4 from
-  L5 — see how the worked problems in
+  the last seat at the same second" is the follow-up that separates mid-level from
+  senior — see how the worked problems in
   [classic LLD problems](03-classic-lld-problems.md) handle it.
 
 ---
 
 ## How this differs from the system-design (HLD) round
 
-| | HLD (`02-google-loop/31`–`40`) | LLD (here) |
+| | HLD (`02-interview-core/31`–`40`) | LLD (here) |
 | --- | --- | --- |
 | Unit of design | Services, data stores, queues | Classes, interfaces, methods |
 | Scale question | "How many requests per second?" | "How many concurrent callers on this object?" |
@@ -267,7 +267,7 @@ guess.
    the atomic step is fast, release the lock, then call the payment provider.
    On success, move `RESERVED → BOOKED`; on failure or TTL expiry, move it
    back to `AVAILABLE`. This is the same reservation-with-timeout pattern
-   used in [Rate limiting and resilience](../02-google-loop/29-resilience-rate-limiting.md)
+   used in [Rate limiting and resilience](../02-interview-core/29-resilience-rate-limiting.md)
    for holding a resource without blocking on a slow dependency.
 
    </details>

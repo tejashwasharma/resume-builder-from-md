@@ -13,11 +13,11 @@ grade after each answer — a real interviewer doesn't. Feedback comes at the en
 | Invocation | Round |
 | --- | --- |
 | `/mock-interview auth` | Deep technical on identity — `01-auth-identity/` |
-| `/mock-interview coding` | Google-style coding round — `02-google-loop/03`–`19` (one problem, 45 min, in a plain doc) |
-| `/mock-interview design` | System design — `02-google-loop/31`–`40` |
-| `/mock-interview distributed` | Distributed systems — `02-google-loop/20`–`30` |
-| `/mock-interview security` | Role-related security knowledge — `02-google-loop/41` |
-| `/mock-interview googleyness` | Googleyness & Leadership — `02-google-loop/42` + `00-experience/` |
+| `/mock-interview coding` | Coding round — `02-interview-core/03`–`19` (one problem, 45 min, in a plain doc) |
+| `/mock-interview design` | System design — `02-interview-core/31`–`40` |
+| `/mock-interview distributed` | Distributed systems — `02-interview-core/20`–`30` |
+| `/mock-interview security` | Security knowledge — `02-interview-core/41` |
+| `/mock-interview leadership` | Behavioural & Leadership — `02-interview-core/42` + `00-experience/` |
 | `/mock-interview lld` | Low-level design / OOD round — `09-lld/` |
 | `/mock-interview backend` | Implementation/backend — `03-backend/` |
 | `/mock-interview behavioral` | Experience and hard questions — `00-experience/` |

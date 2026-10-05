@@ -5,13 +5,12 @@
       "id": "start",
       "title": "Start here",
       "level": "process",
-      "blurb": "How the Google loop works, what the two roles want, and how to use this path.",
+      "blurb": "How the interview loop works, and how to use this path.",
       "chapters": [
-        "02-google-loop/01-the-loop.md",
-        "02-google-loop/02-the-two-roles.md",
-        "02-google-loop/03-coding-round-how-google-runs-it.md",
-        "02-google-loop/19-the-drill-plan.md",
-        "02-google-loop/43-the-schedule.md"
+        "02-interview-core/01-the-interview-process.md",
+        "02-interview-core/03-the-coding-round.md",
+        "02-interview-core/19-the-drill-plan.md",
+        "02-interview-core/43-the-schedule.md"
       ]
     },
     {
@@ -20,29 +19,29 @@
       "level": "basic",
       "blurb": "The structures every problem is built on. Starts in brief — most of the time goes into Code.",
       "chapters": [
-        "02-google-loop/04-patterns-and-complexity.md",
-        "02-google-loop/06-arrays-and-two-pointers.md",
-        "02-google-loop/07-strings-and-hashing.md",
-        "02-google-loop/08-linked-lists.md",
-        "02-google-loop/13-matrices-and-grids.md",
-        "02-google-loop/14-recursion-and-backtracking.md",
-        "02-google-loop/16-binary-search-and-bits.md"
+        "02-interview-core/04-patterns-and-complexity.md",
+        "02-interview-core/06-arrays-and-two-pointers.md",
+        "02-interview-core/07-strings-and-hashing.md",
+        "02-interview-core/08-linked-lists.md",
+        "02-interview-core/13-matrices-and-grids.md",
+        "02-interview-core/14-recursion-and-backtracking.md",
+        "02-interview-core/16-binary-search-and-bits.md"
       ]
     },
     {
       "id": "coding-core",
       "title": "Coding core",
       "level": "core",
-      "blurb": "The patterns Google's coding rounds lean on, once the basics are automatic.",
+      "blurb": "The patterns coding rounds lean on, once the basics are automatic.",
       "chapters": [
-        "02-google-loop/05-choosing-the-approach.md",
-        "02-google-loop/09-stacks-queues-monotonic.md",
-        "02-google-loop/10-trees-and-bst.md",
-        "02-google-loop/11-heaps-and-top-k.md",
-        "02-google-loop/12-graphs.md",
-        "02-google-loop/15-dynamic-programming.md",
-        "02-google-loop/17-tries-intervals-and-design-structures.md",
-        "02-google-loop/18-security-flavoured-problems.md"
+        "02-interview-core/05-choosing-the-approach.md",
+        "02-interview-core/09-stacks-queues-monotonic.md",
+        "02-interview-core/10-trees-and-bst.md",
+        "02-interview-core/11-heaps-and-top-k.md",
+        "02-interview-core/12-graphs.md",
+        "02-interview-core/15-dynamic-programming.md",
+        "02-interview-core/17-tries-intervals-and-design-structures.md",
+        "02-interview-core/18-security-flavoured-problems.md"
       ]
     },
     {
@@ -51,36 +50,36 @@
       "level": "advanced",
       "blurb": "From zero: what breaks when one machine becomes many, and the tools that cope.",
       "chapters": [
-        "02-google-loop/20-distributed-start-here.md",
-        "02-google-loop/21-the-technology-landscape.md",
-        "02-google-loop/22-failure-modes-and-fallacies.md",
-        "02-google-loop/23-consistency-cap-pacelc.md",
-        "02-google-loop/24-replication-partitioning.md",
-        "02-google-loop/25-consensus-coordination.md",
-        "02-google-loop/26-idempotency-transactions.md",
-        "02-google-loop/27-messaging-streams.md",
+        "02-interview-core/20-distributed-start-here.md",
+        "02-interview-core/21-the-technology-landscape.md",
+        "02-interview-core/22-failure-modes-and-fallacies.md",
+        "02-interview-core/23-consistency-cap-pacelc.md",
+        "02-interview-core/24-replication-partitioning.md",
+        "02-interview-core/25-consensus-coordination.md",
+        "02-interview-core/26-idempotency-transactions.md",
+        "02-interview-core/27-messaging-streams.md",
         "03-backend/06-messaging-in-practice.md",
-        "02-google-loop/28-caching-at-scale.md",
-        "02-google-loop/29-resilience-rate-limiting.md",
-        "02-google-loop/30-observability-slos-and-operations.md"
+        "02-interview-core/28-caching-at-scale.md",
+        "02-interview-core/29-resilience-rate-limiting.md",
+        "02-interview-core/30-observability-slos-and-operations.md"
       ]
     },
     {
       "id": "design",
       "title": "System design",
       "level": "advanced",
-      "blurb": "From one server to Google scale, then the designs in your own domain.",
+      "blurb": "From one server to hyperscale, then the designs in your own domain.",
       "chapters": [
-        "02-google-loop/31-design-round-start-here.md",
-        "02-google-loop/32-the-method.md",
-        "02-google-loop/33-estimation.md",
-        "02-google-loop/34-the-technology-toolbox.md",
-        "02-google-loop/35-building-blocks.md",
-        "02-google-loop/36-google-scale-vocabulary.md",
-        "02-google-loop/37-design-auth-service.md",
-        "02-google-loop/38-design-rbac-sso-sessions.md",
-        "02-google-loop/39-design-classics.md",
-        "02-google-loop/40-design-security-systems.md"
+        "02-interview-core/31-design-round-start-here.md",
+        "02-interview-core/32-the-method.md",
+        "02-interview-core/33-estimation.md",
+        "02-interview-core/34-the-technology-toolbox.md",
+        "02-interview-core/35-building-blocks.md",
+        "02-interview-core/36-scale-vocabulary.md",
+        "02-interview-core/37-design-auth-service.md",
+        "02-interview-core/38-design-rbac-sso-sessions.md",
+        "02-interview-core/39-design-classics.md",
+        "02-interview-core/40-design-security-systems.md"
       ]
     },
     {
@@ -99,7 +98,7 @@
         "01-auth-identity/08-rbac-abac.md",
         "01-auth-identity/09-opa-rego.md",
         "01-auth-identity/10-zero-trust-idps.md",
-        "02-google-loop/41-security-domain-knowledge.md"
+        "02-interview-core/41-security-domain-knowledge.md"
       ]
     },
     {
@@ -137,7 +136,7 @@
     },
     {
       "id": "stories",
-      "title": "Your stories & Googleyness",
+      "title": "Your stories & behavioural",
       "level": "behavioural",
       "blurb": "Every resume claim as a story you can defend, then the behavioural round.",
       "chapters": [
@@ -145,7 +144,7 @@
         "00-experience/bestpeers.md",
         "00-experience/gyrix.md",
         "00-experience/hard-questions.md",
-        "02-google-loop/42-googleyness-and-leadership.md",
+        "02-interview-core/42-behavioral-and-leadership.md",
         "WEAK-SPOTS.md"
       ]
     }

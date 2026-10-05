@@ -816,7 +816,7 @@ one.
    The related issue is **hot keys** — one tenant's key taking
    disproportionate traffic and saturating a single Redis shard, which no TTL
    strategy fixes. That needs replication of that key or a local in-process
-   cache in front. See `02-google-loop/28-caching-at-scale.md`.
+   cache in front. See `02-interview-core/28-caching-at-scale.md`.
 
    </details>
 

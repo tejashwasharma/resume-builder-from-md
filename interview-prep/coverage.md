@@ -89,4 +89,4 @@ Skills line, and whether this repo teaches it.
 
 ## Expected at senior level, not on the resume
 
-- ✅ **Google loop (coding, distributed, design)** — `02-google-loop/` (43 files)
+- ✅ **Interview core (coding, distributed, design)** — `02-interview-core/` (43 files)
