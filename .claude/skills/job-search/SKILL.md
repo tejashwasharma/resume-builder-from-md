@@ -254,23 +254,35 @@ stack overlap, seniority word, or applicant count:
 
 ```js
 const bad   = /intern|fresher|trainee|graduate|associate engineer|sde[ -]?1\b|recruit|sales|marketing|qa engineer|test engineer|support|manual|architect|director|\bmanager\b|head of|vice president|\bvp\b|consultant/i;
-const good  = /software engineer|backend engineer|back[ -]?end engineer|full ?stack engineer|software developer|backend developer|back[ -]?end developer|full ?stack developer|node\.?js developer|iam engineer|security engineer|platform engineer|staff engineer|principal engineer|lead engineer|tech ?lead|engineering lead/i;
-const stack = /node|nest|backend|full ?stack|platform|micro ?service|api|typescript|javascript|identity|iam|auth|saas|distributed|cloud/i;
-const candidates = pool.filter(j => !bad.test(j.title) && good.test(j.title) && stack.test(j.title + ' ' + j.co));
+const good  = /software engineer|backend engineer|back[ -]?end engineer|full ?stack engineer|software developer|backend developer|back[ -]?end developer|full ?stack developer|node\.?js developer|platform engineer|distributed systems engineer|infrastructure engineer|staff engineer|principal engineer|lead engineer|tech ?lead|engineering lead/i;
+const excludeIam = /\biam\b|identity (and |&\s*)?access management|identity engineer|sso engineer|\bciam\b|\bsaml\b|\bscim\b|\brbac\b/i;
+const stack = /node|nest|backend|full ?stack|platform|micro ?service|api|typescript|javascript|auth|saas|distributed|cloud/i;
+const candidates = pool.filter(j => !bad.test(j.title) && !excludeIam.test(j.title) && good.test(j.title) && stack.test(j.title + ' ' + j.co));
 ```
 
 `good` is the allowlist itself — Engineer/Developer IC titles, the
-IAM-specific engineer variants (IAM/Security/Platform Engineer), and the
-senior IC growth track the resume now targets (Staff Engineer, Principal
-Engineer, Lead Engineer/Tech Lead/Engineering Lead) — so a seniority
-prefix like "Senior"/"Sr." still passes as long as the role noun after it
-is one of those phrases ("Senior Backend Engineer" matches on "backend
-engineer"), and "Staff Engineer" / "Principal Engineer" / "Tech Lead" now
-match directly on their own phrase rather than needing a role-noun suffix.
+platform/distributed-systems variants (Platform/Distributed Systems/
+Infrastructure Engineer), and the senior IC growth track the resume now
+targets (Staff Engineer, Principal Engineer, Lead Engineer/Tech Lead/
+Engineering Lead) — so a seniority prefix like "Senior"/"Sr." still
+passes as long as the role noun after it is one of those phrases
+("Senior Backend Engineer" matches on "backend engineer"), and "Staff
+Engineer" / "Principal Engineer" / "Tech Lead" now match directly on
+their own phrase rather than needing a role-noun suffix.
 `bad` still excludes Architect/Director/Manager/VP/Consultant titles
 outright, even when `good` would otherwise match on a stack keyword
 elsewhere in the string — only that narrower set (not Staff/Principal/
 Lead) is off-track for this resume.
+
+**`excludeIam` (hard drop, added 2026-09-30 per user request)** — the
+resume is shifting away from IAM/identity as a target domain, so any
+title naming IAM/Identity Access Management/SSO/CIAM/SAML/SCIM/RBAC as
+its role focus is dropped outright, even when it also matches `good` on
+a platform/backend phrase — e.g. "IAM Platform Engineer" and "Senior
+Backend Engineer - CIAM" are both dropped. This mirrors the top-level
+`title_exclude_keywords` in `config.local.json`, which full mode's step 4
+title filter checks the same way — keep the two in sync by hand if either
+changes, same as `good`/`title_keywords`.
 
 **Backend-major check (manual, on top of the regex above):** the `stack`
 regex only confirms *some* backend/JS-adjacent keyword is present — it
@@ -410,7 +422,7 @@ decent-fit role posted three hours ago with 25.
 | Weight | Dimension |
 | --- | --- |
 | 35 | Core stack overlap (Node.js/NestJS, Golang, GraphQL/gRPC, microservices, Mongo/Postgres/Redis, AWS) |
-| 25 | Domain overlap (IAM, authN/authZ, RBAC, OAuth/SAML/OIDC/SCIM, platform/infra, enterprise SaaS) |
+| 25 | Domain overlap (platform engineering, distributed systems, microservices/scalability, cloud infra, enterprise SaaS — IAM/identity-specific roles are now hard-excluded by the title gate, see below, rather than scored here) |
 | 20 | Seniority fit — a stated minimum of 7–8 is the sweet spot against 7.4; 4–6 scores well but risks reading over-qualified; 9 is a stretch |
 | 10 | Workplace fit — see location priority below |
 | 10 | Company tier signal — every surviving row already cleared the product-company hard gate above, so this scores *within* that set: a well-known product brand or funded product startup scores highest, a smaller/less-established product company scores a little lower, nothing here scores a staffing/services employer since none reach this step |
@@ -486,10 +498,12 @@ repeats today's list. State the new ledger size in the report.
 - Broad keywords + `sortBy=DD` returns operations, sales, and manager roles
   with no relation to the query. Relevance sort with tight filters is
   strictly better for this mode.
-- Generic IAM keywords in the India market return security-consulting and
-  identity-administration roles (IBM, UST, Wipro), not product engineering.
-  Pair IAM terms with `Software Engineer` / `Backend` and expect a low
-  yield; the platform-engineering queries carry the run.
+- IAM/identity keywords are no longer queried (removed 2026-09-30 per user
+  request) — they mostly returned security-consulting and
+  identity-administration roles (IBM, UST, Wipro) rather than product
+  engineering anyway. The platform/distributed-systems and backend themes
+  now carry the run, and the `excludeIam` gate drops any IAM-titled role
+  that slips through via a generic query.
 - The "retiring classic job search" banner is noise — the classic
   `/jobs/search/` URL form still works.
 - `f_E=4` maps to "Mid-Senior level", which in practice returns postings
@@ -566,8 +580,8 @@ For each selected country's block, **re-derive the query keywords from the
 resume read in step 1** rather than trusting `search_seeds` verbatim — the
 seeds are proven query shapes from the first run, and the skill set they
 were built from drifts (tailoring, a new cert, a dropped claim). Construct 3-4
-searches spanning the IAM/identity specialty and the core backend stack
-(Node.js/NestJS) — a search leg aimed at the Staff/Principal/Lead track
+searches spanning the platform/distributed-systems specialty and the core
+backend stack (Node.js/NestJS) — a search leg aimed at the Staff/Principal/Lead track
 is worth building now too, since step 4's `title_keywords` filter keeps
 those titles; don't bother building one around Architect/Manager, which
 the filter still drops regardless of how a search was built to find
@@ -576,6 +590,12 @@ them — shaped per `job_site`:
 - **`naukri`** (India): `https://www.naukri.com/<hyphenated-keywords>-jobs`
   (or `-jobs-in-india`). Plus **3b, the company-directory sweep** below —
   the part that goes beyond keyword search for this country specifically.
+  Since the platform/distributed-systems seeds return mostly Go/Java/.NET
+  results on page 1 (dropped later by the backend-major gate), also open
+  page 2 of each seed's result list via the site's own pagination control
+  before moving to the next seed (`countries.India.search_seeds_pagination_note`)
+  — widening pages this way, not relaxing the backend-major gate, is how
+  the user chose to compensate for this domain's lower hit rate.
 - **`linkedin`** (**every selected country**, alongside that country's
   primary site — driven by the top-level `linkedin` block, not a per-country
   `job_site`). For each selected country take its location string from
@@ -587,7 +607,12 @@ them — shaped per `job_site`:
   applicants/closed check via `jobs-guest/jobs/api/jobPosting/<id>`) rather
   than driving the logged-in UI card by card — the two modes converged on
   the same mechanism; only the query themes and what happens to the results
-  differ. **For every country except India**, also run
+  differ. Use `linkedin.pages_per_query` (5, added 2026-09-30) for this
+  sweep's page count per theme — higher than quick mode's default of 3 —
+  since the platform/distributed-systems themes lose most candidates to the
+  Node.js/TS backend-major gate (Go/Java-primary postings), and the user
+  chose to widen pages/themes to compensate rather than relax that gate.
+  **For every country except India**, also run
   `linkedin.overseas_sponsorship_pass` (`keywords` = "senior software
   engineer visa sponsorship") once through `url_pattern` and once through
   `remote_url_pattern` (`&f_WT=2`, Remote) — that pass is where sponsoring /
@@ -711,6 +736,17 @@ front-loads a level or team name before the role ("Member of Technical
 Staff I - Architect", "IAM Principal Consultant") — match against the
 whole title, not just its first word or two.
 
+**IAM/identity exclusion (hard drop, runs right after the title-keywords
+allowlist check, added 2026-09-30 per user request to shift the search
+away from IAM).** Check the title against `config.local.json`'s
+`title_exclude_keywords` (IAM, Identity Access Management, SSO Engineer,
+CIAM, SAML, SCIM, RBAC) — a match drops the row outright, even when the
+same title also matches `title_keywords` on a platform/backend phrase
+(e.g. "IAM Platform Engineer", "Senior Backend Engineer - CIAM" are both
+dropped). This is the same regex quick mode's `excludeIam` encodes; keep
+both in sync if either changes. Count these drops in the step 8 report
+the same way as any other title-filter drop.
+
 **Product-company filter (hard gate, runs right after the title filter,
 before the detail-view read below).** Keep only postings whose employer is
 a genuine product engineering company — one that builds and owns the
@@ -830,9 +866,11 @@ days:
   resume's Technical Skills and what the posting actually names, drawn
   from the **full description body read in step 4**, not just the card's
   tag chips — a card's tags are often generic ("Backend", "Coding") even
-  when the body names the real stack. Node.js/NestJS/TypeScript and the
-  IAM protocols (OAuth/SAML/OIDC/SCIM/SSO/RBAC) count double; generic tags
-  count once.
+  when the body names the real stack. Node.js/NestJS/TypeScript and
+  platform/distributed-systems terms (microservices, distributed systems,
+  scalability, cloud-native, event-driven, Kafka/RabbitMQ) count double;
+  generic tags count once. IAM/identity terms no longer count here — those
+  roles are hard-excluded at the title gate (step 4) before scoring.
 - **Role fit** — every candidate scored here already cleared step 4's
   `title_keywords` filter, so this is a finer distinction within that
   allowed set, not a check against the Architect/Manager track (those
@@ -842,7 +880,7 @@ days:
   title with no seniority marker docks a little; a title that's really an
   operations/support role wearing an Engineer label ("Support Engineer",
   "Ops Engineer") docks more, even with strong protocol-keyword overlap.
-- **Domain fit bonus** — IAM/RBAC/OAuth/SSO/SCIM specifically.
+- **Domain fit bonus** — platform engineering / distributed systems specifically (microservices, scalability, infra depth), not IAM/RBAC/OAuth/SSO/SCIM — see the title-exclude gate in step 4, which drops IAM-titled roles before they ever reach scoring.
 - **Seniority fit** — see step 5's per-site normalization; a figure or
   title centered near 7-8 scores higher than one that only brushes the
   band from either edge.
