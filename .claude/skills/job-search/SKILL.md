@@ -148,6 +148,8 @@ Drop anything under `volume.min_fit_percent` (55).
 **Step 6 - Report.** Print a ranked table sorted by **Shortlist %**
 descending (max `volume.max_reported`): Fit % | Shortlist % | Career % | Role |
 Company | Location / mode | Req. exp. | Pay | Applicants | Source | Link.
+The Link column must show the **full URL** in every row (never a label like
+"Open" or a bare id), so it can be clicked or copied straight from chat.
 Follow with two or three lines per top pick (why it fits, one reservation),
 the dropped-and-why list, the queries used, any `min NA` / title-only flags,
 and which sources ran or were skipped (e.g. unauthenticated session) with
@@ -167,8 +169,9 @@ down); (3) one `GOOGLESHEETS_VALUES_UPDATE` on `India!A2:P<N+1>` with
 `USER_ENTERED`; (4) read back `India!A1:P3` with `GOOGLESHEETS_BATCH_GET` to
 confirm placement. Rate limit is 60 writes/minute - always write the whole
 block in one call. Field rules: Date Found = ISO `2026-10-08`; Status = `New`
-(never overwrite an existing row's Status); Link = `=HYPERLINK("https://www.linkedin.com/jobs/view/<id>/","Open")`
-using the canonical URL; Work Mode = Remote / Hybrid / Onsite; Exp Required as
+(never overwrite an existing row's Status); Link = the **full canonical URL as visible plain text** (never an "Open"
+label or HYPERLINK formula), e.g. `https://www.linkedin.com/jobs/view/<id>/`,
+formatted blue/underlined, no wrap; Work Mode = Remote / Hybrid / Onsite; Exp Required as
 stated (`6+`, `5-8`, or `min NA`); Pay (LPA) listed pay or blank; Fit,
 Shortlist and Career % as plain integers; Applicants a number or `<25` / `200+`;
 Source = LinkedIn / Naukri / Career page; Stack Matched = comma list of the
