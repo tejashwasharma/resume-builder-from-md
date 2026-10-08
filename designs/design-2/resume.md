@@ -1,6 +1,6 @@
 # Tejashwa Sharma
 
-Senior Software Engineer
+Senior Software Engineer · Backend & Platform
 
 [linkedin.com/in/tejashwasharma](https://linkedin.com/in/tejashwasharma) · [github.com/tejashwasharma](https://github.com/tejashwasharma) · [tejashwasharma.web.app](https://tejashwasharma.web.app)<br>
 [+91-7869097744](tel:+917869097744) · [tejsharma407@gmail.com](mailto:tejsharma407@gmail.com) · Agra, India - 282003 · Open to Remote / Relocation
@@ -9,20 +9,20 @@ Senior Software Engineer
 
 ## Summary
 
-- **Senior Software Engineer, 7+ years**, architecting and delivering enterprise SaaS, IAM, and distributed systems platforms.
-- **IAM & Security Architecture specialist** (RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, OPA/Rego) — architected a **multi‑product RBAC framework** used platform-wide.
-- **Backend engineer** (Node.js, NestJS, Golang, GraphQL, gRPC, MongoDB, PostgreSQL, Redis, AWS) — built auth infrastructure supporting **2–3B daily requests**.
-- Drove security-critical initiatives to **zero audit findings** and **3x faster** incident resolution; built a **RAG-based Slack support bot** answering auth/RBAC/SSO questions, live with the internal support team.
+- **Senior Software Engineer, 7+ years**, architecting and delivering enterprise SaaS, platform, and distributed systems at scale.
+- **Backend engineer** (Node.js, NestJS, TypeScript, Golang, Java/Spring Boot, GraphQL, gRPC, MongoDB, PostgreSQL, Redis, AWS) — built backend infrastructure supporting **2–3B daily requests**.
+- **Platform security & authorization** (RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, OPA/Rego) — architected a **multi‑product authorization framework** used platform-wide.
+- Drove security-critical initiatives to **zero audit findings** and **3x faster** incident resolution; built a **RAG-based Slack support bot**, live with the internal support team.
 
 ## Core Skills
 
-- **Identity & Access Management:** RBAC, OAuth 2.0, SAML 2.0, OIDC, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
-- **Backend Engineering:** Node.js, NestJS, Express.js, Fastify, Golang, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ
+- **Languages & Runtimes:** JavaScript, TypeScript, Node.js, Golang, Java, SQL
+- **Backend & APIs:** NestJS, Express.js, Fastify, Spring Boot, Spring Security, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ, RBAC, OAuth 2.0, OIDC, SAML 2.0, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
 - **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
-- **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, Firebase (Auth, Firestore, Storage, Hosting)
+- **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, JPA/Hibernate, Firebase (Auth, Firestore, Storage, Hosting)
 - **Cloud & Infrastructure:** AWS EC2, S3, Lambda, API Gateway, CloudFront, CloudWatch, Route 53, IAM, Nginx, Docker
-- **Testing & Quality:** Jest, Unit/Integration/E2E Testing, TDD, Test Automation
-- **DevOps & Observability:** Jenkins, GoCD, Datadog, Observe, CI/CD, Jira
+- **Testing & Quality:** Jest, JUnit, Mockito, Unit/Integration/E2E Testing, TDD, Test Automation
+- **Build, DevOps & Observability:** Maven, Gradle, Jenkins, GoCD, Datadog, Observe, CI/CD, Jira
 - **AI Engineering:** RAG (Retrieval-Augmented Generation), LLM-Backed Bots, Claude Code, GPT, GitHub Copilot, AI-driven RCA, AGENT.md/SKILLS.md agent-navigation docs
 
 ## Experience
@@ -32,7 +32,7 @@ Senior Software Engineer
 
 **Software Engineer II** · Nov 2022 – Jul 2024 — promoted to Senior Software Engineer
 
-**Identity, Access & Authorization:**
+**Platform Security & Authorization:**
 - Architected the RBAC system design for Contentstack's multi-tenant platform, transforming two fixed roles into an **unlimited, multi‑product** framework with granular permission controls, now a recurring differentiator in enterprise sales.
 - Extended RBAC into SSO onboarding, SCIM onboarding, and the role-update flow via OPA/Rego policy enforcement, shipping 2–3 default roles per product alongside custom role creation.
 - Built a unified authentication layer spanning multi-tenant OAuth 2.0, SAML-based enterprise SSO, and SCIM provisioning, partnering with **Okta and Microsoft Entra ID** engineering to ship native marketplace apps.

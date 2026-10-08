@@ -1,6 +1,6 @@
 # Tejashwa Sharma
 
-**Senior Software Engineer I**
+**Senior Software Engineer I** · Backend & Platform
 
 - [+91-7869097744](tel:+917869097744)
 - [tejsharma407@gmail.com](mailto:tejsharma407@gmail.com)
@@ -15,25 +15,25 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 
 ## Profile Summary
 
-- **Senior Software Engineering professional** with **over 7 years of experience** in architecting and delivering enterprise SaaS platforms, identity and access management solutions, and distributed systems across high-scale product environments.
-- **IAM & Security Architecture specialist** with expertise in RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, JWT, SSO, OPA, and Rego; modernized authorization architecture into a scalable, multi-product RBAC framework with granular, policy-based access controls.
-- **Backend Engineering expert** with strong hands-on proficiency in Node.js, NestJS, Golang, GraphQL, gRPC, microservices, MongoDB, PostgreSQL, Redis, and AWS; engineered authentication infrastructure supporting **2–3B daily requests** with high availability and performance.
+- **Senior Software Engineering professional** with **over 7 years of experience** in architecting and delivering enterprise SaaS platforms, security and authorization solutions, and distributed systems across high-scale product environments.
+- **Platform Security & Authorization engineer** with expertise in RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, JWT, SSO, OPA, and Rego; modernized authorization architecture into a scalable, multi-product RBAC framework with granular, policy-based access controls.
+- **Backend Engineering expert** with strong hands-on proficiency in Node.js, NestJS, TypeScript, Golang, Java/Spring Boot, GraphQL, gRPC, microservices, MongoDB, PostgreSQL, Redis, and AWS; engineered backend infrastructure supporting **2–3B daily requests** with high availability and performance.
 - **Technology & Production Engineering leader** experienced in driving security-critical enterprise initiatives, architecture modernization, observability, reliability, compliance, and SLA excellence; delivered solutions that cleared third-party audits with **zero findings**, accelerated incident resolution by **3x**, and reduced resolution time by **~30%**.
 - **AI-augmented engineering professional** leveraging Claude Code, GPT, and GitHub Copilot across the SDLC to improve development velocity, code quality, testing, debugging, RCA, and security analysis; contributed to **2–3x higher PR throughput and 85%+ test coverage**, complemented by expertise in React.js, TypeScript, CI/CD, Docker, Jenkins, and modern engineering practices.
 
 ## Core Competencies
 
-- Identity & Access Management (IAM) | Authentication, Authorization & SSO | RBAC & Policy-Based Access Control | Backend & Distributed Systems Engineering | Enterprise SaaS & Platform Engineering | API & Microservices Architecture | Application Security & Compliance | Performance Engineering & Observability | DevOps, CI/CD & Agile Delivery | AI-Augmented Software Engineering | Software Quality, Testing & Reliability
+- Backend & Distributed Systems Engineering | Authentication, Authorization & SSO | RBAC & Policy-Based Access Control | Enterprise SaaS & Platform Engineering | API & Microservices Architecture | Application Security & Compliance | Performance Engineering & Observability | DevOps, CI/CD & Agile Delivery | AI-Augmented Software Engineering | Software Quality, Testing & Reliability
 
 ## Technical Skills
 
-- **Identity & Access Management:** RBAC | OAuth 2.0 | SAML 2.0 | OIDC | SSO | SCIM | JWT | MFA/TOTP | Zero Trust Architecture | Passport.js | OPA | Rego | Okta | Microsoft Entra ID | Ping Identity
-- **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ
+- **Languages & Runtimes:** JavaScript | TypeScript | Node.js | Golang | Java | SQL
+- **Backend Engineering:** Node.js | NestJS | Express.js | Fastify | Spring Boot | Spring Security | Golang | REST APIs | GraphQL | gRPC | Protobuf | Socket.IO | Microservices | Kafka | RabbitMQ | RBAC | OAuth 2.0 | SAML 2.0 | OIDC | SSO | SCIM | JWT | MFA/TOTP | Zero Trust Architecture | Passport.js | OPA | Rego | Okta | Microsoft Entra ID | Ping Identity
 - **Frontend Engineering:** React.js | TypeScript | JavaScript | Redux | Redux Thunk/Saga | AngularJS | SCSS | Styled Components | Micro-Frontends
-- **Databases & Caching:** MongoDB | PostgreSQL | SQL | Redis | ioredis | Mongoose | Sequelize | Firebase (Authentication, Firestore, Storage, Hosting)
+- **Databases & Caching:** MongoDB | PostgreSQL | SQL | Redis | ioredis | Mongoose | Sequelize | JPA/Hibernate | Firebase (Authentication, Firestore, Storage, Hosting)
 - **Cloud & Infrastructure:** AWS EC2 | S3 | Lambda | API Gateway | CloudFront | CloudWatch | Route 53 | IAM | Nginx | Docker
-- **Testing & Quality:** Jest | Unit Testing | Integration Testing | E2E Testing | TDD | Test Automation | 85%+ Test Coverage
-- **DevOps & Observability:** Jenkins | GoCD | PM2 | Datadog | Observe | CI/CD | Postman | Jira
+- **Testing & Quality:** Jest | JUnit | Mockito | Unit Testing | Integration Testing | E2E Testing | TDD | Test Automation | 85%+ Test Coverage
+- **DevOps & Observability:** Maven | Gradle | Jenkins | GoCD | PM2 | Datadog | Observe | CI/CD | Postman | Jira
 - **AI-Augmented Engineering:** Claude Code | GPT | GitHub Copilot | AI-Assisted Code Review | AI Test Generation | AI-Assisted Debugging | AI-Driven RCA | AI Security Analysis | AGENT.md / SKILLS.md Agent-Navigation Documentation | Prompt & Playbook Libraries | Prompt Caching & Model Routing
 
 ## Major Clients
@@ -61,7 +61,7 @@ Targeting a **Senior Software Engineer, Engineering Lead, or Staff Engineer** ro
 
 **Software Engineer II** | Nov 2022 – Jul 2024 | Promoted
 
-**Identity, Access & Authorization:**
+**Platform Security & Authorization:**
 
 - Transformed the platform from two fixed roles into an **unlimited, multi-product RBAC framework** with granular permission controls, strengthening customer governance and reducing support escalations while becoming a recurring differentiator in enterprise sales.
 - **Architected and delivered** the multi-org invitation and onboarding workflow for a multi-tenant model where users belong to several organizations, assigning permissions at invitation time and supporting **two product teams** through end-to-end RBAC adoption using **OPA/Rego policy enforcement.**
