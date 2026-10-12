@@ -102,6 +102,9 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design rbac sso sessions](02-interview-core/38-design-rbac-sso-sessions.md) |
 | URL shortener, notifications, feed, rate limiter, key-value store, log pipeline, job scheduler | ✅ [classics](02-interview-core/39-design-classics.md) |
 | cloud security posture, third-party access inventory, supply-chain integrity, authorization service, secrets detection, package registry proxy, agentic-AI guardrails | ✅ [design security systems](02-interview-core/40-design-security-systems.md) |
+| requirements gathering, functional vs non-functional, clarifying questions, panel feedback, why design rounds fail | ✅ [requirements playbook](10-design-cases/01-requirements-playbook.md), [panel feedback and practice plan](10-design-cases/02-panel-feedback-and-practice-plan.md) |
+| design email service, multi-tenant quotas, daily quota reset, over-quota policy, idempotency, token bucket, DLQ, deferred dispatcher, why not cron or Step Functions, notification service, webhook delivery | ✅ [design email service](10-design-cases/03-design-email-service.md) |
+| design e-commerce platform, service decomposition, purchase flow, catalog and search, search index sync, outbox, reindex, cart, checkout, idempotent order, inventory, overselling, reservation TTL, hot SKU, flash sale, order saga, compensation, payments, double charge, webhooks, reconciliation, fulfillment, sale-day scaling, marketplace | ✅ [design e-commerce platform](10-design-cases/04-design-ecommerce-platform.md) |
 
 ### E. The security round, behavioural & leadership, the schedule
 
@@ -128,6 +131,7 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | --- | --- |
 | MongoDB, PostgreSQL, SQL, indexes, transactions | ✅ [databases](04-data-cache/01-databases.md) |
 | Redis, ioredis, Mongoose, Sequelize, Firebase | ✅ [redis and orms](04-data-cache/02-redis-and-orms.md) |
+| Elasticsearch, OpenSearch, inverted index, analyzers, mappings, shards, bool query, search_after, ILM, reindex with alias | ✅ [elasticsearch](04-data-cache/03-elasticsearch.md) |
 
 ## 05 — Testing *(all written)*
 
@@ -144,6 +148,7 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | CloudWatch, metrics, alarms, log retention, cardinality | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §CloudWatch |
 | Route 53, DNS, alias records, TTL, failover routing | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §Route 53 |
 | CI/CD, deployment strategies, migrations, observability, SLO | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) |
+| CloudWatch deep dive, Logs Insights, EMF, alarms, CloudTrail, trails, data events, Lake, X-Ray, tracing, sampling, CloudFront cache key, OAC, Origin Shield, Functions vs Lambda@Edge | ✅ [cloudwatch, cloudtrail, x-ray, cloudfront](06-cloud-devops/03-cloudwatch-cloudtrail-xray-cloudfront.md) |
 | PM2, Postman, Newman, Jira, story points, velocity | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) §The day-to-day tooling |
 
 ## 07 — AI Tooling *(all written)*

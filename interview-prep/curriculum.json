@@ -83,6 +83,18 @@
       ]
     },
     {
+      "id": "design-cases",
+      "title": "System design cases",
+      "level": "worked cases",
+      "blurb": "Full worked examples, kept apart from your resume material. One chapter per system: requirements, numbers, numbered architecture, schemas, edge cases, questions and quiz.",
+      "chapters": [
+        "10-design-cases/01-requirements-playbook.md",
+        "10-design-cases/02-panel-feedback-and-practice-plan.md",
+        "10-design-cases/03-design-email-service.md",
+        "10-design-cases/04-design-ecommerce-platform.md"
+      ]
+    },
+    {
       "id": "auth",
       "title": "Auth & identity",
       "level": "advanced",
@@ -114,9 +126,11 @@
         "03-backend/05-microservices.md",
         "04-data-cache/01-databases.md",
         "04-data-cache/02-redis-and-orms.md",
+        "04-data-cache/03-elasticsearch.md",
         "05-testing/01-testing-and-coverage.md",
         "06-cloud-devops/01-aws-and-containers.md",
         "06-cloud-devops/02-cicd-and-observability.md",
+        "06-cloud-devops/03-cloudwatch-cloudtrail-xray-cloudfront.md",
         "07-ai-tooling/01-ai-engineering.md",
         "07-ai-tooling/02-ai-across-the-sdlc.md",
         "07-ai-tooling/03-rag-and-llm-bots.md",

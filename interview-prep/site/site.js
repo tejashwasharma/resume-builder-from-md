@@ -305,7 +305,7 @@ function renderHome() {
 function levelLabel(level) {
   return ({
     process: 'How it works', basic: 'In brief', core: 'Patterns', advanced: 'Zero to one',
-    reference: 'Reference', behavioural: 'Behavioural',
+    reference: 'Reference', behavioural: 'Behavioural', 'worked cases': 'Worked cases',
   })[level] || level;
 }
 

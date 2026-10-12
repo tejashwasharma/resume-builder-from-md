@@ -114,6 +114,10 @@ generic implementation guidance doesn't carry the same risk as a specific
 claim about his work, but if a chapter's `> **FILL IN:**` marker covers exactly
 what this section would need, point at it rather than inventing around it.
 
+## System design cases: one chapter per example
+
+Worked design examples live in `10-design-cases/` as their own topic ("System design cases"), kept apart from the resume-derived material. **One system = one chapter**, however large. Do not split a system (an e-commerce platform, an email service) into several chapter files; use one `##` section per component (for example `## Deep dive 3: Inventory`) so the pager still shows one screen at a time. Shape: In brief, The prompt, Step 1 Ask (functional and non-functional requirements, out of scope), Step 2 Numbers, Step 3 Architecture (numbered diagram plus a legend), schema tables, decisions, edge cases, scaling, **alternatives and why not** (a table per major decision: alternative, when it is the right choice, why it loses here), how to drive the conversation, Reference stack, Interview Q&A, What a weak answer sounds like, Quiz, Glossary.
+
 ## Rules when writing or editing guides
 
 - **Never invent a fact about the candidate's own work.** Where only he knows
