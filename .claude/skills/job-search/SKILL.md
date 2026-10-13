@@ -60,6 +60,17 @@ Log every drop with its gate in the report (`Company - Role, gate, reason`).
 (`r604800`) and set it true after the run; afterwards use 24h (`r86400`).
 The user may override in the prompt.
 
+**Volume target and expansion ladder.** `volume.target_min` (20) is the goal.
+If the gated survivors fall short, expand in this order and stop as soon as the
+target is met; **never relax a gate on your own**:
+1. all `keyword_themes` at `pages_per_query` pages (config now has ~23 themes);
+2. escalate recency per `recency.escalation` (7d, then 30d); note posting age in
+   Notes when >7d;
+3. Naukri with and without the product facet (see Step 3);
+4. career pages, if the watchlist is confirmed.
+If still short, report the shortfall and offer gate relaxations (e.g. allow
+non-Node stacks at named product companies) for the user to choose.
+
 **Step 1 - load.** Resume, config, both ledgers, registry. Seed
 `window.__seen` from the LinkedIn ledger.
 
@@ -110,6 +121,26 @@ closed flag, applicant count and workplace type, then apply gates 2-7. If the
 guest endpoint returns empty, fall back to the logged-in
 `/jobs/search/` UI with a lazy scroll.
 
+Lessons from 2026-10-12 (the guest endpoint rate-limits hard):
+- **Never navigate the tab between steps** - `window` state (ledger set,
+  helpers, candidates) is lost. Keep everything in one tab until the sweep and
+  detail fetch are done; paste the ledger back in if you must.
+- The posting body marker `show-more-less-html__markup` can sit late in the
+  page; search the whole response, don't assume an early offset or a closing
+  `</div>`.
+- Pre-filter on title + known non-product company names (registry, staffing/IT
+  services regexes) **before** fetching bodies, so the request budget goes to
+  plausible roles only.
+- Fetch bodies ~10 at a time in parallel; after roughly 25-30 requests it
+  returns **HTTP 429**. Stop, wait ~80s (cooldown), resume with the remaining
+  ids. Don't retry in a tight loop or double-fetch.
+- Long loops exceed the 45s tool timeout: keep each call under ~35s and resume.
+- The logged-in `/jobs/view/<id>/` page does **not** expose the description in
+  `innerText`/`get_page_text` here, so it is not a fallback for bodies. If bodies
+  stay unreadable, list the role as an unverified lead, not a scored row.
+- Unknown companies: classify from the title/company name where obvious,
+  otherwise keep provisionally and queue the registry question.
+
 **Step 3 - Naukri** (logged in). Build keyword URLs
 `https://www.naukri.com/<hyphenated-keywords>-jobs-in-india` plus the
 product filter `?industryTypeIdGid=110` (Naukri's Software Product industry
@@ -119,7 +150,13 @@ route around it; use real page navigation. Naukri result lists are virtualized:
 scroll in ~10-15 tick increments and `read_page` after each. Open every
 candidate's detail page before scoring (cards are teasers). Naukri cards show
 an explicit `N-M Yrs` range: keep when 7.5 falls inside, or the minimum is
-5-10 (apply the same experience gate). Apply gates 1-7.
+5-10 (apply the same experience gate). Apply gates 1-7. The product facet returned mostly irrelevant roles on
+2026-10-12, so also run each seed **without** the facet and keep only
+registry `product_companies`. Extract cards with the DOM
+(`.srp-jobtuple-wrapper`: `a.title`, `.comp-name`, `.expwdth`, `.locWdth`) and
+**capture each card's href** - a Naukri row without a link can't be reported.
+Navigating loses `window` state, so extract right after each page loads and
+write results down before moving on.
 
 **Step 4 - Career pages.** Take `product_companies` from the registry (plus the
 approved big-tech GCC list once it exists), restricted to whichever companies

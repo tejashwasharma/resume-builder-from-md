@@ -10,19 +10,20 @@ Senior Software Engineer · Backend & Platform
 ## Summary
 
 - **Senior Software Engineer, 7+ years**, architecting and delivering enterprise SaaS, platform, and distributed systems at scale.
-- **Backend engineer** (Node.js, NestJS, TypeScript, Golang, Java/Spring Boot, GraphQL, gRPC, MongoDB, PostgreSQL, Redis, AWS) — built backend infrastructure supporting **2–3B daily requests**.
-- **Platform security & authorization** (RBAC, OAuth 2.0, SAML 2.0, OIDC, SCIM, OPA/Rego) — architected a **multi‑product authorization framework** used platform-wide.
+- **MERN stack engineer** (MongoDB, Express.js, React.js, Node.js) with NestJS, TypeScript, GraphQL, gRPC, PostgreSQL, Redis, and AWS — built backend infrastructure supporting **2–3B daily requests**.
+- **Platform security & authorization** (RBAC, OAuth 2.0, SAML 2.0, SCIM, OPA/Rego) — architected a **multi‑product authorization framework** used platform-wide.
 - Drove security-critical initiatives to **zero audit findings** and **3x faster** incident resolution; built a **RAG-based Slack support bot**, live with the internal support team.
 
 ## Core Skills
 
-- **Languages & Runtimes:** JavaScript, TypeScript, Node.js, Golang, Java, SQL
-- **Backend & APIs:** NestJS, Express.js, Fastify, Spring Boot, Spring Security, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ, RBAC, OAuth 2.0, OIDC, SAML 2.0, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
+- **Primary Stack (MERN):** MongoDB, Express.js, React.js, Node.js, JavaScript, TypeScript
+- **Secondary Languages:** Golang, Python, Java, SQL
+- **Backend & APIs:** NestJS, Express.js, Fastify, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ, RBAC, OAuth 2.0, SAML 2.0, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
 - **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
-- **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, JPA/Hibernate, Firebase (Auth, Firestore, Storage, Hosting)
-- **Cloud & Infrastructure:** AWS EC2, S3, Lambda, API Gateway, CloudFront, CloudWatch, Route 53, IAM, Nginx, Docker
-- **Testing & Quality:** Jest, JUnit, Mockito, Unit/Integration/E2E Testing, TDD, Test Automation
-- **Build, DevOps & Observability:** Maven, Gradle, Jenkins, GoCD, Datadog, Observe, CI/CD, Jira
+- **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, Firebase (Auth, Firestore, Storage, Hosting)
+- **Cloud & Infrastructure:** AWS EC2, S3, Lambda, API Gateway, CloudFront, Route 53, IAM, Nginx, Docker
+- **Testing & Quality:** Jest, Unit/Integration/E2E Testing, TDD, Test Automation
+- **Build, DevOps & Observability:** Jenkins, GoCD, Datadog, Observe, AWS CloudWatch, CloudTrail, X-Ray, CI/CD, Jira
 - **AI Engineering:** RAG (Retrieval-Augmented Generation), LLM-Backed Bots, Claude Code, GPT, GitHub Copilot, AI-driven RCA, AGENT.md/SKILLS.md agent-navigation docs
 
 ## Experience
@@ -47,7 +48,7 @@ Senior Software Engineer · Backend & Platform
 - Drove remediation of a separate third-party security audit, cutting open findings from ~150 to 10 within two quarters, and extended 2FA from SMS-based to authenticator-app-based across the platform.
 
 **Platform Scale & Reliability:**
-- Optimized authentication infrastructure serving **2–3B requests daily** by migrating the service from Node.js to **Golang** and redesigning Rego/OPA policy evaluation and Redis caching, cutting latency from ~13s to under 200ms.
+- Optimized authentication infrastructure serving **2–3B requests daily** by contributing to the Node.js → **Golang** service migration and redesigning Rego/OPA policy evaluation and Redis caching, cutting p95 latency from ~6s to under 200ms.
 - Redesigned service logging around high-signal events, cutting irrelevant log volume to reduce **Datadog/Observe costs**, and built **p95/p99 latency dashboards** that sharpened RCA precision.
 - Owned end-to-end authentication incident response, increasing incident resolution throughput **3x** and reducing average resolution time by ~30%, consistently maintaining SLA commitments for enterprise accounts.
 
