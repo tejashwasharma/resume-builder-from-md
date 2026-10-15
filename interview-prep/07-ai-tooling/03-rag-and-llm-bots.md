@@ -1,12 +1,10 @@
 # RAG and LLM-backed bots
 
 Retrieval-augmented generation (RAG) is how you make a language model answer
-from **your** documents instead of from what it memorised. Design 2 of your
-resume claims a RAG-based Slack support bot answering auth-domain questions in
-production, so this chapter teaches the mechanism end to end. The story itself
-— your stack, your numbers — is
-[Story 10 in contentstack](../00-experience/contentstack.md), with `FILL IN`
-markers for the parts only you know.
+from **your** documents instead of from what it memorised. A support bot over
+internal docs and ticket history is the canonical version of this and a common
+resume claim, so this chapter teaches the mechanism end to end — and the two
+probes that separate having built one from having read about it.
 
 *In the interview: expect "walk me through the pipeline", then two probes an
 IAM engineer is uniquely placed to answer well — how you stop it hallucinating,

@@ -291,6 +291,9 @@ section.doc { scroll-margin-top: 16px; }
 /* --------------------------------------------------------- prose (doc) --- */
 
 .doc { max-width: 76ch; }
+/* A long unbreakable token (an arrow chain, a URL, a cache key) must wrap
+   rather than widen the page: on a phone it caused horizontal page scroll. */
+.doc p, .doc li, .doc td, .doc th, .doc blockquote { overflow-wrap: break-word; }
 .doc h1 { display: none; }
 .doc h2 { font-size: 22px; color: var(--ink); margin: 0 0 14px; letter-spacing: -.01em; text-wrap: balance; }
 .doc h3 { font-size: 17px; color: var(--ink); margin: 28px 0 8px; }
@@ -505,6 +508,11 @@ textarea.fallback-editor {
   border-radius: 9px; resize: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
 }
 @media (max-width: 560px) {
-  .ask-panel { right: 8px; bottom: 8px; width: calc(100vw - 16px); height: calc(100vh - 16px); }
+  /* Touch targets: the pills and tabs are comfortable with a mouse and too
+     small with a thumb. */
+  .filters button { font-size: 13px; padding: 8px 12px; }
+  .stage-tab { padding: 12px 12px 12px; }
+  .quiz label, .quiz .opt { min-height: 40px; }
+  .ask-panel { right: 8px; bottom: 8px; width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: calc(100vh - 16px); }
   .ask-fab { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 }

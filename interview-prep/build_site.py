@@ -54,9 +54,10 @@ except ImportError:
 # Directories whose .md files are chapters. Every one of them must be listed in
 # curriculum.json (as a chapter or an exclusion) so nothing silently drops out.
 MODULE_DIRS = [
-    "00-experience", "01-auth-identity", "02-interview-core", "03-backend",
+    "01-auth-identity", "02-interview-core", "03-backend",
     "04-data-cache", "05-testing", "06-cloud-devops", "07-ai-tooling", "08-frontend",
     "09-lld", "10-design-cases",
+    "11-backend-nodejs", "12-backend-python", "13-backend-golang",
 ]
 
 
@@ -98,7 +99,7 @@ STAGE_RULES: list[tuple[str, str]] = [
     (r"quiz\b", "quiz"),
     (r"(practice ladder|worked problems?|worked example|problem bank|building it|"
      r"reference stack|interview q&a|what a weak answer|the question bank|"
-     r"follow-ups google|cross-cutting|workshop\b)", "workshop"),
+     r"cross-cutting|workshop\b)", "workshop"),
 ]
 
 

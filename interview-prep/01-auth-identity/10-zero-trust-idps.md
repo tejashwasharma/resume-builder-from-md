@@ -1,13 +1,12 @@
 # Zero Trust and the identity providers
 
-Two things in one chapter: the architectural idea your resume claims, and the
-three IdPs it names. Both are places where a vague answer costs you.
+Two things in one chapter: the architectural idea, and the three identity
+providers you will be asked to compare. Both are places where a vague answer
+costs you.
 
-**This chapter maps directly to [WEAK-SPOTS](../WEAK-SPOTS.md) #8** — "Zero Trust
-Architecture" is on your skills line with no bullet evidencing it, and it is
-the single most over-claimed phrase in IAM. Some interviewers ask about it
-*specifically* to find out whether a candidate is pattern-matching on
-vocabulary.
+"Zero Trust Architecture" is the single most over-claimed phrase in IAM, and
+some interviewers ask about it *specifically* to find out whether a candidate is
+pattern-matching on vocabulary rather than describing a system.
 
 Reference: [NIST SP 800-207, Zero Trust Architecture](https://csrc.nist.gov/pubs/sp/800/207/final)
 
@@ -116,16 +115,16 @@ Skip the definition. Name what you actually built:
 
 You have real work behind every one of those. Say those; don't say the slogan.
 
-> **In your own work.** The gRPC auth package is a micro-segmentation story —
-> nine services each authenticating and authorising rather than trusting the
-> network. Session governance is continuous verification. Frame them that way
-> and the skills-line claim becomes evidenced.
+> **Bring your own experience.** A shared auth package every service calls,
+> rather than a trusted network perimeter, is a micro-segmentation story;
+> session governance is continuous verification. Framing work you have done that
+> way turns a claimed buzzword into evidence.
 
 ---
 
 ## The identity providers
 
-Your resume names three. Be able to scope your exposure to each honestly —
+Three names come up constantly. Scope your exposure to each honestly —
 claiming depth in all three and then being unable to describe Ping is worse
 than saying "Okta and Entra in depth, Ping by evaluation".
 
@@ -137,7 +136,7 @@ Okta acquired) covers customer identity. Concepts an integrator meets:
 - **Universal Directory** — the user store; profile mappings transform IdP
   attributes to your app's shape.
 - **SSO apps** — SAML or OIDC, published in the **Okta Integration Network**
-  after review. That's what you shipped.
+  after review.
 - **SCIM provisioning** — Okta as SCIM client against your server, deprovision
   via `PATCH active:false`.
 - **Groups → app roles** through group push or attribute mapping.
@@ -368,7 +367,7 @@ The universal practical lesson is that **certificate rotation is the number one
 support issue**, regardless of IdP. Certs expire, SSO breaks for an entire
 company at once, and nobody read the renewal email.
 
-> **FILL IN:** what actually differed for you between the two integrations, and
+> **Your turn:** what actually differed for you between the two integrations, and
 > what their reviewers pushed back on. A specific detail here is far more
 > convincing than the general comparison above.
 
@@ -384,8 +383,8 @@ company at once, and nobody read the renewal email.
   architecture.
 - **Claiming deep expertise in all three IdPs.** Scope it honestly; the
   follow-up will find the gap.
-- **Not knowing Conditional Access** when Entra is on your resume — it's its
-  most distinctive feature.
+- **Not knowing Conditional Access** while claiming Entra experience — it is
+  Entra's most distinctive feature.
 - **Forgetting that SSO-enforced MFA can be bypassed** by local and service
   accounts.
 

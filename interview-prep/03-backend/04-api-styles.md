@@ -1,8 +1,8 @@
 # REST, GraphQL, gRPC and WebSockets
 
 Four ways for systems to talk. The interview question is never "what is REST" —
-it's "why did you pick this one", which you answered in real life when you
-chose gRPC for the auth package.
+it is "why did you pick this one", and the answer has to be about the traffic
+shape, not about fashion.
 
 ---
 
@@ -189,7 +189,7 @@ user can keep receiving data over an already-open connection.
 
 | Style | Library | Why |
 | --- | --- | --- |
-| REST | Express or Fastify — see [frameworks](02-frameworks.md) | Already covered there; nothing style-specific to add |
+| REST | Express or Fastify — see [frameworks](../11-backend-nodejs/03-building-the-server.md) | Already covered there; nothing style-specific to add |
 | GraphQL | `apollo-server` or `graphql-yoga` | Schema-first, resolver wiring, and query-cost limiting out of the box |
 | gRPC | `@grpc/grpc-js` + `ts-proto` | `ts-proto` generates typed clients/servers from `.proto` — avoids hand-writing the generated code |
 | WebSocket | `ws` (bare) or `socket.io` | `socket.io` adds rooms, reconnection and fallback transport; `ws` when you want nothing extra |

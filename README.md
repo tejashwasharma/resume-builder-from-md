@@ -28,7 +28,7 @@ build output and are never edited by hand.
 │   ├── design-1/tejashwasharma_resume.pdf   Generated — never hand-edit
 │   └── design-2/tejashwasharma_resume.pdf   Generated — never hand-edit
 ├── tailor/tailor_cv.py         Per-application variants of design 1 (output in tailor/output/, gitignored)
-├── interview-prep/             Study material derived from design 1
+├── interview-prep/             Standalone, shareable interview study book
 ├── AGENT.md                    Instructions for AI agents working in this repo
 ├── .claude/skills/             resume-build / resume-tailor / job-search skills
 └── README.md                   This file

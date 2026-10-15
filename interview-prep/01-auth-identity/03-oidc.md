@@ -227,10 +227,9 @@ a provider rotating keys while you cache indefinitely means every login breaks;
 fetching JWKS on every request means a hard dependency and rate limits. Cache
 with a TTL, and refetch on an unknown `kid`.
 
-> **In your own work.** You ran an OAuth server across all products and shipped
-> enterprise SSO. Expect: *"you had OAuth already — what did adding OIDC give
-> you?"* and *"how did a client know which tenant a user belonged to?"* See
-> [contentstack](../00-experience/contentstack.md) §2.
+> **Bring your own experience.** If you have run an OAuth server and then added
+> enterprise SSO on top, expect: *"you had OAuth already — what did adding OIDC
+> give you?"* and *"how did a client know which tenant a user belonged to?"*
 
 
 ## Building it

@@ -176,7 +176,7 @@ hybrid fix is what's being tested.
 
 ## Chat / messaging
 
-Relevant because Socket.io is on your resume.
+The canonical test of whether you can reason about fan-out and delivery.
 
 - **WebSockets** for delivery; fall back to long polling.
 ```mermaid

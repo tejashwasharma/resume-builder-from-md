@@ -1,8 +1,8 @@
 # Messaging, queues and streams
 
 How services communicate without calling each other synchronously — and the
-failure modes that come with it. Socket.io is on your resume, so real-time
-delivery belongs here too.
+failure modes that come with it. Real-time delivery to clients belongs here
+too, since it leans on the same fan-out machinery.
 
 ---
 

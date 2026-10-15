@@ -1,4 +1,4 @@
-# Linked lists — pointer surgery under time pressure
+# Linked lists
 
 Linked lists are rare in production JavaScript and common in interviews, for a
 specific reason: they test whether you can hold a mutable pointer structure in

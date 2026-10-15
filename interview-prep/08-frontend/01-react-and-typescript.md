@@ -193,8 +193,8 @@ Query first today.
 
 A **micro-frontend** architecture splits one web app into independently built
 and deployed pieces, each owned by a team — the frontend version of
-microservices. The resume's AngularJS → React migration used this shape
-([Gyrix](../00-experience/gyrix.md)).
+microservices. A legacy-framework-to-React migration is the usual reason a team
+reaches for it.
 
 **How the pieces get composed:**
 
@@ -390,7 +390,7 @@ prevents. I'd measure before optimising.
    For very large canvases, virtualisation is next: only render what's in the
    viewport.
 
-   > **FILL IN:** which of these it actually was, and how you measured it —
+   > **Your turn:** which of these it actually was, and how you measured it —
    > React Profiler, browser performance timeline, or a scripted interaction
    > benchmark? Naming the tool is what makes it sound lived rather than
    > reconstructed.

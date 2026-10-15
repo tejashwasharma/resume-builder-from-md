@@ -1,4 +1,4 @@
-# Start here — what system design actually is
+# System design: start here
 
 *In the interview: the interviewer will say something as short as "design a system that finds leaked credentials" and then wait. This chapter is what you need to not freeze — read it before [the method](32-the-method.md).*
 
@@ -189,9 +189,9 @@ The TTL is doing two jobs: it expires data you no longer need, and it bounds how
 wrong you can be. Even if you forget to invalidate somewhere, staleness has a
 ceiling.
 
-> This stage is where the biggest number on this resume comes from: caching
-> permission decisions rather than recomputing them took a check from 13s to
-> 200ms. See [contentstack §5](../00-experience/contentstack.md).
+> This stage is where the headline latency numbers in most systems come from:
+> caching an expensive decision rather than recomputing it per request routinely
+> turns seconds into milliseconds.
 
 **What breaks:** cache invalidation — the copy in Redis and the row in the
 database disagree; and the **stampede**, where a popular key expires and a

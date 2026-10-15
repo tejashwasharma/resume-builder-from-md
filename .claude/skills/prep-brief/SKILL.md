@@ -30,16 +30,16 @@ This one researches and compiles.
 2. Read the matched guide file(s) in full — they hold the model answers, the
    "Building it" sections, and the diagrams. Reuse that content; don't
    re-derive from scratch what the book already has written and verified.
-3. Check `interview-prep/WEAK-SPOTS.md` for anything the topic touches. A JD
-   or question that lands on a known weak spot is worth flagging explicitly —
-   that's the part most likely to get probed.
+3. Note where the topic lands on something the user has told you is thin — a
+   technology they listed but have not shipped, a number they cannot explain.
+   That is the part most likely to get probed, and worth flagging explicitly.
 4. If nothing in the book covers it, say so plainly and answer from general
-   knowledge, clearly labeled as general (not the candidate's own experience).
+   knowledge, clearly labeled as general (not the user's own experience).
 
-**Never invent a fact about the candidate's own work.** Same rule as the rest
-of `interview-prep/`: where only he knows a detail and the book has no answer,
-say `FILL IN: <what's needed>` rather than guessing a plausible-sounding story.
-A confident invented answer is worse than an honest gap.
+**Never invent a fact about the user's own work.** Same rule as the rest of
+`interview-prep/`: where only they know a detail and the book has no answer,
+say `Your turn: <what's needed>` rather than guessing a plausible-sounding
+story. A confident invented answer is worse than an honest gap.
 
 ## Path A — direct answer
 
@@ -49,7 +49,7 @@ actually speak aloud, not an encyclopedia entry — same bar as the book.
 - If the book covers it, answer from the model answer, cite the file
   (`interview-prep/01-auth-identity/02-oauth2.md`-style), and add anything the
   question asked that the file didn't (e.g. a follow-up angle).
-- If it's about the candidate's own experience and the book doesn't have it,
+- If it's about the user's own experience and the book doesn't have it,
   say what's missing rather than inventing it.
 - If it's general knowledge the book doesn't cover, answer it, and mention in
   one line that it isn't in the book (so they know whether to add it, and
@@ -78,9 +78,8 @@ For each extracted topic, find the matching file(s) via
 - **Not covered** — nothing in the book. Answer from general knowledge in the
   artifact, clearly labeled `(general — not in the book)`, so it's obvious
   what to double check.
-- **About the candidate specifically, and thin** — cross-reference
-  `interview-prep/WEAK-SPOTS.md`. If it's a known gap, say so and suggest the
-  honest framing rather than papering over it.
+- **About the user specifically, and thin** — say so, and suggest the honest
+  framing rather than papering over it.
 
 ### 3. Write the content — not a reading list
 
@@ -102,8 +101,8 @@ file. For each topic, inline, **in this order**:
    gets runnable shape" below.
 4. 1-3 realistic follow-up questions an interviewer would actually ask next,
    with short answers.
-5. A one-line "watch out" callout wherever `interview-prep/WEAK-SPOTS.md`
-   flags the topic.
+5. A one-line "watch out" callout wherever the topic is one the user is likely
+   to be probed hardest on.
 
 Organize by round type if the JD names one (system design / coding /
 behavioral / domain knowledge), otherwise by topic in the order the JD or list
@@ -199,11 +198,10 @@ so the two stay associated.
 
 ## Boundaries
 
-- **Read-only against the book.** This skill never edits guide files,
-  `interview-prep/INDEX.md`, or `interview-prep/WEAK-SPOTS.md`. A real gap in
-  the book's coverage is worth mentioning to the user, not silently patching
-  from here.
-- **Never fabricate the candidate's history** to fill a JD requirement. The
+- **Read-only against the book.** This skill never edits guide files or
+  `interview-prep/INDEX.md`. A real gap in the book's coverage is worth
+  mentioning to the user, not silently patching from here.
+- **Never fabricate the user's history** to fill a JD requirement. The
   artifact's job is honest prep, not a stronger story than the resume
   supports — that gap gets found in the actual interview either way.
 - Don't append to `interview-prep/progress/log.md` — that file tracks

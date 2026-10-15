@@ -1,4 +1,4 @@
-# Estimation — including your own 2–3B
+# Estimation
 
 *In the interview: a senior candidate estimates before being asked. Say the numbers out loud in the first five minutes, then use them to justify every later choice.*
 
@@ -78,7 +78,7 @@ average RPS. `86,400 ≈ 10⁵`, and the error is under 15%.
 
 ---
 
-## Worked: your 2–3B daily requests
+## Worked: 2–3B requests a day
 
 This is the calculation to have ready.
 
@@ -94,9 +94,9 @@ consumer app. At 3× average:
 peak ≈ 90,000 RPS
 ```
 
-> **FILL IN:** the actual peak-to-average ratio, and the read/write split on
-> auth requests. Two numbers you'd want ready — see
-> [WEAK-SPOTS](../WEAK-SPOTS.md) #3.
+> **Your turn:** the peak-to-average ratio and the read/write split for a
+> system you have actually run. Two numbers worth knowing cold, because they
+> are the first follow-ups to any traffic claim you make.
 
 **What that means for auth specifically.** Almost all of it is token validation
 and authorization checks — reads. Assume 1000:1 read/write:

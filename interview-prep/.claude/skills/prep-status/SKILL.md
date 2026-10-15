@@ -12,15 +12,18 @@ Answer one question: **what should they do next?**
 1. `progress/log.md` — terminal drill and mock history. Missing or empty
    means they haven't started *in the terminal*; check the site's record
    before concluding they haven't practised at all.
-2. The study site's `db`, if it has been used — Artifact tool,
-   `action: "read_db"`, `db_op: "list"`, collection `progress`. Each doc is
-   a topic with `{attempts, strong, weak, weakAreas, lastAt}`. Reconcile with
-   the log rather than reporting whichever you happened to read.
-3. `WEAK-SPOTS.md` — open risks. Struck-through items are resolved.
-4. `INDEX.md` — the full module list, to find what has never been touched.
-5. Run `python3 check_coverage.py` if it exists, for gaps in the material
-   itself (as opposed to gaps in their practice).
-6. Check for unfilled markers: `grep -rc "FILL IN" 00-experience/ WEAK-SPOTS.md`
+2. The study site's `db`, if it has been used — the `ArtifactData` tool,
+   `action: "list"`, on `data/users/me/progress/chapters` (status per chapter),
+   `data/users/me/progress/solved` and `data/users/me/progress/quiz` (best
+   score). Progress is stored per viewer under `data/users/me/`, so this reads
+   the user's own record and nobody else's. Reconcile with the log rather than
+   reporting whichever you happened to read.
+3. `curriculum.json` and `INDEX.md` — the full topic list, to find what has
+   never been touched.
+4. Run `python3 check_coverage.py`, for gaps in the material itself (as opposed
+   to gaps in their practice).
+5. Check for unanswered prompts: `grep -rc "Your turn" --include='*.md' .` —
+   these are the details only they can supply.
 
 ## Report
 
@@ -41,7 +44,7 @@ Keep it short and prescriptive. No dashboards.
 - <modules with no drill history>
 
 ### Blocking
-- <unfilled FILL IN markers, unresolved weak spots>
+- <unanswered `Your turn` prompts, empty story slots, repeated misses>
 
 ## Do this next
 1. <one specific action — a command to run or a file to read>
@@ -53,9 +56,10 @@ Keep it short and prescriptive. No dashboards.
 
 - **A repeated weakness outranks an untouched module.** Something they've
   fumbled twice is a live problem; something never drilled is just unknown.
-- **Unfilled `FILL IN` markers in `00-experience/` are blocking.** They cannot
-  practise behavioral rounds on stories with holes. Say this bluntly if the
-  count is high.
+- **An empty six-slot story table in `02-interview-core/42` is blocking.** They
+  cannot practise behavioural rounds without their own stories in those slots.
+  Say so bluntly, and the same for unanswered `Your turn` prompts in the
+  chapters they are about to drill.
 - **Recency matters.** A topic drilled once six weeks ago is not retained.
   Flag anything strong-but-stale for a refresh.
 - **Weight by round frequency**, not by their comfort. System design and

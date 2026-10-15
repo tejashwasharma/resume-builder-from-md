@@ -1,8 +1,8 @@
 # SAML 2.0 and enterprise SSO
 
-The protocol enterprise buyers actually have. You shipped native SSO apps into
-the Okta and Entra ID marketplaces, so expect this to go past "explain SAML"
-into operating it for many tenants.
+The protocol enterprise buyers actually have. For any product sold to
+enterprises, expect this to go past "explain SAML" into operating it across many
+tenants.
 
 Spec: [SAML 2.0 Technical Overview (OASIS)](https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-tech-overview-2.0.html)
 
@@ -252,10 +252,9 @@ your roles). Practical realities you should be able to speak to:
 - **JIT provisioning** — create the user on first successful SSO — versus SCIM,
   which provisions ahead of time and, importantly, *deprovisions*.
 
-> **In your own work.** You partnered with Okta and Entra engineering to ship
-> marketplace apps. Expect questions on their review process, on attribute
+> **Bring your own experience.** If you have shipped an app into an IdP
+> marketplace, expect questions on the provider's review process, on attribute
 > mapping across tenants, and on what happens when a customer's cert rotates.
-> See [contentstack](../00-experience/contentstack.md) §2.
 
 
 ## Building it
@@ -593,8 +592,8 @@ sessions over stateless ones on an enterprise product.
   knowing which checks stop which attacks is what they are looking for.
 - **Omitting `AudienceRestriction`.** Same class of miss as omitting `aud` in
   OIDC, and it's the assertion-replay hole.
-- **"We parse the XML and read the attributes."** If you built the parsing
-  yourself, that's a red flag, not a credential.
+- **"We parse the XML and read the attributes."** Hand-rolled assertion
+  parsing is a red flag, not a credential.
 - **Treating SSO as complete identity integration.** Without deprovisioning,
   leavers keep accounts.
 

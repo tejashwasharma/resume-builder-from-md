@@ -1,7 +1,7 @@
-# Hyperscale vocabulary — the systems worth naming, and how not to name-drop
+# Hyperscale vocabulary
 
-Google has published much of its infrastructure, and an interviewer may
-have read the papers. Several of the systems below are the direct ancestors of the tools in
+The large infrastructure companies have published much of what they run, and an
+interviewer may have read the papers. Several of the systems below are the direct ancestors of the tools in
 [the technology landscape](21-the-technology-landscape.md). Citing one
 correctly says "I know where this idea comes from and what it costs";
 citing one loosely says the opposite. Each entry below has three parts:
@@ -67,7 +67,7 @@ change on different systems must be observed in causal order, or a
 just-removed user sees just-added content. Zanzibar's answer is external
 consistency via **zookies** — opaque tokens returned from writes and stored
 with content, which force later checks to be evaluated at a snapshot at
-least that fresh. See [38](38-design-rbac-sso-sessions.md) for the full
+least that fresh. See [the identity subsystem](../10-design-cases/06-design-identity-subsystem.md) for the full
 model.
 
 **When to cite it.** Any design with fine-grained, relationship-based

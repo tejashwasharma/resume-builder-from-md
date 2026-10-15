@@ -5,10 +5,9 @@
       "id": "start",
       "title": "Start here",
       "level": "process",
-      "blurb": "How the interview loop works, and how to use this path.",
+      "blurb": "How a senior loop works, how to practise, and how to plan the weeks before it.",
       "chapters": [
         "02-interview-core/01-the-interview-process.md",
-        "02-interview-core/03-the-coding-round.md",
         "02-interview-core/19-the-drill-plan.md",
         "02-interview-core/43-the-schedule.md"
       ]
@@ -17,8 +16,9 @@
       "id": "coding-basics",
       "title": "Coding basics",
       "level": "basic",
-      "blurb": "The structures every problem is built on. Starts in brief — most of the time goes into Code.",
+      "blurb": "How the coding round runs, and the structures every problem is built on. Starts in brief \u2014 most of the time goes into Code.",
       "chapters": [
+        "02-interview-core/03-the-coding-round.md",
         "02-interview-core/04-patterns-and-complexity.md",
         "02-interview-core/06-arrays-and-two-pointers.md",
         "02-interview-core/07-strings-and-hashing.md",
@@ -48,13 +48,16 @@
       "id": "distributed",
       "title": "Distributed systems",
       "level": "advanced",
-      "blurb": "From zero: what breaks when one machine becomes many, and the tools that cope.",
+      "blurb": "From zero: the network underneath, how a single store actually works, then what breaks when one machine becomes many \u2014 and the tools that cope.",
       "chapters": [
         "02-interview-core/20-distributed-start-here.md",
         "02-interview-core/21-the-technology-landscape.md",
+        "02-interview-core/44-networking.md",
         "02-interview-core/22-failure-modes-and-fallacies.md",
         "02-interview-core/23-consistency-cap-pacelc.md",
+        "02-interview-core/45-storage-engines-and-transactions.md",
         "02-interview-core/24-replication-partitioning.md",
+        "02-interview-core/46-multi-region.md",
         "02-interview-core/25-consensus-coordination.md",
         "02-interview-core/26-idempotency-transactions.md",
         "02-interview-core/27-messaging-streams.md",
@@ -68,7 +71,7 @@
       "id": "design",
       "title": "System design",
       "level": "advanced",
-      "blurb": "From one server to hyperscale, then the designs in your own domain.",
+      "blurb": "The method, the numbers, and every building block \u2014 what each one is, and when and why to use it.",
       "chapters": [
         "02-interview-core/31-design-round-start-here.md",
         "02-interview-core/32-the-method.md",
@@ -76,29 +79,39 @@
         "02-interview-core/34-the-technology-toolbox.md",
         "02-interview-core/35-building-blocks.md",
         "02-interview-core/36-scale-vocabulary.md",
-        "02-interview-core/37-design-auth-service.md",
-        "02-interview-core/38-design-rbac-sso-sessions.md",
-        "02-interview-core/39-design-classics.md",
-        "02-interview-core/40-design-security-systems.md"
+        "02-interview-core/39-design-classics.md"
       ]
     },
     {
       "id": "design-cases",
       "title": "System design cases",
       "level": "worked cases",
-      "blurb": "Full worked examples, kept apart from your resume material. One chapter per system: requirements, numbers, numbered architecture, schemas, edge cases, questions and quiz.",
+      "blurb": "Full worked examples. One chapter per system: requirements, numbers, numbered architecture, schemas, alternatives and why not, edge cases, questions and quiz.",
       "chapters": [
         "10-design-cases/01-requirements-playbook.md",
         "10-design-cases/02-panel-feedback-and-practice-plan.md",
         "10-design-cases/03-design-email-service.md",
-        "10-design-cases/04-design-ecommerce-platform.md"
+        "10-design-cases/04-design-ecommerce-platform.md",
+        "10-design-cases/05-design-auth-service.md",
+        "10-design-cases/06-design-identity-subsystem.md"
+      ]
+    },
+    {
+      "id": "lld",
+      "title": "Low-level design",
+      "level": "reference",
+      "blurb": "Object modelling, SOLID and design patterns, and the classic LLD problem pool \u2014 for companies that run a dedicated round.",
+      "chapters": [
+        "09-lld/01-lld-start-here.md",
+        "09-lld/02-oop-solid-and-patterns.md",
+        "09-lld/03-classic-lld-problems.md"
       ]
     },
     {
       "id": "auth",
       "title": "Auth & identity",
       "level": "advanced",
-      "blurb": "Your specialty, taught from first principles to the security knowledge round.",
+      "blurb": "Identity from first principles: the protocols, the token formats, and the authorization models built on them.",
       "chapters": [
         "01-auth-identity/01-foundations.md",
         "01-auth-identity/02-oauth2.md",
@@ -109,65 +122,136 @@
         "01-auth-identity/07-mfa-totp.md",
         "01-auth-identity/08-rbac-abac.md",
         "01-auth-identity/09-opa-rego.md",
-        "01-auth-identity/10-zero-trust-idps.md",
-        "02-interview-core/41-security-domain-knowledge.md"
+        "01-auth-identity/10-zero-trust-idps.md"
       ]
     },
     {
-      "id": "stack",
-      "title": "Backend, data, cloud, AI & frontend",
-      "level": "reference",
-      "blurb": "The rest of your resume's stack, at the depth an interviewer probes.",
+      "id": "security",
+      "title": "Security engineering",
+      "level": "advanced",
+      "blurb": "The security knowledge round, and the design prompts a security team asks.",
       "chapters": [
-        "03-backend/01-nodejs-internals.md",
-        "03-backend/02-frameworks.md",
-        "03-backend/03-golang.md",
+        "02-interview-core/41-security-domain-knowledge.md",
+        "02-interview-core/40-design-security-systems.md"
+      ]
+    },
+    {
+      "id": "backend-nodejs",
+      "title": "Backend: Node.js",
+      "level": "language track",
+      "blurb": "TypeScript for services, the event loop, and building an HTTP server with middleware, validation, auth and graceful shutdown.",
+      "chapters": [
+        "11-backend-nodejs/01-typescript-for-backend.md",
+        "11-backend-nodejs/02-runtime-and-event-loop.md",
+        "11-backend-nodejs/03-building-the-server.md",
+        "11-backend-nodejs/04-testing-structure-production.md"
+      ]
+    },
+    {
+      "id": "backend-python",
+      "title": "Backend: Python",
+      "level": "language track",
+      "blurb": "Python from zero, the GIL and asyncio, and the same server built with FastAPI \u2014 dependencies, Pydantic and the blocking-call trap.",
+      "chapters": [
+        "12-backend-python/01-python-from-zero.md",
+        "12-backend-python/02-the-python-runtime.md",
+        "12-backend-python/03-building-the-server.md",
+        "12-backend-python/04-testing-structure-production.md"
+      ]
+    },
+    {
+      "id": "backend-golang",
+      "title": "Backend: Go",
+      "level": "language track",
+      "blurb": "Go from zero, goroutines and the scheduler, and the same server on net/http \u2014 middleware as one type, context, and a 15MB image.",
+      "chapters": [
+        "13-backend-golang/01-go-from-zero.md",
+        "13-backend-golang/02-the-go-runtime.md",
+        "13-backend-golang/03-building-the-server.md",
+        "13-backend-golang/04-testing-structure-production.md"
+      ]
+    },
+    {
+      "id": "backend-shared",
+      "title": "Backend: cross-cutting",
+      "level": "reference",
+      "blurb": "The decisions that are the same in every language: how services talk, and where to draw service boundaries.",
+      "chapters": [
         "03-backend/04-api-styles.md",
-        "03-backend/05-microservices.md",
+        "03-backend/05-microservices.md"
+      ]
+    },
+    {
+      "id": "data",
+      "title": "Data & caching",
+      "level": "reference",
+      "blurb": "Choosing a store and defending it: relational versus document, Redis and ODMs, and search.",
+      "chapters": [
         "04-data-cache/01-databases.md",
         "04-data-cache/02-redis-and-orms.md",
-        "04-data-cache/03-elasticsearch.md",
-        "05-testing/01-testing-and-coverage.md",
-        "06-cloud-devops/01-aws-and-containers.md",
-        "06-cloud-devops/02-cicd-and-observability.md",
-        "06-cloud-devops/03-cloudwatch-cloudtrail-xray-cloudfront.md",
+        "04-data-cache/03-elasticsearch.md"
+      ]
+    },
+    {
+      "id": "cloud",
+      "title": "DevOps & SRE",
+      "level": "operations",
+      "blurb": "The Linux box under the container, containers and Kubernetes end to end, infrastructure as code, pipelines and GitOps, the monitoring stack, and running it on call.",
+      "chapters": [
+        "06-cloud-devops/05-linux-for-operators.md",
+        "06-cloud-devops/06-containers.md",
+        "06-cloud-devops/07-kubernetes-objects.md",
+        "06-cloud-devops/08-kubernetes-operations.md",
+        "06-cloud-devops/09-infrastructure-as-code.md",
+        "06-cloud-devops/10-pipelines-and-gitops.md",
+        "06-cloud-devops/11-the-monitoring-stack.md",
+        "06-cloud-devops/12-running-it-on-call.md",
+        "06-cloud-devops/01-aws-ecosystem.md",
+        "06-cloud-devops/03-cloudwatch-cloudtrail-xray-cloudfront.md"
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "Testing & quality",
+      "level": "reference",
+      "blurb": "Test levels, TDD, and how to defend a coverage number.",
+      "chapters": [
+        "05-testing/01-testing-and-coverage.md"
+      ]
+    },
+    {
+      "id": "ai",
+      "title": "AI engineering",
+      "level": "reference",
+      "blurb": "Agent enablement, AI across the SDLC, and RAG \u2014 with the boundaries that make the claims credible.",
+      "chapters": [
         "07-ai-tooling/01-ai-engineering.md",
         "07-ai-tooling/02-ai-across-the-sdlc.md",
-        "07-ai-tooling/03-rag-and-llm-bots.md",
+        "07-ai-tooling/03-rag-and-llm-bots.md"
+      ]
+    },
+    {
+      "id": "frontend",
+      "title": "Frontend",
+      "level": "reference",
+      "blurb": "React, Redux, TypeScript and styling, for a backend-leaning loop that still asks.",
+      "chapters": [
         "08-frontend/01-react-and-typescript.md"
       ]
     },
     {
-      "id": "lld",
-      "title": "Low-level design",
-      "level": "reference",
-      "blurb": "Object modeling, SOLID and design patterns, and the classic LLD problem pool — for companies that run a dedicated round.",
-      "chapters": [
-        "09-lld/01-lld-start-here.md",
-        "09-lld/02-oop-solid-and-patterns.md",
-        "09-lld/03-classic-lld-problems.md"
-      ]
-    },
-    {
-      "id": "stories",
-      "title": "Your stories & behavioural",
+      "id": "behavioural",
+      "title": "Behavioural & leadership",
       "level": "behavioural",
-      "blurb": "Every resume claim as a story you can defend, then the behavioural round.",
+      "blurb": "What the round grades, the answer shape that gets credit, and a question bank to hang your own stories on.",
       "chapters": [
-        "00-experience/contentstack.md",
-        "00-experience/bestpeers.md",
-        "00-experience/gyrix.md",
-        "00-experience/hard-questions.md",
-        "02-interview-core/42-behavioral-and-leadership.md",
-        "WEAK-SPOTS.md"
+        "02-interview-core/42-behavioral-and-leadership.md"
       ]
     }
   ],
   "exclude": [
     "README.md",
     "INDEX.md",
-    "AGENT.md",
-    "coverage.md",
-    "00-experience/README.md"
+    "AGENT.md"
   ]
 }

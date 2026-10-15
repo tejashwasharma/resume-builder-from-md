@@ -1,4 +1,4 @@
-# The drill plan — how to practise, and what to practise
+# The drill plan
 
 [Patterns and complexity](04-patterns-and-complexity.md) is the framework and
 [choosing the approach](05-choosing-the-approach.md) is how to pick a

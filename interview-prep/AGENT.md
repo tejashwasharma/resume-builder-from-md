@@ -1,38 +1,44 @@
 # Agent instructions — interview-prep
 
-Study material for Senior SWE / IAM-platform interviews, derived from
-`../tejashwasharma_resume.md` (this directory sits inside the resume repo).
+A study book for senior software engineering interviews, meant to be shared:
+anyone can clone it and prepare from it. **Everything here is world-readable**,
+so write for a reader you do not know — never for one person's resume, and
+never with a specific employer's internal detail in it.
 
-**This directory lives in the parent resume repo, which is public.** It used to
-be a separate, gitignored inner repo; that was deliberately undone, so there is
-no nested `.git` here and these files are tracked and pushed like any others.
+Two rules follow from that, and they are the ones most easily broken:
 
-Write accordingly: everything here — including `WEAK-SPOTS.md`, the
-`00-experience/` stories and every `FILL IN` answer — is world-readable. Don't
-add anything about a former employer, a colleague, or the candidate's own
-situation that shouldn't be public.
+- **Never assert anything about the reader.** Not their job history, not what
+  is on their CV, not which company they are interviewing with. Where only the
+  reader can supply a detail, leave a `> **Your turn:** <what's needed and why
+  it matters>` prompt instead of inventing one.
+- **Technical citations are welcome; company targeting is not.** Naming
+  Spanner, Zanzibar, GFS, Borg or BeyondCorp as published sources is what makes
+  the material credible. A sentence about *whose loop the reader is preparing
+  for* is not.
 
-## The resume drives this
+The book is Node/TypeScript-centred and says so up front (README, and the
+intro of `02-interview-core/01`). Keep concrete examples in that stack rather
+than scattering languages.
 
-The resume decides what needs preparing. After it changes, run:
+## Checks
 
 ```
-python3 check_coverage.py
+python3 check_coverage.py     # question blocks, diagram captions, links
+python3 build_site.py --check # curriculum completeness, exercises, MCQs
 ```
 
-It fails when the resume claims a skill nothing here teaches, and when a
-question block or link is broken. Fix the gap rather than the check.
+Both must pass before a change is done.
 
 ## Structure
 
-- `00-` … `08-` — topic guides, the knowledge base. Questions live here, once.
+- `01-` … `10-` — topic guides, the knowledge base. Questions live here, once.
+- `curriculum.json` — the study order and the site's topic structure. Every
+  chapter `.md` must appear in exactly one topic or in `exclude`.
 - `.claude/skills/` — `drill`, `mock-interview`, `prep-status`. These hold
   *procedure* only. Never move question content into a skill.
 - [INDEX](INDEX.md) — topic/keyword → exact file. Use it to locate material instead
   of globbing; keep it updated when adding a guide.
 - `progress/log.md` — append-only record of drill sessions and weak areas.
-- [WEAK-SPOTS](WEAK-SPOTS.md) — where the candidate is most exposed. Feeds mock-interview
-  curveballs.
 
 ## The question format is a contract
 
@@ -102,35 +108,38 @@ explicitly testing that you don't reach for a dependency.
 
 ## The interview-core part
 
-`02-interview-core/` is one self-contained part, numbered `01`–`43` in reading order: `01`
-the process, `03`–`19` coding, `20`–`30` distributed-systems
-foundations, `31`–`40` system design, `41`–`43` the security knowledge round,
-behavioural & leadership, and the schedule. Keep it company-neutral: no
-employer-, team- or job-posting-specific content. Do not state process
-details you cannot source publicly.
+**A chapter's number is a stable id, not its position.** `curriculum.json` is
+the reading order and the sidebar's grouping, and a chapter can sit in a topic
+with files from other directories. `02-interview-core/` runs `01`–`46`, roughly
+grouped as `01` the process, `03`–`19` coding, `20`–`30` plus `44`–`46`
+distributed systems, `31`–`39` system design, `40`–`41` security, `42`
+behavioural, `43` the schedule — but new chapters take the next free number and
+are placed where they belong in `curriculum.json`, rather than renumbering
+everything and breaking every inbound link. Keep it company-neutral: no employer-, team- or
+job-posting-specific content, and no process detail you cannot source
+publicly.
 
-Never invent a fact about the candidate's own deployment to fill this in —
-generic implementation guidance doesn't carry the same risk as a specific
-claim about his work, but if a chapter's `> **FILL IN:**` marker covers exactly
-what this section would need, point at it rather than inventing around it.
+Keep it generic implementation guidance. Where the honest answer depends on
+what the reader has actually built, point at the chapter's `> **Your turn:**`
+prompt rather than inventing a deployment around it.
 
 ## System design cases: one chapter per example
 
-Worked design examples live in `10-design-cases/` as their own topic ("System design cases"), kept apart from the resume-derived material. **One system = one chapter**, however large. Do not split a system (an e-commerce platform, an email service) into several chapter files; use one `##` section per component (for example `## Deep dive 3: Inventory`) so the pager still shows one screen at a time. Shape: In brief, The prompt, Step 1 Ask (functional and non-functional requirements, out of scope), Step 2 Numbers, Step 3 Architecture (numbered diagram plus a legend), schema tables, decisions, edge cases, scaling, **alternatives and why not** (a table per major decision: alternative, when it is the right choice, why it loses here), how to drive the conversation, Reference stack, Interview Q&A, What a weak answer sounds like, Quiz, Glossary.
+Worked design examples live in `10-design-cases/` as their own topic ("System design cases"). **One system = one chapter**, however large. Do not split a system (an e-commerce platform, an email service) into several chapter files; use one `##` section per component (for example `## Deep dive 3: Inventory`) so the pager still shows one screen at a time. Shape: In brief, The prompt, Step 1 Ask (functional and non-functional requirements, out of scope), Step 2 Numbers, Step 3 Architecture (numbered diagram plus a legend), schema tables, decisions, edge cases, scaling, **alternatives and why not** (a table per major decision: alternative, when it is the right choice, why it loses here), how to drive the conversation, Reference stack, Interview Q&A, What a weak answer sounds like, Quiz, Glossary.
 
 ## Rules when writing or editing guides
 
-- **Never invent a fact about the candidate's own work.** Where only he knows
-  a detail, leave `> **FILL IN:** <what's needed and why it matters>`. A story
-  he cannot defend under follow-up is worse than no story.
+- **Never invent a fact about the reader's own work.** Where only they know a
+  detail, leave `> **Your turn:** <what's needed and why it matters>`. A story
+  the reader cannot defend under follow-up is worse than no story.
 - **Protocol details get verified, not remembered.** For anything load-bearing
   in `01-auth-identity/` or the distributed-systems chapters, check the spec (RFC
   6749, 7636, 7644, 6238, OIDC Core, SAML 2.0) and cite the section. Errors in
   his own specialty are the most costly kind.
-- **Tie topics to his claims** where they genuinely connect — the caching guide
-  should reference the 13s→200ms Redis redesign, sharding should reference
-  multi-tenant hot tenants. Studying then rehearses his story too. Don't force
-  a connection that isn't real.
+- **Invite the reader's own experience** where a topic genuinely connects to
+  work people do — a `> **Bring your own experience.**` aside naming the
+  follow-ups that topic attracts. Describe the *kind* of work, never a specific
+  employer's system.
 - Keep answers at the depth a senior candidate would actually speak aloud, not
   encyclopedia entries.
 
@@ -138,24 +147,26 @@ Worked design examples live in `10-design-cases/` as their own topic ("System de
 
 ```
 python3 check_coverage.py
+python3 build_site.py --check
 ```
 
-It fails if a resume skill token has no real coverage, or a question block is
-malformed. Fix what it reports before considering the change done.
+The first fails on a malformed question block, an uncaptioned diagram or a
+broken link; the second on a chapter missing from `curriculum.json`, a
+malformed exercise or MCQ, or a reference solution that does not pass its own
+tests. Fix what they report before considering the change done.
 
 ## Version control
 
-There is no inner repo. Commit from the parent repo
-(`Documents/Projects/resume`), which pushes to a public GitHub remote. Do not
-re-create a nested `.git` here — it turns this directory into a submodule
-gitlink in the parent and the files stop being tracked.
+There is no inner repo. Commit from the parent repo, which pushes to a public
+GitHub remote. Do not create a nested `.git` here — it turns this directory
+into a submodule gitlink in the parent and the files stop being tracked.
 
 **Never commit or push without the user's explicit approval for that specific
 change.** Editing files and running the checks above needs no sign-off; `git
 commit` and `git push` do, every time — an earlier approval doesn't carry
 forward to the next change.
 
-**Publish before you commit and push.** If Markdown under `00-` … `08-`
+**Publish before you commit and push.** If any chapter Markdown
 changed, rebuild and republish the artifact first (`python3 build_site.py`,
 then republish `site/index.html` to the existing artifact URL) — a commit
 whose `site/index.html` doesn't match what's live is worse than one that lags
@@ -180,9 +191,9 @@ update the artifact in place (same URL).
 explicitly: no Book / Drill / Mock / Progress tabs. Two axes:
 
 - **Vertical — Topics → Chapters**, from `curriculum.json`. It is the single
-  source of study order. Every `.md` under `00-`…`08-` must be listed in exactly
-  one topic or in `exclude`; the build fails otherwise. A new chapter means a
-  new line in `curriculum.json`.
+  source of study order and of the sidebar's grouping. Every chapter `.md` must
+  be listed in exactly one topic or in `exclude`; the build fails otherwise. A
+  new chapter means a new line in `curriculum.json`.
 - **Horizontal — stages inside a chapter:** Learn → Workshop → Code → Quiz.
   Only stages with content appear. Which `##` section lands in which stage is
   one table, `STAGE_RULES` in `build_site.py`, matched on the heading —
@@ -209,6 +220,15 @@ behind the one-screen-at-a-time view.
 
 **Progress is chapter-level only** — not started / started / done — plus which
 problems are solved and the best quiz score. No per-section ticks.
+
+### The Code stage runs TypeScript only
+
+`## Exercises` blocks are executed — in a Web Worker on the page, and under
+node at build time via `site/runner.js`. **Only TypeScript/JavaScript can run
+there.** The Python and Go chapters therefore carry their code in `## Building
+it` and `## Workshop:` sections, which render as prose, and must not define
+`## Exercises`; adding one would hand Go source to the TypeScript runner and
+fail the build.
 
 ### The Exercise contract (Code stage)
 
@@ -300,9 +320,9 @@ naive keyword retrieval over chapter text (`relevantChapters`), sends the top
 matches plus the current chapter as context, and cites them as links.
 
 Two things to preserve if you touch it: the prompt tells the model to say when
-the book doesn't cover something rather than bluffing, and to point at `FILL IN`
-markers rather than inventing the candidate's history. Both matter — a
-confident wrong answer about his own experience is worse than no answer.
+the book doesn't cover something rather than bluffing, and to point at
+`Your turn` prompts rather than inventing the reader's history. Both matter — a
+confident wrong answer about someone's own experience is worse than no answer.
 
 ### Answer quality
 
@@ -320,8 +340,9 @@ That is how the chat is both cheap and useful — don't flatten it back to one
 tier in either direction.
 
 Coaching questions ("what should I study", "weakest areas") get real data via
-`progressBrief()`: drill records, unfinished chapters and WEAK-SPOTS. Without
-it the model invents an answer, which is worse than none.
+`progressBrief()`: chapter status, solved problems, quiz bests and the next
+chapter on the path. Without it the model invents an answer, which is worse
+than none.
 
 ### Diagrams — a map above the prose, never instead of it
 
@@ -376,8 +397,8 @@ The rules, which `build_site.py` enforces where it can:
   request". Same reason the prose uses curl.
 - **Types:** `sequenceDiagram` for flows across parties, `flowchart` for
   decision trees and request paths, `stateDiagram-v2` for lifecycles.
-- **Never invent the candidate's architecture.** Where only he knows the shape,
-  leave a `> **FILL IN:**` marker instead of a plausible guess — same rule as
+- **Never invent the reader's architecture.** Where only they know the shape,
+  leave a `> **Your turn:**` prompt instead of a plausible guess — same rule as
   prose.
 
 When adding a protocol chapter, follow the shape: the diagram, then who's who,
@@ -396,8 +417,11 @@ The chat is deliberately cheap, and the pieces work together:
   into ~400-char chunks; `relevantPassages()` returns the best 6. An earlier
   version sent 3 whole chapters (21k chars) and, worse, sent each chapter's
   *first* 7000 characters — which often didn't contain the answer.
-- **`modelTier: 'quick'`** — the cheapest tier. Fine here because answers are
-  short lookups against supplied context, not open reasoning.
+- **`modelTier: 'quick'`** — the cheapest and fastest tier, used for *every*
+  chat question. Fine here because answers are short responses against supplied
+  context, not open reasoning. `askIntent()` still varies the answer-length
+  budget and how many passages are retrieved; it no longer escalates the model.
+  Don't reintroduce a bigger tier for the chat.
 - **Short answers** — the prompt asks for 2-4 sentences, under 100 words.
 - **History capped** at the last two exchanges, so the prompt doesn't grow
   every turn.
@@ -405,19 +429,31 @@ The chat is deliberately cheap, and the pieces work together:
 
 Roughly 600 input tokens per question instead of ~5,250.
 
-Problem generation and code review stay on `modelTier: 'default'` on purpose:
-writing tests that hold up, and spotting the input that breaks someone's code,
-need more capability than a lookup does.
+Problem generation and code review (Code stage, not the chat) stay on
+`modelTier: 'default'` on purpose: writing tests that hold up, and spotting the
+input that breaks someone's code, need more capability than a lookup does.
 
 ## Two progress records
 
 - `progress/log.md` — written by the terminal skills (`drill`, `mock-interview`).
-- The artifact's `db` — written by the site: `chapters/{id}` (status),
-  `solved/{exerciseId}`, `quiz/{chapterId}` (best score), `generated/{id}`
-  (AI problems). The old `reading/sections`, `progress/*` and `mocks/*` docs
-  are from the previous site; it migrates `reading/sections` into chapter
-  status once and otherwise leaves them alone.
+- The artifact's `db` — written by the site, **per viewer**, under
+  `data/users/me/progress/`: `chapters/{id}` (status), `solved/{exerciseId}`,
+  `quiz/{chapterId}` (best score), `generated/{id}` (AI problems).
+
+**The `data/users/me/` prefix is load-bearing and must not be removed.** It is
+the one subtree the runtime scopes to the signed-in viewer — `me` resolves to
+their own id, and the subtree is private even from the artifact's owner. Share
+the link with someone and they build their own record instead of editing
+yours. A viewer the runtime cannot identify (an anonymous visitor on a public
+link) has no subtree at all: the write throws, the page swallows it, and their
+progress stays in their own browser's `localStorage`. Everything goes through
+`DB_ROOT` in `site/site.js`, so there is exactly one place to get this wrong.
+
+**That prefix only resolves if the published version declares `user` alongside
+`db`.** Publish with `capabilities: {sample: {}, db: {}, user: {}}` — dropping
+`user` silently breaks per-viewer scoping.
 
 They are separate by design. `prep-status` should read `progress/log.md` and,
 when the site has been used, also pull the artifact's `db` (the `ArtifactData`
-tool: `list` on `chapters`, `solved`, `quiz`) and reconcile before reporting.
+tool: `list` on `data/users/me/progress/chapters`, `.../solved`, `.../quiz`)
+and reconcile before reporting.

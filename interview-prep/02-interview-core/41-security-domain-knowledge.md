@@ -7,9 +7,9 @@ conversations run on: preventing vulnerability classes (safe coding),
 securing the supply chain, securing what you run and buy in the cloud,
 third-party risk, and the AI-agent threat landscape.
 
-Your IAM background is a genuine advantage: identity is the control plane
-for almost everything below, and every section says where your own work
-plugs in. Where only you know a detail, there is a `FILL IN`.
+An IAM background is a genuine advantage here: identity is the control plane
+for almost everything below, and each section says where your own work plugs
+in. Where only you know a detail, there is a `Your turn` prompt.
 
 Depth target: what a senior engineer can say out loud in two minutes, with
 one concrete example, and defend two follow-ups deep. Not an encyclopedia.
@@ -129,11 +129,10 @@ variant is renamed to something unpleasant and gated behind review),
 same idea to DOM sinks), and **sanitizers** (ASan, MSan, UBSan — runtime
 detection for the code that still has to be unsafe).
 
-Where your work plugs in: the auth package and the OPA policy layer are
-class-level controls — one implementation, adopted everywhere, so a missing
-check in a product service becomes impossible rather than unlikely. Say it
-in those words. See
-[auth as a platform](../00-experience/contentstack.md#story-4--auth-as-a-platform-the-grpc-npm-package).
+Where your own work plugs in: a shared auth library or a central policy layer
+is a class-level control — one implementation, adopted everywhere, so a missing
+check in a product service becomes impossible rather than unlikely. If you have
+built one, say it in those words.
 
 ---
 
@@ -224,9 +223,9 @@ the SBOM diff problem in [18](18-security-flavoured-problems.md).
 **Vulnerability management.** Ingest advisories (OSV, NVD, GitHub
 Advisory Database); match against SBOMs; prioritise by reachability
 (is the vulnerable function actually called?), exploitability (EPSS,
-KEV) and exposure; assign an owner; track to closure with an SLA. Your
-~150→10 audit remediation is a small version of this loop — see
-[security audit remediation](../00-experience/contentstack.md#story-3--security-audit-remediation-150--10).
+KEV) and exposure; assign an owner; track to closure with an SLA. Any audit
+backlog you have driven down is a small version of this loop — describe it with
+the same vocabulary.
 
 ---
 
@@ -321,9 +320,9 @@ grants and the SCIM deprovisioning that this team audits from the outside.
 ## AI and agent threats
 
 Staying on top of the rapidly developing agentic threat landscape is now
-part of the job. Interviewers will ask, and this is where your AI-tooling work is
-a differentiator — provided you hold the line on what it can and can't do
-(see [WEAK-SPOTS](../WEAK-SPOTS.md)).
+part of the job. Interviewers will ask, and AI-tooling experience is a
+differentiator here — provided you hold the line on what it can and can't do
+rather than overselling it.
 
 The OWASP Top 10 for LLM Applications (2025 edition) is the shared
 vocabulary. The entries that matter for a coding-agent context:
@@ -354,23 +353,26 @@ provenance applied to a new kind of actor.
 
 ## Bringing your own work in
 
-The interviewer wants evidence, not vocabulary. Map:
+The interviewer wants evidence, not vocabulary. Before the round, map each
+thing they ask about to something you have actually done:
 
-| They ask about | You have | Story |
-| --- | --- | --- |
-| Authorisation at scale, policy engines | RBAC 0→1, OPA/Rego, decision caching | [Story 1](../00-experience/contentstack.md#story-1--rbac-from-0-to-1-flagship), [Story 5](../00-experience/contentstack.md#story-5--policy-evaluation-and-caching-13s--under-200ms) |
-| Identity protocols, token lifecycle, revocation | OAuth/OIDC/SAML/SCIM unification, session governance | [Story 2](../00-experience/contentstack.md#story-2--unifying-oauth-sso-and-scim), [Story 6](../00-experience/contentstack.md#story-6--session-governance-and-2fa-hardening) |
-| Finding and fixing at volume | ~150 → 10 findings | [Story 3](../00-experience/contentstack.md#story-3--security-audit-remediation-150--10) |
-| A control other teams adopt | The auth package, 9 teams | [Story 4](../00-experience/contentstack.md#story-4--auth-as-a-platform-the-grpc-npm-package) |
-| Incidents | Auth on-call | [Story 7](../00-experience/contentstack.md#story-7--owning-auth-incidents) |
-| AI in the SDLC, with limits | Agent docs, prompt library, AI review | [Story 8](../00-experience/contentstack.md#story-8--ai-adoption-and-tooling) |
+| They ask about | The kind of work that answers it |
+| --- | --- |
+| Authorisation at scale, policy engines | A permission model you designed, a policy engine you ran, decision caching |
+| Identity protocols, token lifecycle, revocation | OAuth/OIDC/SAML/SCIM work, session governance, forced logout |
+| Finding and fixing at volume | An audit or scanner backlog you drove down, and how you prioritised it |
+| A control other teams adopt | A library, service or gate other teams took on without being made to |
+| Incidents | An on-call rotation, an RCA you wrote, what changed afterwards |
+| AI in the SDLC, with limits | Where you used it, and where you deliberately did not |
 
-> **FILL IN:** one example where a security finding in your work was a
+One entry per row, named and specific, beats a vocabulary list.
+
+> **Your turn:** one example where a security finding in your work was a
 > *class* problem rather than an instance — a place where you changed an API
 > or a library so the bug couldn't recur. That single example is the bridge
 > to the safe-coding worldview.
 
-> **FILL IN:** anything you have actually done with cloud IAM, bucket
+> **Your turn:** anything you have actually done with cloud IAM, bucket
 > policies, service-account keys or vendor access reviews on AWS. If nothing,
 > that's fine — say the first-principles answer and don't claim more.
 
@@ -798,12 +800,12 @@ up: cache the last known-good decision with a bounded TTL, keep the
 control's dependencies few and highly available, and give it a break-glass
 path that is logged and time-limited.
 
-The specific version I've lived: the authorisation service in front of the
-platform. It failed closed, so its availability was the product's
-availability, and that's why the decision caching and latency work
-mattered — [Story 5](../00-experience/contentstack.md#story-5--policy-evaluation-and-caching-13s--under-200ms).
+The common version: an authorisation service in front of a platform. It fails
+closed, so its availability *is* the product's availability — which is exactly
+why decision caching and latency work on that path are security work, not just
+performance work.
 
-> **FILL IN:** what the actual behaviour was when the policy store was
+> **Your turn:** what the actual behaviour was when the policy store was
 > unreachable — cached decision, deny, or allow — and whether it ever
 > happened. The follow-up is guaranteed.
 
@@ -909,7 +911,7 @@ hand-rolled authorisation — became inexpressible for the teams that
 adopted the library, and adoption happened because it was easier than the
 alternative.
 
-> **FILL IN:** the specific unsafe pattern the library removed, one
+> **Your turn:** the specific unsafe pattern the library removed, one
 > concrete finding it closed, and — most persuasive — the one team that
 > resisted adoption and what changed their mind. Without those three
 > details this is a nice story; with them it's evidence.
@@ -926,7 +928,7 @@ alternative.
    services that never adopted the library. Say which, and what the
    compensating control was.
 
-   > **FILL IN:** the real residue, and the control that covered it.
+   > **Your turn:** the real residue, and the control that covered it.
 
    </details>
 

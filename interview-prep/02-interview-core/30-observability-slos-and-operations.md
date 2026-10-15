@@ -1,4 +1,4 @@
-# Observability, SLOs and operations — the half of the round people skip
+# Observability, SLOs and operations
 
 A design that works on the whiteboard and cannot be run is not a passing
 design at senior level. Strong interviewers are steeped in the *Site

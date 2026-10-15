@@ -132,12 +132,11 @@ write (sticky sessions) for a short window; or read from the primary for N
 seconds after a write; or track a version token per session and require the
 replica to have caught up to it.
 
-> **In your own work.** This is directly relevant to auth: a user's role changes
+> **Bring your own experience.** This is directly relevant to auth: a user's role changes
 > and the write goes to a primary, but the authorization check reads a replica.
 > Eventual consistency there means a revoked permission still works — a
-> *security* consequence rather than a UX one. That framing is exactly the kind
-> of thing an interviewer probing your 2–3B claim will reward. See
-> [contentstack](../00-experience/contentstack.md) §5.
+> *security* consequence rather than a UX one. Reaching that framing unprompted
+> is exactly what an interviewer probing a scale claim rewards.
 
 
 ## Building it

@@ -1,4 +1,4 @@
-# Design: security systems — the prompts a security team will ask
+# Design: security systems
 
 Security-platform engineering is about building software that identifies,
 measures and remediates security gaps across a cloud estate and its
@@ -625,7 +625,7 @@ flowchart TD
 
 <details><summary>Worked solution</summary>
 
-This is the Zanzibar model from [38](38-design-rbac-sso-sessions.md), and
+This is the Zanzibar model from [the identity subsystem](../10-design-cases/06-design-identity-subsystem.md), and
 that chapter's *The Zanzibar model* section is the data-model and
 consistency half of the answer — read it first. What follows is the
 system-design half.

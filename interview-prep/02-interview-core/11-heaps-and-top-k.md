@@ -1,4 +1,4 @@
-# Heaps and priority queues — the k best, cheaply
+# Heaps and priority queues
 
 A heap answers one question extremely well: **what is the smallest (or largest)
 thing right now?** — while things are constantly being added and removed. That's

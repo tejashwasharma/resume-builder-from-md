@@ -2,9 +2,9 @@
 
 [Chapter 1](01-ai-engineering.md) covers the *enablement* work — the docs,
 navigation index and playbook library that make an agent effective, plus prompt
-caching and model routing. This chapter covers the five places your resume says
-you actually applied it: **code review, test generation, debugging, incident
-RCA, and security analysis**.
+caching and model routing. This chapter covers the five places teams actually
+apply it: **code review, test generation, debugging, incident RCA, and security
+analysis**.
 
 The distinction matters in an interview. Chapter 1 is "what I built"; this is
 "what it does day to day". Interviewers push on the second, because that's
@@ -50,7 +50,7 @@ where the claim either has substance or falls apart.
 
 ## The tools, and which one for what
 
-You name three on your resume. Be able to say why more than one exists.
+Three names come up constantly. Be able to say why more than one exists.
 
 | Tool | Shape | Where it earns its place |
 | --- | --- | --- |
@@ -64,9 +64,9 @@ explaining an unfamiliar error — not for changing code in place. A candidate
 who claims an agent workflow but only ever pastes into a chat window is
 describing something much smaller, so keep the distinction sharp.
 
-> **FILL IN:** which model/provider your team actually standardised on, and
-> whether GPT was used through ChatGPT, the API, or Copilot's backend. "We used
-> GPT" invites "for what, and through what?" and a vague answer reads as
+> **Your turn:** which model or provider your team actually standardised on,
+> and whether it was used through a chat UI, the API, or an editor plugin. "We
+> used GPT" invites "for what, and through what?" and a vague answer reads as
 > résumé padding.
 
 ---
@@ -152,8 +152,9 @@ on it.
 
 ### 4. AI-driven RCA
 
-This is the highest-value one on your resume, because it maps directly to a
-number you claim: incidents resolved 3x more, ~30% faster.
+This is the highest-value one to be able to describe, because it maps directly
+to a number people put on resumes: incidents resolved faster, by some
+multiple.
 
 The mechanism worth describing is **assembling the context a responder would
 otherwise assemble by hand**: the error signature, the surrounding logs, the
@@ -169,8 +170,8 @@ Say the boundary out loud before you're asked: **diagnosis yes, executing a
 mitigation no.** An agent with production write access during an incident is
 how a small outage becomes a large one.
 
-> **FILL IN:** whether RCA assistance ran on live incidents or after the fact
-> on the write-up, and whether the playbook read from Datadog/Observe directly
+> **Your turn:** whether RCA assistance ran on live incidents or after the fact
+> on the write-up, and whether the playbook read from your observability tool directly
 > or from pasted context. The 3x/30% claim gets much stronger with one concrete
 > incident where it changed the outcome — and much weaker if you can't say how
 > the tool got its data.
@@ -320,7 +321,7 @@ correct means.
 
 **Follow-ups:**
 1. Q: Your coverage went 75% to 85%. How much of that was generated?
-   <details><summary>Answer</summary>> **FILL IN:** roughly what share was generated versus handwritten, and whether the generated tests concentrated in a particular layer. Be ready for "so is the extra 10% meaningful?" — the honest answer is that coverage is a floor, not a target, and the number I'd actually defend is bug turnaround, which is an outcome rather than an activity.</details>
+   <details><summary>Answer</summary>> **Your turn:** roughly what share was generated versus handwritten, and whether the generated tests concentrated in a particular layer. Be ready for "so is the extra 10% meaningful?" — the honest answer is that coverage is a floor, not a target, and the number I'd actually defend is bug turnaround, which is an outcome rather than an activity.</details>
 
 ### Q: You claim incidents resolved 3x faster with AI RCA. Where does the speed-up actually come from?
 **Level:** senior · **Tags:** ai, incidents, rca
@@ -347,7 +348,7 @@ a small outage becomes a large one.
 1. Q: What if it ranks the wrong hypothesis first?
    <details><summary>Answer</summary>Then you've lost a minute, provided each hypothesis carries its evidence — the responder checks the evidence, not the ranking. The dangerous version is a confident explanation with no evidence attached, because that's the one people act on without confirming. That's why the output is a ranked list with citations rather than a single answer.</details>
 2. Q: How did the playbook get the logs?
-   <details><summary>Answer</summary>> **FILL IN:** whether it queried Datadog/Observe directly or worked from pasted context, and whether it ran during live incidents or on the write-up afterwards. This is the follow-up most likely to expose a thin claim — be specific.</details>
+   <details><summary>Answer</summary>> **Your turn:** whether it queried your observability tool directly or worked from pasted context, and whether it ran during live incidents or on the write-up afterwards. This is the follow-up most likely to expose a thin claim — be specific.</details>
 
 ### Q: Where would you not use AI in the SDLC?
 **Level:** senior · **Tags:** ai, boundaries, security

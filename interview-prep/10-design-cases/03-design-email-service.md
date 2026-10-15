@@ -1,4 +1,4 @@
-# Design: a multi-tenant email service with daily quotas
+# Design: a multi-tenant email service
 
 This is the question behind the panel rejection. The prompt is one vague line, and the candidate named SQS, Lambda, MySQL, Step Functions and cron without clarifying anything. This chapter shows the order of work that passes: ask, size, simple design, find what breaks, justify, walk the edge cases.
 

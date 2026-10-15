@@ -1,4 +1,4 @@
-# The technology toolbox — choosing between the options
+# The technology toolbox
 
 *In the interview: every technology you name will be followed by "why not the other one?". Know the trade-off, and know the published system it descends from ([36](36-scale-vocabulary.md)).*
 
@@ -273,7 +273,7 @@ loud; it's the honest version.
 > cache lookup only for the revocation guarantee."
 
 This is the resume's home territory — [JWT](../01-auth-identity/06-jwt.md) and
-[session revocation](38-design-rbac-sso-sessions.md#prompt-c--session-management-with-instant-revocation)
+[session revocation](../10-design-cases/06-design-identity-subsystem.md#prompt-c--session-management-with-instant-revocation)
 go much deeper, and it will be probed hard.
 
 ---

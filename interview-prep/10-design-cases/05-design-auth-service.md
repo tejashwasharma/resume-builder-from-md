@@ -1,8 +1,9 @@
-# Design: an auth service at 2–3B requests/day
+# Design: an auth service at scale
 
-Your flagship design question. It's the one you're most likely to get, because
-it's on your resume — so you should be better at this than at any other prompt
-in the book.
+The design prompt for any identity or platform role, and the one this book goes
+deepest on. Everything else in the design part is practice for it: it has a
+read path that must never be slow, a write path that must never be wrong, and a
+tenancy model that breaks both if you get it wrong.
 
 ---
 
@@ -210,8 +211,8 @@ Don't over-engineer it.
 
 ## Follow-ups to expect
 
-The auth-service design above is the one on your resume, so an
-interviewer will push past it. These are the four pushes to have rehearsed.
+An interviewer who is satisfied with the design above will push past it. These
+are the four pushes to have rehearsed.
 
 **"Make it multi-region, active-active."** The hard part is not the stateless
 token-validation path — that replicates trivially with the public keys. The
@@ -220,11 +221,11 @@ revocation and key rotation. Two honest options: (a) one home region per
 tenant for writes, with reads everywhere and a routing layer that knows the
 home — simple, and a tenant's latency to its home is the cost; (b) a
 strongly consistent multi-region store (the Spanner model from
-[23](23-consistency-cap-pacelc.md)) for the small revocation and key tables
+[23](../02-interview-core/23-consistency-cap-pacelc.md)) for the small revocation and key tables
 only, with everything else regional. Say which you would pick and why the
 revocation table is the one that needs consistency: a revoked session that is
 still valid in another region is the "new enemy" problem from
-[38](38-design-rbac-sso-sessions.md).
+[the identity subsystem](06-design-identity-subsystem.md).
 
 **"A session is revoked. How fast is it dead everywhere?"** Three tiers, and
 the answer should name all three: short-lived access tokens bound the
@@ -248,6 +249,42 @@ the hot key is the one tenant with a bulk import), and the audit log (append
 only, batched, shipped to cold storage — never on the request path). Then
 say which of those you would fix first, and what you would measure to know
 you had to.
+
+---
+
+## Alternatives and why not
+
+| Decision | Alternative | When it is the right choice | Why it loses here |
+| --- | --- | --- | --- |
+| Stateless JWT validation | Opaque tokens with introspection on every request | Low request volume, or a hard requirement that revocation be instant with no window | A network hop on every request to a tier-0 service at tens of thousands of RPS; the read path becomes the bottleneck it was designed to avoid |
+| Authorization SDK with a local cache | Every service calls a central authz API | Few services, or policies that change constantly | Adds a dependency to every request path; the central service becomes the single point of failure for all of them |
+| Per-user version in the cache key | Flush the whole cache on any role change | Small installs where the cache is cheap to rebuild | One role change in one tenant evicts everyone, turning an admin action into a latency spike |
+| Shared database with a tenant column | A database per tenant | Regulated customers, or wildly different data volumes per tenant | Hundreds of schemas to migrate, connection-pool exhaustion, and no cheap cross-tenant reporting |
+| Fail closed with a cached fallback | Strict fail closed | A security boundary where any unauthorized access is unacceptable | Auth availability becomes the whole platform's availability; a brief store outage turns into a total outage |
+| Fail closed with a cached fallback | Fail open | Non-sensitive reads, or a soft rollout | Fails *towards* granting access, which is the one failure direction an auth system must never take |
+
+---
+
+## How to drive the conversation
+
+1. **Split the system in the first two minutes.** Authentication (login, SSO,
+   provisioning) is low-volume and must be correct; authorization (permission
+   checks) is high-volume and must be fast. Everything after that follows from
+   the split, and candidates who never make it end up designing one system that
+   does both badly.
+2. **Do the numbers out loud** before drawing boxes, and name the one that
+   matters: average RPS, peak, and the read/write ratio. The read path is what
+   you are actually designing.
+3. **Draw the read path first**, then the write path, then revocation. Say
+   where state lives at each step.
+4. **Volunteer the invalidation story** with the cache, not after being asked.
+   A cache with no invalidation answer is the single most common way this
+   design fails.
+5. **Name the failure behaviour explicitly** — what happens when the policy
+   store is unreachable — and say why that direction was chosen.
+6. **Keep a scaling answer in reserve** for "now make it ten times bigger":
+   read replicas, a decision cache closer to the caller, then regional
+   isolation, in that order.
 
 ---
 
@@ -375,7 +412,7 @@ old key becomes unreachable at once, without having to hunt them down.
 - **No read/write split.** It's the fact the whole design hangs on.
 - **Caching with no invalidation story.** Especially bad here — it's a security
   gap.
-- **Forgetting multi-tenancy.** It's on your resume; they will ask.
+- **Forgetting multi-tenancy.** Any real auth service has it; they will ask.
 - **Failing open**, or not having thought about what happens when auth is down.
 
 ---
@@ -451,3 +488,16 @@ old key becomes unreachable at once, without having to hunt them down.
 - [ ] It's the smallest and simplest service to operate
 - [ ] Tier-0 only refers to services with no external dependencies
 **Why:** This framing is what justifies the heavy investment in caching, degradation strategies, and careful rollout (canary deploys, shadow mode) — an outage here isn't a degraded feature, it's a platform-wide outage.
+
+---
+
+## Glossary
+
+- **Authentication vs authorization** — proving who you are, versus deciding what you may do; two systems that share a prefix and almost nothing else.
+- **Tier-0 service** — one whose failure takes the platform with it, so its availability target is stricter than anything in front of it.
+- **Stateless validation** — verifying a token by checking its signature locally, with no lookup; fast, at the cost of a revocation window.
+- **JWKS** — the published set of public keys a service fetches to validate signatures, which is what makes key rotation possible without a deploy.
+- **Decision cache** — a cached authorization *answer* (allow/deny) rather than cached input data; what turns an expensive policy evaluation into a lookup.
+- **Cache key version** — a counter embedded in the key so that bumping it makes every prior entry unreachable at once, instead of deleting keys one by one.
+- **Fail closed / fail open** — denying or allowing when the authority cannot be reached; auth fails closed, with a bounded cached fallback to avoid taking everything down.
+- **Break-glass path** — a logged, time-limited emergency access route for when the normal control is unavailable.

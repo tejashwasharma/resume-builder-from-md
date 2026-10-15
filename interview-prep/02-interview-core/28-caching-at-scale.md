@@ -1,8 +1,7 @@
 # Caching at scale
 
-The theory under your 13s→200ms story. This is the chapter most likely to be
-probed hard, because your resume claims a Redis caching redesign and every
-follow-up lives here.
+The theory behind every cache-latency story. Any resume that claims a caching
+redesign gets probed hard, and every follow-up lives in this chapter.
 
 ---
 
@@ -215,9 +214,9 @@ re-evaluate per request — cache the boolean outcome keyed on
 inputs pays the evaluation cost every time, which for policy engines is most of
 the cost.
 
-> **In your own work.** This is [contentstack](../00-experience/contentstack.md)
-> §5 in full. The likely questions: what was the original key design, what's
-> your hit rate, what happens on a miss storm, and how does a role change
+> **Bring your own experience.** A cache redesign is the most heavily probed
+> story in this chapter. The likely questions: what was the original key design,
+> what's your hit rate, what happens on a miss storm, and how does a role change
 > invalidate. Have the invalidation answer ready — it's the one that separates
 > "I added a cache" from "I own a cache".
 
@@ -282,9 +281,8 @@ immediate (then the check must go to the source, or the source must publish
 invalidations) or may lag by the TTL. Then name the stampede protection when
 the invalidation empties a hot key.
 
-> **FILL IN:** the actual TTL and invalidation mechanism in the Redis
-> redesign behind the 13s to 200ms claim, so the answer above is your story,
-> not a generic one.
+> **Your turn:** the actual TTL and invalidation mechanism in a cache you have
+> run, so the answer above is your story rather than a generic one.
 
 ## Interview Q&A
 

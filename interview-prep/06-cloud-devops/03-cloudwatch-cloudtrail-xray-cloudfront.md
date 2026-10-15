@@ -1,6 +1,6 @@
 # CloudWatch, CloudTrail, X-Ray and CloudFront
 
-Four AWS services that interviewers lump together because they answer the questions you ask when something is wrong: *what is happening* (CloudWatch), *who changed it* (CloudTrail), *where is the time going* (X-Ray) and *how is content reaching users* (CloudFront). The earlier [AWS chapter](01-aws-and-containers.md) introduces CloudWatch and CloudFront briefly; this chapter goes to the depth a senior interview probes, and adds CloudTrail and X-Ray.
+Four AWS services that interviewers lump together because they answer the questions you ask when something is wrong: *what is happening* (CloudWatch), *who changed it* (CloudTrail), *where is the time going* (X-Ray) and *how is content reaching users* (CloudFront). The [AWS ecosystem](01-aws-ecosystem.md) chapter tours the platform and introduces CloudWatch and CloudFront briefly; this chapter goes to the depth a senior interview probes, and adds CloudTrail and X-Ray.
 
 ---
 
@@ -62,7 +62,7 @@ flowchart TD
 | Anomaly detection | Learns a band instead of a fixed threshold |
 | Actions | SNS (to paging), Auto Scaling, EC2 actions, Lambda via SNS or EventBridge |
 
-Alert on **symptoms users feel** (error rate, latency percentile, queue age), not causes (CPU at 80%). This matches the SLO approach in the [CI/CD and observability chapter](02-cicd-and-observability.md).
+Alert on **symptoms users feel** (error rate, latency percentile, queue age), not causes (CPU at 80%). This matches the SLO approach in the [monitoring stack chapter](11-the-monitoring-stack.md).
 
 ### Logs
 

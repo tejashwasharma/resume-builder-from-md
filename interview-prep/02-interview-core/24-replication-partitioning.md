@@ -158,11 +158,10 @@ shards; dedicated shards for the largest tenants; a cache or read replicas in
 front of the hot key; or key salting for extreme cases, at the cost of scatter
 reads.
 
-> **In your own work.** Multi-tenant auth is the textbook hot-tenant case, and
-> "how would you shard the auth data at 2–3B requests/day?" is a natural
-> follow-up to your headline number. Being able to reach for composite keys and
-> per-tenant isolation without being asked is what makes the claim credible. See
-> [WEAK-SPOTS](../WEAK-SPOTS.md) #3.
+> **Bring your own experience.** Multi-tenant auth is the textbook hot-tenant
+> case, and "how would you shard the auth data at that volume?" is a natural
+> follow-up to any headline traffic number. Reaching for composite keys and
+> per-tenant isolation without being asked is what makes the claim credible.
 
 ```mermaid
 flowchart LR

@@ -254,7 +254,7 @@ data or double-charges a customer, you need fencing tokens, or a consensus-backe
 lock (etcd, ZooKeeper), or — best — to remove the need for a lock by making the
 operation idempotent.
 
-> **In your own work.** Redis in an auth platform invites: "did you use
+> **Bring your own experience.** Redis in a platform invites: "did you use
 > distributed locks, and for what?" The strongest answer names the
 > efficiency/correctness split and says which side your use sat on. See
 > [caching at scale](28-caching-at-scale.md) for the related stampede-lock case.

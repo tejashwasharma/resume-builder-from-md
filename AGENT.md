@@ -15,7 +15,7 @@ output/
 tailor/
   tailor_cv.py                 per-application variants of design 1
   output/                      gitignored; one folder per job, each with its own PDF
-interview-prep/                tracked; study material derived from design 1
+interview-prep/                tracked; a standalone, shareable interview study book
 ```
 
 ## Rebuild-on-edit rule
@@ -38,45 +38,28 @@ When the user pastes a LinkedIn job or search-results link and wants their CV
 matched, **do not edit `designs/design-1/resume.md`**. Use the
 **`resume-tailor`** skill at `.claude/skills/resume-tailor/SKILL.md`. It
 enumerates the postings (`tailor/tailor_cv.py jobs "<url>"`), screens each
-against design 1 + `interview-prep/WEAK-SPOTS.md`, and for every strong match
+against design 1, and for every strong match
 scaffolds and builds a folder under `tailor/output/` (gitignored) with a
 tailored CV, its PDF, and a cover letter. The build reuses `build.py`
 unchanged, so ATS/content scoring matches.
 
 ## Interview prep lives here too
 
-`interview-prep/` holds study material derived from **design 1** — guides, an
-AI-drilled study site, and the stories behind each bullet. It has its own
-[AGENT.md](interview-prep/AGENT.md); read that before working in it. It is
-tracked here like any other file — do **not** create a nested `.git` under it,
-which would turn the directory into a submodule gitlink and stop the files
-being tracked.
+`interview-prep/` is a **standalone interview study book**, written to be
+shared with anyone: guides, a generated study site, and drill skills. It is no
+longer derived from the resume and holds nothing about this repo's owner — see
+its own [AGENT.md](interview-prep/AGENT.md), and read that before working in
+it. It is tracked here like any other file — do **not** create a nested `.git`
+under it, which would turn the directory into a submodule gitlink and stop the
+files being tracked.
 
-### The resume and the prep must not drift
-
-Design 1 is the source of truth for *what needs preparing*. After any change
-to `designs/design-1/resume.md` — a new skill, a reworded bullet, a new
-metric — check the prep still covers it:
-
-```
-cd interview-prep && python3 check_coverage.py
-```
-
-It exits non-zero when the resume claims something the prep doesn't teach, and
-names the gap.
-
-| Resume change | What to update in `interview-prep/` |
-| --- | --- |
-| New skill/technology added | A guide covering it, in the matching module |
-| Skill removed | Prune or de-emphasise it; drop it from `INDEX.md` |
-| Bullet reworded or a metric changed | The matching story in `00-experience/` |
-| New bullet | A new story with STAR + follow-ups |
-| A claim made bolder | Check `WEAK-SPOTS.md` — bolder claims invite harder probes |
-
-Then rebuild the site so the change reaches the study artifact:
+It has no coupling to the resume in either direction: a resume change needs no
+prep change, and the prep must not acquire claims about one person's history.
+Its own checks are the gate:
 
 ```
-cd interview-prep && python3 build_site.py
+cd interview-prep && python3 check_coverage.py     # question blocks, diagrams, links
+cd interview-prep && python3 build_site.py         # regenerate site/index.html
 ```
 
 ## Version control

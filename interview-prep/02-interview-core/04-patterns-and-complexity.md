@@ -1,8 +1,7 @@
-# Coding rounds: patterns and complexity
+# Patterns and complexity
 
-You have a Scaler DSA certification on your resume, and senior loops still run
-coding rounds. This isn't about grinding hundreds of problems — it's about
-recognising which of a small number of patterns applies.
+Senior loops still run coding rounds. This isn't about grinding hundreds of
+problems — it's about recognising which of a small number of patterns applies.
 
 ---
 

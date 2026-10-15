@@ -320,10 +320,9 @@ That crash is why this is **at-least-once**: the event was published but not
 marked sent, so the next run publishes it again. Consumers must be idempotent —
 which brings the chapter full circle.
 
-> **In your own work.** The Bestpeers monolith split into 3 services is where
+> **Bring your own experience.** Splitting a monolith into services is where
 > this lives: "how did you keep data consistent across them?" Sagas and the
-> outbox pattern are the expected vocabulary. See
-> [bestpeers](../00-experience/bestpeers.md) Story 2.
+> outbox pattern are the expected vocabulary.
 
 
 ## Building it

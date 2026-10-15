@@ -1,4 +1,4 @@
-# Start here — what a distributed system is, and why anyone bothers
+# Distributed systems: start here
 
 This chapter assumes you know nothing about the topic. No jargon is used before
 it is explained, and every term introduced here is used unexplained in the

@@ -191,8 +191,8 @@ remove the old one.
 
 ## Firebase
 
-A managed backend — Auth, Firestore, Storage, Hosting. On your resume from
-earlier work, so know roughly what it's for.
+A managed backend — Auth, Firestore, Storage, Hosting. Common on earlier-career
+resumes, so know roughly what it's for and where it stops being enough.
 
 **The pieces**: **Auth** (managed identity with social and email providers),
 **Firestore** (document database with real-time listeners), **Storage** (files),

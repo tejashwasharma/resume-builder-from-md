@@ -1,4 +1,4 @@
-# Tries, intervals and design-a-structure — the problems where you build the thing
+# Tries, intervals and design structures
 
 Most coding rounds ask you to compute something. This family asks you to
 **build** something: a class with an API, a set of operations that must each

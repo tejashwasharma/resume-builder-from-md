@@ -1,7 +1,9 @@
-# Node.js internals
+# The runtime and the event loop
 
-Your primary language. Interviewers go past "what is Node" into the event loop,
-because that's where people either understand it or have been copying patterns.
+What makes Node different from every other runtime in this book: one thread, an
+event loop, and real work happening off it. Interviewers go past "what is Node"
+straight into this, because it is where people either understand the model or
+have been copying patterns that happen to work.
 
 ---
 

@@ -59,20 +59,6 @@ print('pages', d.page_count)"
 Write the PNGs to the session scratchpad directory, then read them. Watch the
 page count: spacing changes can silently push the resume onto a third page.
 
-## After a content change, check the interview prep
-
-`interview-prep/` (tracked in this repo) derives from **design 1**. A content
-edit — new skill, reworded bullet, changed metric — can leave it stale. After
-rebuilding:
-
-```
-cd interview-prep && python3 check_coverage.py
-```
-
-Non-zero means design 1 now claims something the prep doesn't teach. See
-`AGENT.md` for what each kind of change implies. Styling-only CSS edits don't
-affect it.
-
 ## Layout routing
 
 The Markdown is a flat list of sections; the column/placement of each is

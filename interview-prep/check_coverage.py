@@ -2,156 +2,23 @@
 """
 check_coverage.py
 
-Does the prep material still cover the resume?
+Structural checks over the book's Markdown. Run it after editing any guide.
 
-The resume is the source of truth for what needs preparing. Every technology
-named in its Technical Skills section must have real material here — not a passing
-mention. Add "Fastify" to the resume and this fails until a guide covers it.
+    python3 check_coverage.py        report and exit non-zero on any error
 
-    python3 check_coverage.py             report and exit non-zero on gaps
-    python3 check_coverage.py --write     also regenerate coverage.md
-
-Four checks:
-  1. Resume coverage  - every Technical Skills token appears in a guide
-  2. Question format  - every ### Q: block parses (the drill contract)
-  3. Diagram format   - every ```mermaid fence has a body and a caption
-  4. Links            - every relative .md link resolves
-
-Distributed systems and system design are reported separately: they are
-expected at senior level but have no resume token to match against.
+Three checks:
+  1. Question format  - every ### Q: / ### Design: block parses (the drill contract)
+  2. Diagram format   - every ```mermaid fence has a body and a caption
+  3. Links            - every relative .md link resolves
 """
 
 from __future__ import annotations
 
-import argparse
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-# Every design is a claim someone may read, so the prep must cover the union of
-# their skills. Design 1 is the primary layout; design 2 adds claims of its own
-# (the RAG support bot, the Node→Go migration) that design 1 leaves out.
-RESUMES = [
-    ROOT.parent / "designs" / "design-1" / "resume.md",
-    ROOT.parent / "designs" / "design-2" / "resume.md",
-]
-
-# A token needs this many mentions outside the index to count as covered.
-MIN_MENTIONS = 2
-
-# Tokens that are phrases rather than searchable terms, matched loosely.
-# Keys are tokens as they come out of the resume after normalisation.
-ALIASES = {
-    "Identity and Access Management": ["IAM", "identity and access management"],
-    "Authentication & Authorization": ["authentication", "authorization"],
-    "Multi-Factor Authentication": ["MFA", "TOTP", "multi-factor"],
-    "Role-Based Access Control": ["RBAC"],
-    "OpenID Connect": ["OIDC", "OpenID Connect"],
-    "Single Sign-On": ["SSO", "single sign-on"],
-    "React": ["React"],
-    "Jest": ["Jest"],
-    "sustained 85%+ coverage": ["coverage"],
-    "AGENT.md/SKILLS.md & agent-navigation docs": ["AGENT.md"],
-    "prompt/playbook libraries": ["playbook"],
-    "prompt caching & model routing": ["prompt caching"],
-    "Rego/OPA": ["Rego", "OPA"],
-    "Zero Trust Architecture": ["Zero Trust"],
-    "Microsoft Entra ID": ["Entra"],
-    "Node.js": ["Node.js", "Node"],
-    "REST APIs": ["REST"],
-    # The template spells several skills differently from the guides. These
-    # are the same skill under another name, not a new claim to prepare for.
-    "React.js": ["React"],
-    "Express.js": ["Express"],
-    "Redux Thunk/Saga": ["redux-saga", "Redux Saga"],
-    "Styled Components": ["Styled Components", "Styled-Components"],
-    "AWS EC2": ["EC2"],
-    "Unit Testing": ["unit test"],
-    "Integration Testing": ["integration test"],
-    "E2E Testing": ["E2E", "end-to-end test"],
-    "Test Automation": ["test automation", "automated test"],
-    "85%+ Coverage": ["coverage"],
-    "Micro-Frontends": ["micro-frontend"],
-    "Microservices": ["microservice"],
-    "MFA/TOTP": ["MFA", "TOTP", "multi-factor"],
-    "AGENT.md/SKILLS.md agent-navigation docs": ["AGENT.md"],
-    "Prompt & playbook libraries": ["playbook"],
-    "Prompt caching & model routing": ["prompt caching", "model routing"],
-    # The chapters name these by the term the industry uses, not by the
-    # resume's label for the skill.
-    "AI-assisted Code Review": ["pre-review"],
-    "AI Test Generation": ["test generation"],
-    "AI Security Analysis": ["security analysis"],
-    "85%+ Test Coverage": ["coverage"],
-    "AI-Assisted Debugging": ["debugging"],
-    "AGENT.md / SKILLS.md Agent-Navigation Documentation": ["AGENT.md"],
-    # "RAG" as a bare substring matches "storage" and "leverage"; search for
-    # the spelled-out term instead.
-    "RAG": ["retrieval-augmented"],
-    "LLM-Backed Bots": ["LLM-backed", "support bot"],
-    "Unit/Integration/E2E Testing": ["unit test", "integration test", "E2E"],
-}
-
-# Matched case-insensitively: the resume capitalises these labels differently
-# from one layout to the next ("prompt caching & model routing" became "Prompt
-# caching & model routing"), and a case-only difference silently fell through
-# to a literal search for the whole phrase, which never matches.
-ALIASES_LOWER = {k.lower(): v for k, v in ALIASES.items()}
-
-# Not on the resume, but expected of a senior candidate.
-ROLE_LEVEL = {
-    "Interview core (coding, distributed, design)": "02-interview-core",
-    "Low-level design (OOD, SOLID, patterns)": "09-lld",
-}
-
-
-def resume_tokens() -> list[tuple[str, str]]:
-    """[(skill line label, token)] from every resume's skills section.
-
-    Only that section: elsewhere the resume uses the same `- **Label:** value`
-    shape for things that are not skills (the Major Clients entries, Personal
-    Details), and sweeping those in would demand a guide for "Date of Birth".
-    Design 1 calls it "Technical Skills", design 2 "Core Skills".
-    """
-    out: list[tuple[str, str]] = []
-    seen: set[str] = set()
-    for resume in RESUMES:
-        if not resume.exists():
-            print(f"ERROR: resume not found at {resume}", file=sys.stderr)
-            sys.exit(2)
-        md = resume.read_text(encoding="utf-8")
-        section = re.search(r"^## (?:Technical|Core) Skills\b.*?(?=^## |\Z)", md, re.M | re.S)
-        if not section:
-            print(f"ERROR: no skills section in {resume}", file=sys.stderr)
-            sys.exit(2)
-        for label, values in re.findall(r"^-?\s*\*\*(.+?):\*\* (.+)$", section.group(0), re.M):
-            # The template separates skills with pipes; commas and middots survive
-            # from the older layout and stay accepted.
-            for tok in re.split(r"[|,·]", values):
-                # Keep the real name out of a parenthesised list fragment
-                # ("Firebase (Auth" / "Hosting)") rather than the broken punctuation.
-                tok = tok.strip().strip("()").split("(")[0].strip()
-                if tok and tok.lower() not in seen:
-                    seen.add(tok.lower())
-                    out.append((label, tok))
-    return out
-
-
-def guide_text() -> str:
-    """All prose from the guides, excluding the index (which lists everything)."""
-    parts = []
-    for p in sorted(ROOT.rglob("*.md")):
-        if ".git" in p.parts or p.name in {"INDEX.md", "coverage.md"}:
-            continue
-        parts.append(p.read_text(encoding="utf-8"))
-    return "\n".join(parts)
-
-
-def covered(token: str, haystack: str) -> tuple[bool, int]:
-    needles = ALIASES_LOWER.get(token.lower(), [token])
-    n = sum(len(re.findall(re.escape(x), haystack, re.I)) for x in needles)
-    return n >= MIN_MENTIONS, n
 
 
 def check_questions() -> list[str]:
@@ -217,71 +84,23 @@ def check_links() -> list[str]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--write", action="store_true", help="regenerate coverage.md")
-    args = ap.parse_args()
-
-    text = guide_text()
-    tokens = resume_tokens()
-    rows, missing = [], []
-
-    for label, tok in tokens:
-        ok, n = covered(tok, text)
-        rows.append((label, tok, ok, n))
-        if not ok:
-            missing.append((label, tok, n))
-
-    print("RESUME COVERAGE")
-    print(f"  {len(tokens) - len(missing)}/{len(tokens)} skills from the resume have material here\n")
-
-    if missing:
-        print("  Not yet covered — the resume claims these and the prep doesn't teach them:")
-        for label, tok, n in missing:
-            print(f"    ✗ {tok:<42} ({label}){'  [1 passing mention]' if n else ''}")
-        print()
-
-    print("ROLE-LEVEL TOPICS (not on the resume, expected anyway)")
-    for name, d in ROLE_LEVEL.items():
-        files = len(list((ROOT / d).glob("*.md"))) if (ROOT / d).is_dir() else 0
-        print(f"  {'✓' if files else '✗'} {name:<24} {files} file(s)")
-    print()
-
     qerrs = check_questions()
     derrs = check_diagrams()
     lerrs = check_links()
     print(f"QUESTION FORMAT   {'✓ all blocks well-formed' if not qerrs else f'✗ {len(qerrs)} malformed'}")
-    for e in qerrs[:10]:
+    for e in qerrs[:20]:
         print(f"    {e}")
     print(f"DIAGRAM FORMAT    {'✓ all captioned' if not derrs else f'✗ {len(derrs)} malformed'}")
-    for e in derrs[:10]:
+    for e in derrs[:20]:
         print(f"    {e}")
     print(f"LINKS             {'✓ all resolve' if not lerrs else f'✗ {len(lerrs)} broken'}")
-    for e in lerrs[:10]:
+    for e in lerrs[:20]:
         print(f"    {e}")
 
-    if args.write:
-        lines = [
-            "# Coverage",
-            "",
-            "Generated by `check_coverage.py`. Every technology on the resume's Core",
-            "Skills line, and whether this repo teaches it.",
-            "",
-            "| Skill line | Technology | Covered |",
-            "| --- | --- | --- |",
-        ]
-        for label, tok, ok, n in rows:
-            lines.append(f"| {label} | {tok} | {'✅' if ok else '❌'} |")
-        lines += ["", "## Expected at senior level, not on the resume", ""]
-        for name, d in ROLE_LEVEL.items():
-            files = len(list((ROOT / d).glob("*.md"))) if (ROOT / d).is_dir() else 0
-            lines.append(f"- {'✅' if files else '❌'} **{name}** — `{d}/` ({files} files)")
-        (ROOT / "coverage.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print("\nWrote coverage.md")
-
-    failed = bool(missing or qerrs or derrs or lerrs)
-    if failed:
-        print("\nGaps above. If the resume changed, the prep needs to catch up.")
-    return 1 if failed else 0
+    if qerrs or derrs or lerrs:
+        print("\nFix the errors above before considering a change done.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

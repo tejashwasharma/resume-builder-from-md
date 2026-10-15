@@ -179,9 +179,9 @@ stored hashed. An identity-verified support path for people who lose
 everything — deliberately slow and high-friction, because it's the softest
 target. And optional multiple enrolled factors so losing one isn't a crisis.
 
-> **In your own work.** You extended 2FA from SMS to authenticator apps
-> platform-wide. The migration question — how nobody got locked out — is where
-> this goes. See [contentstack](../00-experience/contentstack.md) §6.
+> **Bring your own experience.** If you have extended 2FA from SMS to
+> authenticator apps, the migration question — how nobody got locked out — is
+> where this goes.
 
 
 ## Building it

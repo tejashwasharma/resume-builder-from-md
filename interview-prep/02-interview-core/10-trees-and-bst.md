@@ -1,4 +1,4 @@
-# Trees — recursion with a shape
+# Trees and BSTs
 
 Trees are where recursion stops being a trick and becomes the natural way to
 express a problem. A tree is defined recursively — a node with subtrees that are

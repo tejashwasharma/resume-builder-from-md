@@ -1,4 +1,4 @@
-# Recursion and backtracking — enumerate, prune, undo
+# Recursion and backtracking
 
 Backtracking is the technique for problems that ask for *all* solutions, or
 *any* solution, when there is no shortcut: subsets, permutations, placements,

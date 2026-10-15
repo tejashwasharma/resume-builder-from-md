@@ -1,4 +1,4 @@
-# Dynamic programming — recursion with a memory
+# Dynamic programming
 
 Dynamic programming is what backtracking becomes when the recursion tree has
 repeated subproblems and the question wants a count or an optimum rather

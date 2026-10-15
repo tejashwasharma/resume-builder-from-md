@@ -14,23 +14,26 @@ grade after each answer — a real interviewer doesn't. Feedback comes at the en
 | --- | --- |
 | `/mock-interview auth` | Deep technical on identity — `01-auth-identity/` |
 | `/mock-interview coding` | Coding round — `02-interview-core/03`–`19` (one problem, 45 min, in a plain doc) |
-| `/mock-interview design` | System design — `02-interview-core/31`–`40` |
+| `/mock-interview design` | System design — `02-interview-core/31`–`39`, plus a worked case from `10-design-cases/` |
 | `/mock-interview distributed` | Distributed systems — `02-interview-core/20`–`30` |
-| `/mock-interview security` | Security knowledge — `02-interview-core/41` |
-| `/mock-interview leadership` | Behavioural & Leadership — `02-interview-core/42` + `00-experience/` |
+| `/mock-interview security` | Security knowledge — `02-interview-core/41`, design prompts in `40` |
+| `/mock-interview leadership` | Behavioural & Leadership — `02-interview-core/42` |
 | `/mock-interview lld` | Low-level design / OOD round — `09-lld/` |
 | `/mock-interview backend` | Implementation/backend — `03-backend/` |
-| `/mock-interview behavioral` | Experience and hard questions — `00-experience/` |
+| `/mock-interview behavioral` | The same bank, run as a full behavioural round — `02-interview-core/42` |
 | `/mock-interview` (bare) | Ask which, or run a mixed screen |
 
 ## Before starting
 
-Read: `INDEX.md`, the relevant module files, and **`WEAK-SPOTS.md`**.
+Read `INDEX.md` and the relevant module files, and skim `progress/log.md` for
+areas they have fumbled before.
 
-`WEAK-SPOTS.md` is the point. A real interviewer finds the soft spot in a
-resume and pushes on it. Work at least one weak-spot curveball into every
-round — the Golang question, the "what was the 13 seconds doing", the
-attribution probe on "led RBAC 0 to 1", "why did you leave".
+**Find the soft spot in what they actually say, and push on it.** That is what
+a real interviewer does, and it is the whole value of a mock over a quiz. The
+reliable seams: a number quoted without the mechanism behind it, a technology
+named without depth ("I've used Go"), a claim in the first person about work
+that sounds like a team's, and any chapter where `progress/log.md` records a
+previous miss. Work at least one such curveball into every round, unannounced.
 
 ## Running the round
 
@@ -44,7 +47,8 @@ at a company they've applied to. No meta-commentary, no coaching mid-round, no
    strength, redirect on weakness exactly as a real interviewer does. Follow
    *their* answers rather than a fixed script — if they mention Redis caching,
    go there.
-3. **Curveball** — at least one from `WEAK-SPOTS.md`, unannounced.
+3. **Curveball** — at least one push on the thinnest part of an answer they
+   have just given, unannounced.
 4. **Close** (5 min) — *"What questions do you have for me?"* Answer in
    character as the company.
 

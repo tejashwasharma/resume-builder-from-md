@@ -1,68 +1,47 @@
-# Go
+# The Go runtime
 
-⚠️ **This is [WEAK-SPOTS](../WEAK-SPOTS.md) #2.** Go is on your resume's Backend
-line, but every accomplishment you describe is Node/NestJS. Listing a language
-invites a question in it, and "I've used it a little" *after* listing it beside
-Node reads worse than not listing it.
+The part of Go that is actually different: goroutines, the scheduler that runs
+them, channels and `select`, `context` for cancellation, and a garbage
+collector tuned for latency rather than throughput.
 
-Two honest routes: prepare it properly, or scope it clearly. Decide which before
-your first interview.
+This is where Go earns its place in a backend stack. The language from the
+previous chapter is small and quickly learned; the runtime is what makes a Go
+service handle a hundred thousand concurrent connections on a handful of
+threads, and what you will be asked about.
 
-> **FILL IN:** what Go have you actually written? Production service, internal
-> tool, side project, or reading only? That answer decides your route.
+> **A note on claiming Go.** Listing a language invites a question in it, and
+> "I've used it a little" *after* listing it beside your main language reads
+> worse than not listing it at all. Either prepare it properly — this chapter
+> and the next two — or scope it honestly: *"I've used Go for X; my production
+> depth is in Y, and I'd be productive in a Go codebase within a few weeks."*
+> Confident scoping beats bluffing, which the first real follow-up finds.
 
 ---
 
 ## In brief
 
-- **Confident scoping beats bluffing every time** — claiming Go depth you
-  don't have gets found by the first real follow-up, and it damages
-  credibility on everything else you said. Naming the actual gap ("my
-  production depth is Node; I can read and modify Go comfortably") is the
-  stronger answer.
-- **A goroutine is scheduled by the Go runtime, not the OS** — starting at
-  ~2KB of growable stack versus megabytes for an OS thread, which is why
-  hundreds of thousands of goroutines are viable. The M:N scheduler
-  multiplexes them onto few OS threads, moving another goroutine onto a
-  thread whenever one blocks on I/O.
-- **Node gives concurrency without parallelism; Go gives both** — Node's
-  single thread means CPU-bound work blocks everything; Go runs CPU work in
-  genuine parallel across cores. This is the honest, specific reason to
-  reach for Go alongside Node, not a vague "Go is faster."
-- **A goroutine leak is a goroutine blocked forever** on a channel nobody
-  will ever write to or read from — silent, since nothing crashes, just a
-  steadily growing memory footprint. The usual cause is a missing
-  cancellation path; the fix is `context` with a `select` on `ctx.Done()`.
-- **`context.Context` is the first parameter of nearly every Go function
-  doing I/O** — it carries cancellation, deadlines, and request-scoped
-  values through a call chain, giving deadline propagation for free:
-  `context.WithTimeout` at the top means every layer below inherits the
-  *remaining* budget, not a fresh timer.
-- **Go has no exceptions — errors are values, returned and checked
-  explicitly**, wrapped with `%w` to preserve the chain for `errors.Is`/
-  `errors.As`. `panic` exists only for genuinely unrecoverable situations,
-  never for control flow.
+- **A goroutine is not a thread.** It starts at ~2KB of growable stack and is
+  scheduled by Go's runtime, so hundreds of thousands are routine where OS
+  threads would have died at a few thousand.
+- **The scheduler is M:N** — many goroutines multiplexed onto few OS threads.
+  When a goroutine blocks on I/O the thread picks up another, so threads are
+  never idle waiting.
+- **Go has real parallelism**, unlike Node and single-process Python: CPU-bound
+  work runs on every core by default (`GOMAXPROCS`). That is the honest reason
+  to reach for Go alongside a Node or Python stack.
+- **Channels are for ownership transfer, not for every variable.** "Share
+  memory by communicating" is the slogan, but a `sync.Mutex` around a map is
+  often the simpler and faster answer, and idiomatic.
+- **`context.Context` is the cancellation and deadline mechanism**, passed
+  explicitly as the first parameter, and it is how a client disconnect
+  propagates all the way down to a database query.
+- **A goroutine leak is Go's memory leak**: one blocked forever on a channel
+  nobody will write to, usually because a cancellation path was forgotten.
+- **The GC is a concurrent mark-sweep tuned for short pauses** — sub-millisecond
+  typically — and it is tuned by reducing allocation, not by fiddling with
+  knobs.
 
----
-
-## If you're scoping it honestly
-
-A good version sounds like:
-
-> *"I've used Go for [X]. My production depth is in Node — that's where the
-> auth platform work was. I can read and modify Go comfortably and I'd be
-> productive in a Go codebase within a few weeks, but I wouldn't claim the same
-> depth as Node."*
-
-Confident scoping beats bluffing every time. What sinks people is claiming
-parity and then failing a basic goroutine question.
-
-Consider moving Go to a clearly secondary position on the resume if it's the
-weakest item there.
-
----
-
-## The basics worth knowing either way
+## Goroutines and the scheduler
 
 ### Goroutines
 
@@ -145,21 +124,99 @@ shared one variable across iterations, so goroutines often saw the last value.
 Go 1.22 changed loop variables to be per-iteration, which fixed it. Knowing
 both the bug and that it was fixed is a nice signal.
 
-### Error handling
+### The scheduler, concretely
 
-No exceptions. Errors are values you return and check:
+```mermaid
+flowchart TD
+  G1["goroutine"] --> P1["P (logical processor)<br/>local run queue"]
+  G2["goroutine"] --> P1
+  G3["goroutine"] --> P2["P<br/>local run queue"]
+  P1 --> M1["M (OS thread)"]
+  P2 --> M2["M (OS thread)"]
+  M1 --> C1["core"]
+  M2 --> C2["core"]
+  P2 -.->|"idle: steals work"| P1
+```
+*G-M-P: goroutines queue on logical processors, each bound to an OS thread on a core. An idle P steals from a busy one, which is why load spreads without you doing anything.*
+
+- **G** is a goroutine, **M** is an OS thread, **P** is a logical processor
+  holding a run queue. The number of `P`s is `GOMAXPROCS`, which defaults to
+  the number of cores.
+- **Work stealing**: an idle `P` takes goroutines from a busy one's queue, so
+  uneven work distributes itself.
+- **When a goroutine blocks on a syscall**, its `M` is handed off and the `P`
+  picks up another thread, so a blocking file or network call does not idle a
+  core.
+- **Preemption is asynchronous** since Go 1.14: a goroutine in a tight loop
+  with no function calls can still be interrupted, which fixed a class of
+  "one goroutine starves the scheduler" bugs.
+
+**`GOMAXPROCS` in a container is the trap.** The runtime reads the machine's
+core count, not the cgroup CPU limit — so a pod limited to 500m CPU on a
+64-core node still creates 64 `P`s, producing heavy context switching and
+throttling. Set `GOMAXPROCS` from the limit, or use `automaxprocs`, which does
+it for you. This is one of the highest-value Go production facts there is.
+
+### Synchronisation, beyond channels
+
+"Share memory by communicating" is the slogan, but the standard library's
+primitives are idiomatic too, and often simpler:
 
 ```go
-user, err := GetUser(ctx, id)
-if err != nil {
-    return fmt.Errorf("getting user: %w", err)   // %w wraps, preserving the chain
+// A mutex around shared state is normal Go, not a failure to use channels.
+type Counter struct {
+    mu sync.Mutex
+    n  map[string]int
 }
+
+func (c *Counter) Inc(key string) {
+    c.mu.Lock()
+    defer c.mu.Unlock()          // defer makes "always unlock" automatic
+    c.n[key]++
+}
+
+// sync.RWMutex when reads vastly outnumber writes.
+// sync.Once for one-time initialisation, which is the right way to build a
+// lazily-created client without a race.
+var once sync.Once
+var client *http.Client
+func Client() *http.Client {
+    once.Do(func() { client = &http.Client{Timeout: 2 * time.Second} })
+    return client
+}
+
+// errgroup: the usual way to fan out, collect the first error, and cancel the
+// rest — structured concurrency without writing it yourself.
+g, ctx := errgroup.WithContext(ctx)
+for _, u := range urls {
+    g.Go(func() error { return fetch(ctx, u) })
+}
+if err := g.Wait(); err != nil { return err }
 ```
 
-Verbose, and deliberately so — every failure is visible at the call site rather
-than jumping to some distant handler. `panic` exists but is for genuinely
-unrecoverable situations, not for control flow.
+**The rule of thumb**: a channel when you are transferring ownership of a value
+or coordinating a pipeline; a mutex when you are protecting shared state. Using
+a channel as a lock is a common beginner pattern and it is slower and harder to
+read.
 
+### The garbage collector
+
+A concurrent mark-sweep collector tuned for **short pauses** rather than
+maximum throughput: stop-the-world phases are typically under a millisecond,
+and the marking work runs alongside your goroutines.
+
+- **`GOGC`** (default 100) sets how much the heap may grow before the next
+  cycle — 100 means collect when the heap doubles. Higher means fewer
+  collections and more memory.
+- **`GOMEMLIMIT`** (1.19+) is a soft memory ceiling, and it is the knob that
+  matters in a container: set it a little under the pod's memory limit and the
+  GC works harder as you approach it, instead of the kernel OOM-killing you.
+- **The real tuning is allocating less.** Preallocate slices with `make([]T, 0,
+  n)`, reuse buffers with `sync.Pool` on genuinely hot paths, avoid `interface{}`
+  boxing in loops, and prefer value types where they do not escape.
+- **Escape analysis** decides stack versus heap at compile time. `go build
+  -gcflags='-m'` tells you why a variable escaped, which is how you find the
+  accidental allocation in a hot loop.
 
 ## Building it
 
@@ -300,6 +357,62 @@ That keeps the cancellation path visible.
 
 ---
 
+### Q: Your Go service is in a container with a 500m CPU limit on a 64-core node, and it performs badly. Why?
+**Level:** senior · **Tags:** golang, runtime, containers
+
+<details><summary>Model answer</summary>
+
+Almost certainly `GOMAXPROCS`. The runtime sets it from the machine's visible
+core count, not from the cgroup CPU limit, so the process creates 64 logical
+processors and happily schedules 64 goroutines in parallel — on a budget of
+half a core. The result is constant context switching and CFS throttling: the
+process is stopped for the rest of each scheduling period once it exhausts its
+quota, which shows up as latency spikes with no obvious cause in the
+application.
+
+The fix is to set `GOMAXPROCS` from the limit, either explicitly in the
+manifest or with `automaxprocs`, which reads the cgroup and sets it at startup.
+
+The same class of problem applies to memory: the GC sizes its heap target
+against `GOGC` with no knowledge of the container's memory limit, so it can
+grow past the limit and get OOM-killed. `GOMEMLIMIT` set a little below the
+pod's limit makes the collector work harder as it approaches, which turns a
+hard kill into degraded throughput.
+
+Both are about the same root cause — the runtime sees the machine, the
+orchestrator enforces the cgroup — and they are the two things I would check
+first on any Go service that behaves worse in Kubernetes than on a laptop.
+
+</details>
+
+### Q: When do you use a channel and when a mutex?
+**Level:** intermediate · **Tags:** golang, concurrency
+
+<details><summary>Answer</summary>
+
+A channel when I am transferring ownership of a value or coordinating a
+pipeline — a work queue feeding a pool of workers, results flowing back,
+fan-out and fan-in. The value moves from one goroutine to another and only one
+owns it at a time, which is what "share memory by communicating" actually
+means.
+
+A mutex when I am protecting shared state that several goroutines read and
+write in place — a cache, a counter map, a connection registry. That is normal,
+idiomatic Go, not a failure to use channels. `sync.RWMutex` when reads vastly
+outnumber writes, and `sync.Once` for one-time initialisation.
+
+Using a channel as a lock — a buffered channel of size one that goroutines
+take a token from — is a pattern people reach for to be idiomatic, and it is
+slower and harder to read than the mutex it replaces.
+
+For fan-out with error handling I would reach for `errgroup`: it gives
+structured concurrency, cancels the remaining work when one task fails, and
+returns the first error, which is a lot of correctness for three lines.
+
+</details>
+
+---
+
 ## What a weak answer sounds like
 
 - **"Goroutines are lightweight threads"** and nothing more. Say *why* —
@@ -355,20 +468,6 @@ That keeps the cancellation path visible.
 - [ ] It's purely a stylistic preference with no functional difference
 **Why:** The convention exists specifically so a reader can see, at each function signature, that cancellation and deadlines flow through — hiding it in a struct obscures that.
 
-### MCQ: How does Go handle errors, in contrast to languages with exceptions?
-- [ ] Go has exceptions but discourages their use
-- [x] Errors are ordinary return values that must be explicitly checked at each call site — there's no automatic propagation to a distant handler
-- [ ] Go automatically logs and swallows all errors
-- [ ] Errors can only be handled via `panic`/`recover`
-**Why:** This is deliberate: every failure is visible where it occurs rather than jumping to a handler elsewhere, which is more verbose but keeps failure handling explicit.
-
-### MCQ: What does wrapping an error with `%w` (e.g. `fmt.Errorf("getting user: %w", err)`) preserve that using `%v` would not?
-- [ ] The original error's stack trace
-- [x] The error chain, so `errors.Is` and `errors.As` can still identify or unwrap the original underlying error
-- [ ] The error's exact formatting in logs
-- [ ] Nothing — `%w` and `%v` behave identically
-**Why:** `%w` specifically marks the wrapped error as unwrappable, letting callers programmatically check "is this ultimately a not-found error?" even after several layers of wrapping.
-
 ### MCQ: Before Go 1.22, what was the "loop variable gotcha" with code like `for i := range x { go f(i) }`?
 - [ ] `f` would never actually be called
 - [x] All goroutines shared the same loop variable, so they often ended up seeing its final value rather than the value at the time each goroutine was launched
@@ -385,6 +484,23 @@ That keeps the cancellation path visible.
 
 ---
 
+### MCQ: A Go service in a pod limited to 500m CPU on a 64-core node has unexplained latency spikes. First thing to check?
+- [ ] The garbage collector's `GOGC` value
+- [x] `GOMAXPROCS` — the runtime reads the machine's core count, not the cgroup limit, so it creates 64 logical processors on half a core's budget and suffers context switching and CFS throttling
+- [ ] The number of open file descriptors
+- [ ] Whether channels are buffered
+**Why:** Set it from the limit, or use `automaxprocs`. The memory equivalent is `GOMEMLIMIT`, which makes the GC work harder near the pod's limit instead of being OOM-killed.
+
+### MCQ: You are protecting a shared map read and written by many goroutines. What is idiomatic?
+- [ ] A channel used as a lock, since Go prefers communication
+- [x] A `sync.Mutex` (or `RWMutex` if reads dominate) with `defer` to unlock — protecting shared state with a mutex is normal Go; channels are for transferring ownership
+- [ ] A global variable with atomic reads only
+- [ ] One goroutine per key
+**Why:** "Share memory by communicating" applies to moving values between goroutines. Using a buffered channel as a mutex is slower and harder to read than the mutex it replaces.
+
+
+---
+
 ## Glossary
 
 - **Goroutine** — a runtime-scheduled concurrent function; ~2KB to start.
@@ -395,3 +511,10 @@ That keeps the cancellation path visible.
 - **Race detector** — `go test -race`, finds unsynchronised access.
 - **Goroutine leak** — one blocked forever; memory grows silently.
 - **`%w`** — wraps an error, preserving the chain for `errors.Is`/`As`.
+- **G-M-P** — goroutine, OS thread and logical processor; the scheduler's three objects.
+- **`GOMAXPROCS`** — the number of logical processors; defaults to machine cores and must be set from the cgroup limit in a container.
+- **Work stealing** — an idle processor taking goroutines from a busy one's queue.
+- **`GOGC` / `GOMEMLIMIT`** — heap growth target, and the soft memory ceiling that keeps a container from being OOM-killed.
+- **Escape analysis** — the compiler deciding stack versus heap; `-gcflags='-m'` explains its choices.
+- **`errgroup`** — structured fan-out with cancellation and first-error propagation.
+- **`sync.Once`** — guaranteed one-time initialisation without a race.

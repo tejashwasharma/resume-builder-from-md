@@ -1,8 +1,8 @@
 # MongoDB, PostgreSQL and SQL
 
-Both are on your resume. The question is never "which is better" — it's "why
-did you use each", and knowing when Mongo is the wrong choice is worth more
-than knowing its features.
+The question is never "which is better" — it's "why did you use each", and
+knowing when Mongo is the wrong choice is worth more than knowing its
+features.
 
 ---
 
@@ -188,7 +188,7 @@ read-your-writes problems that brings.
 | --- | --- | --- |
 | Postgres driver | `pg` (node-postgres) | The primitive everything else builds on; use it directly when you don't need an ORM's abstraction |
 | Query builder / light ORM | `Drizzle` or `Prisma` | Drizzle stays close to SQL (good when you need to reason about the exact query, as in the locking section); Prisma trades that for more generated ergonomics |
-| Migrations | `node-pg-migrate` or `Prisma Migrate` | Versioned, reversible schema changes — see the expand/contract steps in [cicd-and-observability](../06-cloud-devops/02-cicd-and-observability.md) |
+| Migrations | `node-pg-migrate` or `Prisma Migrate` | Versioned, reversible schema changes — see the expand/contract steps in [pipelines and GitOps](../06-cloud-devops/10-pipelines-and-gitops.md) |
 | MongoDB driver | `mongodb` (official) or `Mongoose` | Mongoose adds schema validation and middleware; the official driver when you want nothing between you and the query |
 
 ---

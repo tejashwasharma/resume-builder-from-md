@@ -1,9 +1,9 @@
 # Foundations and failure modes
 
-Your resume claims ~2–3B daily requests, a monolith split, cross-service gRPC
-and a Redis caching redesign — all distributed systems territory, with no
-distributed systems vocabulary anywhere on the page. This part closes that gap.
-See [WEAK-SPOTS](../WEAK-SPOTS.md) #1.
+High request volumes, a service split, cross-service RPC, a cache in front of a
+database — the moment a resume describes any of these, it is describing a
+distributed system, and the interview will test whether you have the vocabulary
+to reason about one. This part supplies it.
 
 > **New to this?** Read [start here](20-distributed-start-here.md) first — it
 > explains what a distributed system is and defines every term used below.
@@ -69,9 +69,9 @@ rediscovers at least one:
 | Transport cost is zero | Serialisation and TLS are real CPU |
 | The network is homogeneous | Cross-region and cross-cloud differ wildly |
 
-The fourth is the one your own work touches: the auth npm package exists
-precisely because internal calls needed authenticating rather than trusting the
-network.
+The fourth is the one most teams meet first: a shared auth library for internal
+calls exists precisely because those calls need authenticating rather than
+trusting the network.
 
 ### Latency numbers worth memorising
 
@@ -191,8 +191,8 @@ without one duplicates the charge.
 
 ## At hyperscale
 
-Google's engineering literature is unusually candid about failure, which is
-why it is the right reference here. *The Google File System* (SOSP 2003)
+The published engineering literature on large-scale systems is unusually candid
+about failure, which is why it is the right reference here. *The Google File System* (SOSP 2003)
 opens by stating that with thousands of machines, "some are not functional at
 any given time and some will not recover from their current failures" —
 failure is a steady-state condition, not an event. *Paxos Made Live: An

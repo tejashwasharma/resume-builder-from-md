@@ -1,4 +1,4 @@
-# Choosing the approach — every problem type, and how to tell which is which
+# Choosing the approach
 
 [Chapter 01](04-patterns-and-complexity.md) lists seven patterns. This chapter
 answers the harder question: **given a problem you have never seen, how do you

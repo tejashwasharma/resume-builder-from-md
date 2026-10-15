@@ -1,4 +1,4 @@
-# Strings — arrays with sharp edges
+# Strings and hashing
 
 A string is an array of characters, so nearly every array technique transfers.
 What makes strings their own chapter is that they are **immutable** in
@@ -621,7 +621,7 @@ that you can state the O(n) alternative exists without attempting it.
 
 ## Problem bank — every string problem type
 
-The full sweep of string problem types from the Scaler DSA track: character
+The full sweep of string problem types: character
 arithmetic, counting sort, carry-forward over characters, palindromes, and the
 hash-map fundamentals that every string-counting problem leans on. Array-input
 hashing problems (frequency queries, distinct-in-window, zero-sum subarray)

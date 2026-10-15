@@ -1,8 +1,8 @@
-# JWT — structure, validation, revocation
+# JWT
 
 The token format under most of modern auth, and the one with the most
-foot-guns. You shipped session termination on top of tokens, so the revocation
-half of this chapter is where your interview will go.
+foot-guns. Revocation is the half of this chapter interviews go to, because it
+is where the format fights the requirement.
 
 Spec: [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519) ·
 [JWT BCP, RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725)
@@ -215,10 +215,9 @@ protection (`SameSite`). The strongest option is a **backend-for-frontend**:
 tokens live server-side, the browser holds only a session cookie, and the XSS
 exfiltration path disappears.
 
-> **In your own work.** "Active session termination" is a JWT revocation
-> question in disguise. Know your architecture — stateless, server-side, or
-> hybrid — because every follow-up depends on it. See
-> [contentstack](../00-experience/contentstack.md) §6.
+> **Bring your own experience.** "Active session termination" is a JWT
+> revocation question in disguise. Know which architecture you shipped —
+> stateless, server-side, or hybrid — because every follow-up depends on it.
 
 
 ## Building it

@@ -264,11 +264,10 @@ Defences, layered:
   a multi-tenant system without slicing by tenant, and this is also what makes
   partial-failure incidents tractable.
 
-> **In your own work.** Auth is the shared dependency for everything, so it's
-> exactly where one tenant's spike hurts all of them. Per-tenant rate limiting
-> and tenant-scoped telemetry are natural answers when someone probes the 2–3B
-> claim. See [contentstack](../00-experience/contentstack.md) §7 for the
-> partial-failure debugging story.
+> **Bring your own experience.** Auth is the shared dependency for everything,
+> so it's exactly where one tenant's spike hurts all of them. Per-tenant rate
+> limiting and tenant-scoped telemetry are the natural answers when someone
+> probes a scale claim.
 
 
 ## Building it

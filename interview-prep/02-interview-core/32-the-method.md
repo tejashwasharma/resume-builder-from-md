@@ -1,4 +1,4 @@
-# The method — how to run 45 minutes
+# The method
 
 > **Never done a design round?** Read
 > [start here](31-design-round-start-here.md) first — what the question

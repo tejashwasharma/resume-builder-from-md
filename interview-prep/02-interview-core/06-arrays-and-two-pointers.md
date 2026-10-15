@@ -1,4 +1,4 @@
-# Arrays — the structure everything else is built on
+# Arrays
 
 Most interview problems are array problems, including many that look like
 something else. A string is an array of characters, a heap is an array with

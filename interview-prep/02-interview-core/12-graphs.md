@@ -1,4 +1,4 @@
-# Graphs — everything else, generalised
+# Graphs
 
 A tree is a graph with no cycles and one path between any two nodes. A grid is a
 graph where the neighbours are implied by coordinates. A linked list is a graph

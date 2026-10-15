@@ -1,4 +1,4 @@
-# Security-flavoured problems — the same patterns, in security clothes
+# Security-flavoured problems
 
 Coding questions are pattern questions. A security-team interviewer
 asks the same patterns, but dressed in the vocabulary of the job: policies

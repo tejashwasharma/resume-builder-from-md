@@ -1,8 +1,9 @@
 # AI tooling and agent enablement
 
-Your differentiator. Most candidates say "I use Copilot"; you built the docs
-and libraries that made a team of agents effective. That's a different
-conversation, and it's worth being ready to have it well.
+Most candidates say "I use Copilot". The interesting conversation is about the
+docs, indexes and prompt libraries that make a team of agents effective — the
+enablement work rather than the tool. If you have done any of it, this is where
+it pays off.
 
 Expect two kinds of question: genuine curiosity about how it works, and
 skepticism about whether the output is any good.
@@ -179,8 +180,9 @@ with no boundaries hasn't used it seriously.
 
 ## Defending the numbers
 
-Your resume says 2–3x more PRs per sprint, coverage 75% → 85%+, bug turnaround
-2–3 days → one day.
+AI-adoption claims usually come as a throughput number — more PRs per sprint,
+faster bug turnaround, coverage up — and every one of them invites the same
+challenge.
 
 **Lead with the quality number.** Throughput alone reads as churn, and the
 unspoken question is always whether defect rate went up. Coverage rising over
@@ -289,7 +291,7 @@ both are outcomes rather than activity.
    addressing it — with explicit review boundaries — produced a stronger
    advocate than any demo did.
 
-   > **FILL IN:** who was hardest to convince and what changed their mind? A
+   > **Your turn:** who was hardest to convince and what changed their mind? A
    > concrete story here is much more memorable than the general version.
 
    </details>

@@ -3,25 +3,10 @@
 Topic → file map. The skills read this to locate material; use it yourself to
 jump straight to a concept.
 
+Sections mirror the topics in `curriculum.json`, which is the study order.
 `✅` written · `⏳` planned, not yet written. Never send someone to a `⏳` file.
 
-## 00 — Experience *(all written)*
-
-| Topic / keyword | File |
-| --- | --- |
-| RBAC 0→1, permission model, multi-org onboarding | ✅ [contentstack](00-experience/contentstack.md) §1 |
-| OAuth unification, SSO, SCIM, Okta, Entra marketplace | ✅ [contentstack](00-experience/contentstack.md) §2 |
-| security audit, remediation, 150→10 findings | ✅ [contentstack](00-experience/contentstack.md) §3 |
-| auth npm package, gRPC, platform, 9 teams | ✅ [contentstack](00-experience/contentstack.md) §4 |
-| latency, 13s→200ms, Rego/OPA, Redis caching | ✅ [contentstack](00-experience/contentstack.md) §5 |
-| session governance, timeouts, 2FA, zero findings | ✅ [contentstack](00-experience/contentstack.md) §6 |
-| incidents, on-call, RCA, SLA | ✅ [contentstack](00-experience/contentstack.md) §7 |
-| AI adoption, AGENT.md, prompt library | ✅ [contentstack](00-experience/contentstack.md) §8 |
-| leadership, Agile, monolith split, Xtensio, Pinzon, Clipboard | ✅ [bestpeers](00-experience/bestpeers.md) |
-| CI/CD, AngularJS→React, client demos | ✅ [gyrix](00-experience/gyrix.md) |
-| why leaving, tell me about yourself, weakness, conflict, failure, salary, questions to ask | ✅ [hard questions](00-experience/hard-questions.md) |
-
-## 01 — Auth & Identity *(all written)*
+## Auth & identity
 
 | Topic / keyword | File |
 | --- | --- |
@@ -35,13 +20,14 @@ jump straight to a concept.
 | RBAC, ABAC, ReBAC, role explosion, multi-tenancy | ✅ [rbac abac](01-auth-identity/08-rbac-abac.md) |
 | OPA, Rego, policy evaluation, decision caching | ✅ [opa rego](01-auth-identity/09-opa-rego.md) |
 | Zero Trust, Okta, Entra ID, Ping Identity | ✅ [zero trust idps](01-auth-identity/10-zero-trust-idps.md) |
-| PassportJS, strategies, `session: false` | ✅ [frameworks](03-backend/02-frameworks.md) §Passport.js |
+| PassportJS, strategies, `session: false` | ✅ [frameworks](11-backend-nodejs/03-building-the-server.md) §Passport.js |
 
-## 02 — Interview Core *(the whole Senior SWE loop, zero to onsite)*
+## Interview core — the loop, coding, distributed systems, design
 
-One self-contained part, numbered `01`–`43` in reading order: `01` the process,
-`03`–`19` coding, `20`–`30` distributed-systems foundations, `31`–`40` system
-design, `41`–`43` the security round, behavioural & leadership, the schedule.
+`02-interview-core/` is numbered `01`–`43` in reading order: `01` the process,
+`03`–`19` coding, `20`–`30` distributed-systems foundations, `31`–`39` system
+design, `40`–`41` security, `42` behavioural, `43` the schedule. The sidebar
+groups them into topics; the numbers are the reading order within a topic.
 
 ### A. The process
 
@@ -69,13 +55,17 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR, decimal↔binary, add binary, bitwise operators, check/set/unset/toggle i-th bit, count set bits, two's complement | ✅ [binary search and bits](02-interview-core/16-binary-search-and-bits.md) |
 | trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-interview-core/17-tries-intervals-and-design-structures.md) |
 | IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-interview-core/18-security-flavoured-problems.md) |
-| drill, the pattern problem banks: every problem type from the Scaler DSA track, with algorithm + TypeScript, tagged `scaler` for coding practice | ✅ `## Problem bank` sections in [04](02-interview-core/04-patterns-and-complexity.md), [06](02-interview-core/06-arrays-and-two-pointers.md), [07](02-interview-core/07-strings-and-hashing.md), [08](02-interview-core/08-linked-lists.md), [13](02-interview-core/13-matrices-and-grids.md), [14](02-interview-core/14-recursion-and-backtracking.md), [16](02-interview-core/16-binary-search-and-bits.md) |
+| drill, the pattern problem banks: every standard problem type, with algorithm + TypeScript | ✅ `## Problem bank` sections in [04](02-interview-core/04-patterns-and-complexity.md), [06](02-interview-core/06-arrays-and-two-pointers.md), [07](02-interview-core/07-strings-and-hashing.md), [08](02-interview-core/08-linked-lists.md), [13](02-interview-core/13-matrices-and-grids.md), [14](02-interview-core/14-recursion-and-backtracking.md), [16](02-interview-core/16-binary-search-and-bits.md) |
 | what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-interview-core/19-the-drill-plan.md) |
 
 ### C. Distributed-systems foundations
 
 | Topic / keyword | File |
 | --- | --- |
+| IP, packets, latency vs bandwidth, TCP handshake, congestion, head-of-line blocking, TIME_WAIT, port exhaustion, DNS resolution and TTL, TLS handshake, certificate expiry, mTLS, HTTP/1.1 vs 2 vs 3, QUIC, keep-alive, connection pooling, timeout budgets, L4 vs L7 | ✅ [networking](02-interview-core/44-networking.md) |
+| pages, buffer pool, B-tree, LSM, SSTable, compaction, bloom filter, covering index, composite key order, selectivity, write-ahead log, fsync, group commit, checkpoint, ACID, isolation levels, dirty/non-repeatable/phantom read, write skew, MVCC, vacuum, optimistic vs pessimistic locking, deadlocks | ✅ [storage engines and transactions](02-interview-core/45-storage-engines-and-transactions.md) |
+| multi-region, RPO, RTO, active-passive, active-active, split brain, fencing, home region, last-write-wins, CRDT, geo-partitioning, data residency, read-local write-home, inter-region latency | ✅ [multi-region](02-interview-core/46-multi-region.md) |
+| Kafka, RabbitMQ, SQS, SNS, EventBridge, partitions, consumer groups, offsets, idempotent producer, exchanges, visibility timeout, DLQ | ✅ [messaging in practice](03-backend/06-messaging-in-practice.md) |
 | what is a distributed system, scale up vs out, stateless, beginner start | ✅ [start here](02-interview-core/20-distributed-start-here.md) |
 | which technology for which problem, Nginx, Envoy, Kubernetes, etcd, Prometheus, what to learn first | ✅ [the technology landscape](02-interview-core/21-the-technology-landscape.md) |
 | failure modes, fallacies of distributed computing | ✅ [failure modes and fallacies](02-interview-core/22-failure-modes-and-fallacies.md) |
@@ -96,10 +86,10 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | the method, how to run 45 minutes, how the design round runs, the senior bar | ✅ [the method](02-interview-core/32-the-method.md) |
 | estimation, capacity, back-of-envelope, RPS | ✅ [estimation](02-interview-core/33-estimation.md) |
 | Postgres vs Mongo vs Dynamo, Kafka vs SQS, REST vs gRPC, SSE vs WebSockets, monolith vs microservices | ✅ [the technology toolbox](02-interview-core/34-the-technology-toolbox.md) |
-| building blocks, reference architectures to draw | ✅ [building blocks](02-interview-core/35-building-blocks.md) |
+| building blocks, when to add each and when not to, load balancer, gateway, CDN, cache, replicas, partitioning, object store, queue, stream, worker pool, DLQ, scheduler, idempotency store, rate limiter, search index, pub/sub, service discovery, feature flags, secrets store | ✅ [building blocks](02-interview-core/35-building-blocks.md) |
 | Zanzibar, BeyondCorp, Borg, Spanner, Bigtable, Colossus, Pub/Sub, SLSA, Sigstore, in-toto, SBOM — what to cite and how | ✅ [Hyperscale vocabulary](02-interview-core/36-scale-vocabulary.md) |
-| design auth service, 2–3B req/day, multi-region, revocation, key rotation | ✅ [design auth service](02-interview-core/37-design-auth-service.md) |
-| design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design rbac sso sessions](02-interview-core/38-design-rbac-sso-sessions.md) |
+| design auth service, multi-region, revocation, key rotation, alternatives and why not | ✅ [design auth service](10-design-cases/05-design-auth-service.md) |
+| design multi-tenant RBAC, SSO/SCIM, session revocation, the Zanzibar model, new enemy, zookies | ✅ [design identity subsystem](10-design-cases/06-design-identity-subsystem.md) |
 | URL shortener, notifications, feed, rate limiter, key-value store, log pipeline, job scheduler | ✅ [classics](02-interview-core/39-design-classics.md) |
 | cloud security posture, third-party access inventory, supply-chain integrity, authorization service, secrets detection, package registry proxy, agentic-AI guardrails | ✅ [design security systems](02-interview-core/40-design-security-systems.md) |
 | requirements gathering, functional vs non-functional, clarifying questions, panel feedback, why design rounds fail | ✅ [requirements playbook](10-design-cases/01-requirements-playbook.md), [panel feedback and practice plan](10-design-cases/02-panel-feedback-and-practice-plan.md) |
@@ -114,18 +104,41 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | emergent leadership, ambiguity, 0→1, mentoring, pushed back, failure, conflict, why this company | ✅ [behavioural and leadership](02-interview-core/42-behavioral-and-leadership.md) |
 | week-by-week schedule, mock pool, day-before checklist, hiring committee wait, team match, offer basics | ✅ [the schedule](02-interview-core/43-the-schedule.md) |
 
-## 03 — Backend *(all written)*
+## Backend: Node.js
 
 | Topic / keyword | File |
 | --- | --- |
-| Node.js, event loop, async, memory, clustering | ✅ [nodejs internals](03-backend/01-nodejs-internals.md) |
-| Express, NestJS, Fastify, DI, middleware, guards, PassportJS | ✅ [frameworks](03-backend/02-frameworks.md) |
-| Golang, goroutines, channels ⚠️ RISK AREA | ✅ [golang](03-backend/03-golang.md) |
+| TypeScript, strict mode, type erasure, unknown vs any, discriminated unions, zod, z.infer, branded types, Promise.all, floating promises, error cause, ES modules, tsconfig | ✅ [typescript for backend](11-backend-nodejs/01-typescript-for-backend.md) |
+| Node.js, event loop, phases, microtasks, thread pool, blocking the loop, clustering, memory and leaks | ✅ [the runtime and the event loop](11-backend-nodejs/02-runtime-and-event-loop.md) |
+| building a server, node:http, routing, middleware chain and ordering, body limits, validation, error mapper, JWT auth middleware, config at startup, connection pool, graceful shutdown, project layout, Express, Fastify, NestJS, PassportJS, Express 4 async trap | ✅ [building the server](11-backend-nodejs/03-building-the-server.md) |
+| testing handlers, fakes vs mocks, injected clock, multi-stage Dockerfile, exec-form CMD, one process per container, event-loop lag, production checklist | ✅ [testing, structure and production](11-backend-nodejs/04-testing-structure-production.md) |
+
+## Backend: Python
+
+| Topic / keyword | File |
+| --- | --- |
+| Python syntax, venv, pyproject, mutable default argument, comprehensions, dataclasses, Protocol, type hints, exceptions, raise from, context managers | ✅ [python from zero](12-backend-python/01-python-from-zero.md) |
+| GIL, threads vs processes vs asyncio, event loop, blocking calls, asyncio.to_thread, TaskGroup, multiprocessing, Gunicorn/Uvicorn workers, free-threaded build, `__slots__` | ✅ [the python runtime](12-backend-python/02-the-python-runtime.md) |
+| building a server, WSGI vs ASGI, FastAPI, routing, middleware vs dependencies, Depends, Pydantic validation, response_model, exception handlers, JWT, Settings, SQLAlchemy async pool, lifespan, graceful shutdown | ✅ [building the server](12-backend-python/03-building-the-server.md) |
+| pytest, fixtures, ASGITransport, dependency_overrides, parametrize, Alembic migrations, PYTHONUNBUFFERED, one worker per container, py-spy, event-loop lag | ✅ [testing, structure and production](12-backend-python/04-testing-structure-production.md) |
+
+## Backend: Go
+
+| Topic / keyword | File |
+| --- | --- |
+| Go syntax, zero values, nil map vs nil slice, slices as views, structs, methods, implicit interfaces, embedding, errors as values, sentinel errors, %w wrapping, errors.Is/As, defer, generics, go mod, internal/ | ✅ [go from zero](13-backend-golang/01-go-from-zero.md) |
+| goroutines, M:N scheduler, G-M-P, work stealing, GOMAXPROCS in containers, channels, select, context, goroutine leaks, data races, sync.Mutex/RWMutex/Once, errgroup, garbage collector, GOGC, GOMEMLIMIT, escape analysis | ✅ [the go runtime](13-backend-golang/02-the-go-runtime.md) |
+| building a server, net/http, ServeMux patterns, chi, middleware as func(http.Handler) http.Handler, server timeouts, MaxBytesReader, recovery middleware, validation, apiFunc error adapter, JWT, pgx pool, slog, srv.Shutdown | ✅ [building the server](13-backend-golang/03-building-the-server.md) |
+| table-driven tests, httptest, fakes without mocks, -race, benchmarks and allocs/op, static binary, distroless, pprof, goroutine profile, GOMAXPROCS and GOMEMLIMIT in containers | ✅ [testing, structure and production](13-backend-golang/04-testing-structure-production.md) |
+
+## Backend: cross-cutting
+
+| Topic / keyword | File |
+| --- | --- |
 | REST, GraphQL, gRPC, Protobuf, WebSockets, Socket.io | ✅ [api styles](03-backend/04-api-styles.md) |
 | microservices, boundaries, service mesh | ✅ [microservices](03-backend/05-microservices.md) |
-| Kafka, RabbitMQ, SQS, SNS, EventBridge, partitions, consumer groups, offsets, idempotent producer, exchanges, prefetch, DLX, visibility timeout, redrive/DLQ, fan-out, outbox | ✅ [messaging in practice](03-backend/06-messaging-in-practice.md) |
 
-## 04 — Data & Cache *(all written)*
+## Data & caching
 
 | Topic / keyword | File |
 | --- | --- |
@@ -133,25 +146,36 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | Redis, ioredis, Mongoose, Sequelize, Firebase | ✅ [redis and orms](04-data-cache/02-redis-and-orms.md) |
 | Elasticsearch, OpenSearch, inverted index, analyzers, mappings, shards, bool query, search_after, ILM, reindex with alias | ✅ [elasticsearch](04-data-cache/03-elasticsearch.md) |
 
-## 05 — Testing *(all written)*
+## Testing & quality
 
 | Topic / keyword | File |
 | --- | --- |
 | Jest, TDD, coverage strategy, testing auth | ✅ [testing and coverage](05-testing/01-testing-and-coverage.md) |
 | test automation, CI stages, flaky tests, coverage gate | ✅ [testing and coverage](05-testing/01-testing-and-coverage.md) §Test automation |
 
-## 06 — Cloud & DevOps *(all written)*
+## DevOps & SRE
 
 | Topic / keyword | File |
 | --- | --- |
-| AWS EC2, S3, Lambda, CloudFront, IAM, Docker, Nginx, Jenkins, GoCD | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) |
-| CloudWatch, metrics, alarms, log retention, cardinality | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §CloudWatch |
-| Route 53, DNS, alias records, TTL, failover routing | ✅ [aws and containers](06-cloud-devops/01-aws-and-containers.md) §Route 53 |
-| CI/CD, deployment strategies, migrations, observability, SLO | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) |
+| Linux processes, RSS vs VSZ, load average, state D, OOM killer, file descriptors, EMFILE, CLOSE_WAIT, signals, exit 137/143, systemd units | ✅ [linux for operators](06-cloud-devops/05-linux-for-operators.md) |
+| strace, ss, lsof, vmstat, iostat, dmesg, tcpdump, dig, the five-minute triage | ✅ [linux for operators](06-cloud-devops/05-linux-for-operators.md) §The toolkit, by question |
+| Namespaces vs cgroups, image layers, multi-stage builds, layer caching, distroless, musl vs glibc, PID 1, tini, Nginx, reverse proxy, L4 vs L7 | ✅ [containers, properly](06-cloud-devops/06-containers.md) |
+| GOMAXPROCS and cgroup limits, /sys/fs/cgroup, PYTHONUNBUFFERED, container debugging | ✅ [containers, properly](06-cloud-devops/06-containers.md) §The trap |
+| Kubernetes reconciliation, API server, etcd, scheduler, kubelet, Pod, Deployment, StatefulSet, DaemonSet, Service, EndpointSlice, Ingress, Gateway API, ConfigMap, Secret, ServiceAccount, IRSA, RBAC | ✅ [kubernetes: the object model](06-cloud-devops/07-kubernetes-objects.md) |
+| Requests vs limits, QoS classes, taints, affinity, topology spread, PodDisruptionBudget, ResourceQuota | ✅ [kubernetes: the object model](06-cloud-devops/07-kubernetes-objects.md) §Requests, limits and QoS |
+| Liveness/readiness/startup probes, rollouts, maxSurge/maxUnavailable, graceful shutdown, preStop, HPA/VPA/cluster autoscaler, CrashLoopBackOff, OOMKilled, kubectl triage | ✅ [kubernetes: operating it](06-cloud-devops/08-kubernetes-operations.md) |
+| Terraform state, locking, plan/apply, drift, moved blocks, import, modules, count vs for_each, policy as code, CloudFormation vs CDK vs Pulumi, immutable infrastructure | ✅ [infrastructure as code](06-cloud-devops/09-infrastructure-as-code.md) |
+| CI/CD pipeline design, build once promote, deployment strategies, canary analysis, shadow mode, feature flags, expand/contract migrations, CREATE INDEX CONCURRENTLY | ✅ [pipelines and GitOps](06-cloud-devops/10-pipelines-and-gitops.md) |
+| GitOps, Argo CD, Flux, config repo, sync waves, OIDC federation, pinned actions, SBOM, image signing, supply chain | ✅ [pipelines and GitOps](06-cloud-devops/10-pipelines-and-gitops.md) §GitOps |
+| Jenkins, GoCD, value stream map, managed runners, PM2, Postman, Newman, Jira, story points, velocity | ✅ [pipelines and GitOps](06-cloud-devops/10-pipelines-and-gitops.md) §The tooling you will be asked to name |
+| Prometheus pull model, exporters, kube-state-metrics, counter/gauge/histogram/summary, PromQL, rate vs irate, histogram_quantile, cardinality, recording rules, burn-rate alerts, Alertmanager, Grafana | ✅ [the monitoring stack](06-cloud-devops/11-the-monitoring-stack.md) |
+| Structured logs, traces, head vs tail sampling, exemplars, correlation id, OpenTelemetry | ✅ [the monitoring stack](06-cloud-devops/11-the-monitoring-stack.md) §Logs, traces and the three pillars |
+| Incident command, mitigate before diagnose, blameless postmortems, detection latency, RPO/RTO, tested restores, game days, on-call load, toil, error-budget policy, cloud cost | ✅ [running it on call](06-cloud-devops/12-running-it-on-call.md) |
+| AWS EC2, S3, Lambda, API Gateway, IAM, VPC, security groups, NAT, Secrets Manager, SQS/SNS/EventBridge, Route 53 | ✅ [aws ecosystem](06-cloud-devops/01-aws-ecosystem.md) |
+| AWS SDK v3, credential provider chain, presigned URLs, Lambda handler types, RDS Proxy | ✅ [aws ecosystem](06-cloud-devops/01-aws-ecosystem.md) §Building it |
 | CloudWatch deep dive, Logs Insights, EMF, alarms, CloudTrail, trails, data events, Lake, X-Ray, tracing, sampling, CloudFront cache key, OAC, Origin Shield, Functions vs Lambda@Edge | ✅ [cloudwatch, cloudtrail, x-ray, cloudfront](06-cloud-devops/03-cloudwatch-cloudtrail-xray-cloudfront.md) |
-| PM2, Postman, Newman, Jira, story points, velocity | ✅ [cicd and observability](06-cloud-devops/02-cicd-and-observability.md) §The day-to-day tooling |
 
-## 07 — AI Tooling *(all written)*
+## AI engineering
 
 | Topic / keyword | File |
 | --- | --- |
@@ -160,13 +184,13 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 | AI code review, test generation, debugging, RCA, security analysis, GPT | ✅ [ai across the sdlc](07-ai-tooling/02-ai-across-the-sdlc.md) |
 | RAG, retrieval-augmented generation, embeddings, chunking, hybrid search, reranking, vector store, pgvector, permission-aware retrieval, prompt injection, golden set, Slack support bot | ✅ [RAG and LLM-backed bots](07-ai-tooling/03-rag-and-llm-bots.md) |
 
-## 08 — Frontend *(all written)*
+## Frontend
 
 | Topic / keyword | File |
 | --- | --- |
 | React, Hooks, Redux, TypeScript, SCSS, Styled-Components, micro-frontends | ✅ [react and typescript](08-frontend/01-react-and-typescript.md) |
 
-## 09 — Low-Level Design *(all written)* — not part of the interview-core loop; for companies that run a dedicated LLD/OOD round
+## Low-level design — for companies that run a dedicated LLD/OOD round
 
 | Topic / keyword | File |
 | --- | --- |
@@ -178,7 +202,7 @@ design, `41`–`43` the security round, behavioural & leadership, the schedule.
 
 | Need | File |
 | --- | --- |
-| Where I'm exposed | ✅ [WEAK-SPOTS](WEAK-SPOTS.md) |
 | What I've drilled | ✅ [progress log](progress/log.md) |
-| Does every resume skill have material | ✅ `python3 check_coverage.py` |
+| Are the question blocks, diagrams and links valid | ✅ `python3 check_coverage.py` |
+| The contract for writing a chapter | ✅ [AGENT.md](AGENT.md) |
 | Rebuild the study site | ✅ `python3 build_site.py` |

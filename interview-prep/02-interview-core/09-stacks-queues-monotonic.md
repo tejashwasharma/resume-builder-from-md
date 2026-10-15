@@ -1,4 +1,4 @@
-# Stacks and queues — order of processing
+# Stacks and queues
 
 Both are just arrays with a restriction on where you may add and remove. That
 restriction is the entire point: by giving up random access you get an

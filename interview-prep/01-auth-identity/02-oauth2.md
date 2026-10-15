@@ -1,8 +1,8 @@
 # OAuth 2.0
 
-Your specialty, and the protocol you'll be questioned on hardest. You ran a
-multi-tenant OAuth server, so expect questions to go past "explain the flow"
-into operating one.
+The protocol you will be questioned on hardest in any auth-adjacent loop.
+Expect questions to go past "explain the flow" into operating a multi-tenant
+authorization server.
 
 Spec: [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) ·
 PKCE: [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) ·
@@ -49,7 +49,7 @@ OpenID Connect (see [oidc](03-oidc.md)). "Log in with Google" is OIDC, not raw O
 | --- | --- |
 | **Resource owner** | The user who owns the data |
 | **Client** | The application requesting access |
-| **Authorization server** | Issues tokens — *what you built* |
+| **Authorization server** | Issues tokens |
 | **Resource server** | Holds the API, accepts tokens |
 
 **Client types.** A **confidential** client can keep a secret (a backend
@@ -102,10 +102,10 @@ first, and mixing up client and resource server is a common slip.
 
 | Party | In plain terms | Concrete example |
 | --- | --- | --- |
-| **Resource owner** | The human who owns the data | The Contentstack user logging in |
+| **Resource owner** | The human who owns the data | The end user logging in |
 | **Client** | The app asking for access | A dashboard SPA, a mobile app, a partner integration |
-| **Authorization server** | Issues tokens. **This is what you built.** | `auth.contentstack.com` |
-| **Resource server** | The API that accepts the token | `api.contentstack.com/v3/entries` |
+| **Authorization server** | Issues tokens | `auth.example.com` |
+| **Resource server** | The API that accepts the token | `api.example.com/v1/entries` |
 
 The client is *not* the user, and the authorization server is *not* the API.
 They are often different hostnames run by different teams.
@@ -308,10 +308,9 @@ The server can't tell *which* party is the attacker — only that the token was
 used twice. So it kills the whole chain: the legitimate user re-authenticates
 (mild annoyance), the attacker is locked out (the point).
 
-> **In your own work.** You ran a multi-tenant OAuth server, so expect: how
-> were clients isolated per tenant, could a token issued for tenant A be
-> replayed against tenant B, and how did you scope `audience`. See
-> [contentstack](../00-experience/contentstack.md) §2.
+> **Bring your own experience.** If you have run a multi-tenant OAuth server,
+> expect: how were clients isolated per tenant, could a token issued for tenant
+> A be replayed against tenant B, and how did you scope `audience`.
 
 
 ## Building it

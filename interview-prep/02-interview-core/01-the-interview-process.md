@@ -1,4 +1,4 @@
-# The interview loop, stage by stage
+# The interview loop
 
 A senior interview loop is a structured sequence that is run the same way for
 every candidate, and knowing its shape removes most of the uncertainty that
@@ -8,6 +8,14 @@ This chapter describes how a typical large-company loop works, drawn from
 widely reported candidate accounts. **Confirm the specifics with your
 recruiter** — they will tell you the round count and format when the onsite is
 scheduled, and they are the only authoritative source for it.
+
+**What this book assumes.** The coding, distributed-systems and system-design
+parts are language-agnostic: the patterns and trade-offs hold wherever you
+work. Everything that gets concrete — the exercises, the "Building it"
+sections, the reference stacks — is **Node.js and TypeScript**, because a book
+has to pick one stack to be specific in, and specificity is what makes it
+useful. If you interview in another language, the theory carries over and the
+code is a translation exercise.
 
 ---
 
@@ -36,7 +44,7 @@ flowchart TD
 | **Offer** | Comp, level, start date | Compensation committee + recruiter | ~1 week |
 
 End to end, third-party guides commonly report 8–12 weeks from first contact
-to offer. Yours is already partly done.
+to offer.
 
 ### The technical phone screen
 

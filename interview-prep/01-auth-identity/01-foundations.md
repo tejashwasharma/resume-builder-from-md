@@ -1,4 +1,4 @@
-# Foundations: authentication vs authorization
+# Authentication vs authorization
 
 The base layer everything else in this module sits on. If any of this is
 shaky, the protocol files won't stick.
@@ -124,10 +124,11 @@ token that *is* tracked server-side. You accept a bounded window of staleness
 on access tokens in exchange for statelessness on the hot path, and you retain
 real revocation at the refresh step.
 
-> **In your own work.** This is exactly the trade-off behind your session
-> governance suite — "active session termination" only means anything if you
-> can answer *how fast* termination actually takes effect. See
-> [contentstack](../00-experience/contentstack.md) §6, and [jwt](06-jwt.md) for revocation strategies.
+> **Bring your own experience.** This is the trade-off behind any session
+> management feature you have shipped — "active session termination" only means
+> anything if you can answer *how fast* termination actually takes effect. Have
+> an answer ready for where the session state lives and what the worst-case
+> delay is; see [jwt](06-jwt.md) for revocation strategies.
 
 ### Trust boundaries
 
@@ -202,9 +203,9 @@ which fires far less often than the access path.
 — what's the actual revocation latency, in seconds, for a compromised
 account?" A candidate who has only read about JWTs says "it expires
 eventually." A candidate who has operated one names the access-token TTL and
-the refresh-revocation path in the same breath — see
-[contentstack](../00-experience/contentstack.md) §6 for what "instant
-termination" had to mean in practice.
+the refresh-revocation path in the same breath, and says what "instant
+termination" actually meant in the system they ran — seconds, one TTL, or a
+cache flush away.
 
 ---
 

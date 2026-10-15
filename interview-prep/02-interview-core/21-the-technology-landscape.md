@@ -1,4 +1,4 @@
-# The technology landscape — what to actually learn, and why
+# The technology landscape
 
 The previous chapter described *problems*. This one names the *tools* the
 industry uses to solve them, so that when someone says "we put it behind Envoy
@@ -213,10 +213,9 @@ costing 0.5ms — and because it holds real data structures rather than opaque
 blobs, one system covers caching, sessions, rate limiting, distributed locks and
 pub/sub.
 
-> Redis is also where the biggest single win on this resume came from: a
-> permission-check path that fell from 13s to 200ms by caching decisions rather
-> than recomputing them per request. See
-> [contentstack §5](../00-experience/contentstack.md) and
+> Redis is where the largest latency wins in authorization systems usually come
+> from: a permission-check path that falls from seconds to milliseconds by
+> caching decisions rather than recomputing them per request. See
 > [caching at scale](28-caching-at-scale.md).
 
 **What you must learn alongside it:** a cache is a *second copy of the truth*,

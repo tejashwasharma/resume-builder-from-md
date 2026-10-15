@@ -1,10 +1,11 @@
-# Messaging in practice: Kafka, RabbitMQ, SQS and SNS
+# Messaging in practice
 
 [Messaging, queues and streams](../02-interview-core/27-messaging-streams.md)
 teaches the theory: queue vs log, ordering per partition, ack timing and
 delivery semantics. This chapter is the other half — how the three brokers you
 will actually be asked about **work and are wired up**. Kafka and RabbitMQ are
-on your resume; SQS and SNS are what an AWS shop uses for the same jobs.
+the two every interviewer compares; SQS and SNS are what an AWS shop uses for
+the same jobs.
 
 *In the interview: "Kafka or RabbitMQ?" is the warm-up. The follow-ups are
 where it's decided — what happens on a consumer crash, how you retry without
@@ -417,7 +418,7 @@ lost if the service crashes between the DB write and the publish. Then:
 
 **Consumers** don't delete individual keys — they bump a **per-user or
 per-tenant version** that is part of the cache key, so every stale entry
-becomes unreachable at once (the pattern from [Story 5](../00-experience/contentstack.md)). Include `version` in
+becomes unreachable at once. Include `version` in
 the event so an out-of-order or duplicate event can be ignored if it's older
 than what's applied.
 

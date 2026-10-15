@@ -1,4 +1,4 @@
-# Low-level design — start here
+# Low-level design: start here
 
 Not part of the interview-core part (`02-interview-core/`), which folds "design a class
 for X" into the coding round rather than running it as its own 45-minute

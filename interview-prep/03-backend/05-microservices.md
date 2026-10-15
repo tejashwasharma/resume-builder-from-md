@@ -227,7 +227,7 @@ another team? If no, the boundary is wrong.
    carried us for another year. What made the split worthwhile was scaling one
    component separately from the others.
 
-   > **FILL IN:** what actually drove your split — scaling, team boundaries, or
+   > **Your turn:** what actually drove your split — scaling, team boundaries, or
    > deploy contention? The honest reason makes this a much better answer.
 
    </details>

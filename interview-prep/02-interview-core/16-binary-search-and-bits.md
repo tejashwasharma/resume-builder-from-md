@@ -1,4 +1,4 @@
-# Binary search and bit tricks — halving the problem, and the tricks below the integers
+# Binary search and bit tricks
 
 Binary search is the one algorithm everyone claims to know and most people
 get wrong under pressure. The off-by-one on `hi`, the infinite loop on `lo =

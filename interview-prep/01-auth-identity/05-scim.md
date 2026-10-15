@@ -1,4 +1,4 @@
-# SCIM — provisioning and deprovisioning
+# SCIM
 
 SSO decides who may log in *now*. SCIM decides who *exists* and what they're
 entitled to, continuously. The gap between them is where leavers keep access.
@@ -207,10 +207,9 @@ Enterprise extension adds `department`, `manager`, `employeeNumber`.
 and you get duplicate users. Pagination via `startIndex` and `count` matters
 once a customer has thousands of employees.
 
-> **In your own work.** You built SCIM onboarding and shipped a SCIM app to two
-> marketplaces, and extended RBAC into SCIM onboarding. Expect: how do IdP
-> groups become roles, what happens on delete, and how fast is "immediate"?
-> See [contentstack](../00-experience/contentstack.md) §2.
+> **Bring your own experience.** If you have built SCIM onboarding, expect: how
+> do IdP groups become roles, what happens on delete, and how fast is
+> "immediate"?
 
 
 ## Building it

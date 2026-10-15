@@ -1,8 +1,8 @@
 # RBAC, ABAC and ReBAC
 
-Your flagship project. You led RBAC 0→1 in a multi-tenant platform, so this
-chapter needs to go deeper than the others — expect design questions, not
-definition questions.
+Authorization modelling: the round where multi-tenant permission design gets
+probed. Expect design questions here, not definition questions — so this chapter
+goes deeper than the others.
 
 ---
 
@@ -78,7 +78,7 @@ flowchart TD
 ```
 *The binding is the load-bearing link. Drop the org from any arrow in this chain and you have a cross-tenant hole.*
 
-The model you shipped, in one chain: a **user account** is a member of one or
+The model, in one chain: a **user account** is a member of one or
 more **orgs (tenants)**. Each org **binds** that user to a **role** — editor in
 Acme, viewer in Globex — and the binding is scoped to that one org. A role
 **bundles permissions** (`entry:read`, `entry:publish`), and permissions are
@@ -207,10 +207,10 @@ fine-grained decisions belong there. Defence in depth means both; what you must
 avoid is the gateway being the *only* check, which turns the internal network
 into an implicit trust zone.
 
-> **In your own work.** Migrating from 2 fixed roles to granular RBAC, 2–3
-> default roles per product plus custom roles, extended into SSO and SCIM
-> onboarding. See [contentstack](../00-experience/contentstack.md) §1 — including
-> the migration and attribution questions.
+> **Bring your own experience.** Migrating a couple of fixed roles to granular
+> RBAC — default roles per product plus custom roles, extended into SSO and SCIM
+> onboarding — is the most commonly probed version of this work. Have answers
+> ready for the migration path, and for which part of the design was yours.
 
 
 ## Building it

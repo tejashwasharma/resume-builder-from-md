@@ -107,7 +107,7 @@ the race, then the fix at the right granularity: an atomic, a lock per
 shard rather than one global lock, or a lock-free structure if you can
 justify it. Mention that in Node.js the answer is often "one process per
 partition" rather than threads, and say why. See
-[Node.js internals](../03-backend/01-nodejs-internals.md).
+[Node.js internals](../11-backend-nodejs/02-runtime-and-event-loop.md).
 
 **"Do it in O(1) extra space."**
 The tools: in-place read/write pointers, cyclic sort (index as hash),

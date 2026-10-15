@@ -113,9 +113,19 @@ function saveLocal() {
   } catch (_) {}
 }
 
+/* Progress is per viewer, never shared.
+   `data/users/me/...` is the one subtree the runtime scopes to the signed-in
+   viewer — their own id is substituted for `me`, and the subtree is private
+   even from the artifact's owner. Everything here goes through DB_ROOT so a
+   second person opening the link builds their own record rather than editing
+   this one. A viewer the runtime cannot identify (an anonymous visitor on a
+   public link) has no subtree: the write throws, we swallow it, and their
+   progress lives only in their own browser's localStorage. */
+const DB_ROOT = 'data/users/me/progress';
+
 async function dbSet(path, data) {
   if (!db) return;
-  try { await db.doc(path).set(data); } catch (_) { /* local copy still holds it */ }
+  try { await db.doc(`${DB_ROOT}/${path}`).set(data); } catch (_) { /* local copy still holds it */ }
 }
 
 function setStatus(cid, status) {
@@ -266,7 +276,7 @@ function renderHome() {
 
   view.innerHTML = `<div class="home">
     <div class="home-head">
-      <h1>Your path to the Google loop</h1>
+      <h1>Your path through the book</h1>
       <p>Work top to bottom. Each chapter moves left to right: read it in <b>Learn</b>,
         go deeper in <b>Workshop</b>, write and run solutions in <b>Code</b>, then check
         yourself in <b>Quiz</b>. ${done} of ${ORDER.length} chapters done — about
@@ -1309,14 +1319,17 @@ function relevantPassages(q, maxItems) {
 }
 
 /* Lookups stay on the cheap tier; only reasoning questions escalate. */
+/* The chat always runs on the cheapest/fastest tier ('quick'); intent only
+   sets the answer-length budget and how much of the book to retrieve. Deep
+   questions get more context and more words rather than a bigger model. */
 function askIntent(q) {
   const s = q.toLowerCase();
   if (/\b(weak|weakest|study|next|progress|ready|prepare|where am i|what should)\b/.test(s))
-    return { kind: 'coach', tier: 'default', words: 160, items: 2 };
+    return { kind: 'coach', words: 160, items: 2 };
   if (/^(explain|compare|why|walk me|how would|how do i design|design|what.s the difference|trade)/.test(s)
       || /\b(vs\.?|versus|trade-?off|compare|design)\b/.test(s))
-    return { kind: 'deep', tier: 'default', words: 180, items: 7 };
-  return { kind: 'lookup', tier: 'quick', words: 90, items: 5 };
+    return { kind: 'deep', words: 180, items: 7 };
+  return { kind: 'lookup', words: 90, items: 5 };
 }
 
 function progressBrief() {
@@ -1331,8 +1344,6 @@ function progressBrief() {
   if (quiz.length) lines.push('Quiz bests: ' + quiz.join(', '));
   const n = nextChapter();
   if (n) lines.push(`Next chapter on the path: ${CONTENT[n].title}`);
-  const ws = CONTENT['weak-spots'];
-  if (ws) lines.push('\nKNOWN WEAK SPOTS:\n' + searchText()['weak-spots'].slice(0, 2000));
   return lines.join('\n');
 }
 
@@ -1404,14 +1415,14 @@ async function askSend() {
   const idx = ask.turns.length - 1;
 
   const rules = [
-    'You are helping a senior engineer prepare for Google / identity-and-access-management interviews.',
+    'You are helping a senior engineer prepare for software engineering interviews.',
     'Their prep book is below. Answer from it.',
     '',
     `Answer in under ${intent.words} words. Be direct — no preamble.`,
     'Use the book\'s own framing and vocabulary; it is what they will say in the room.',
     'If an extract is marked "model answer", prefer it over re-deriving the point.',
     'If the book does not cover something, say so in one line, then answer briefly from your own knowledge and flag that you are doing so.',
-    'Details only they know are marked FILL IN. Point at those; never invent their history.',
+    'Details the reader must supply are marked "Your turn". Point at those; never invent their background.',
   ];
   if (intent.kind === 'coach') rules.push('', 'Be specific: name chapters and say what to do next. Use the progress data below.');
   const framing = rules.join('\n') + '\n\nBOOK:\n' + context + (intent.kind === 'coach' ? '\n\nTHEIR PROGRESS:\n' + progressBrief() : '');
@@ -1422,7 +1433,7 @@ async function askSend() {
   if (prior.length) turns.push({ role: 'user', content: q });
 
   try {
-    const res = await sample(turns, { modelTier: intent.tier, cache: false, onText: ({ text }) => { ask.turns[idx].text = text; renderAsk(); } });
+    const res = await sample(turns, { modelTier: 'quick', cache: false, onText: ({ text }) => { ask.turns[idx].text = text; renderAsk(); } });
     ask.turns[idx].text = res.text;
   } catch (e) {
     const code = e && e.code;
@@ -1711,9 +1722,9 @@ init();
     if (db) {
       const read = async (col) => {
         try {
-          const snap = await db.collection(col).get();
+          const snap = await db.collection(`${DB_ROOT}/${col}`).get();
           return (snap.docs || []).map((d) => ({ id: d.id, data: d.data() || {} }));
-        } catch (_) { return []; }
+        } catch (_) { return []; }   // no subtree for this viewer: local only
       };
       for (const d of await read('chapters')) {
         if (!CONTENT[d.id]) continue;
@@ -1723,23 +1734,6 @@ init();
       for (const d of await read('solved')) state.solved[d.id] = d.data.at || 1;
       for (const d of await read('quiz')) if (typeof d.data.best === 'number') state.quizBest[d.id] = d.data.best;
       for (const d of await read('generated')) if (d.data && d.data.id) state.generated[d.id] = d.data;
-
-      // One-time carry-over from the old book: section read-marks become a
-      // chapter status for chapters that don't have one yet.
-      try {
-        const legacy = await db.doc('reading/sections').get();
-        const marks = legacy.exists ? (legacy.data() || {}).read || {} : {};
-        const counts = {};
-        for (const k of Object.keys(marks)) { const cid = k.split('::')[0]; counts[cid] = (counts[cid] || 0) + 1; }
-        for (const [cid, n] of Object.entries(counts)) {
-          if (!CONTENT[cid] || state.status[cid]) continue;
-          const c = CONTENT[cid];
-          const total = c.learn.length + c.workshop.length - 1;
-          const status = n >= total ? 'done' : 'started';
-          state.status[cid] = status;
-          dbSet(`chapters/${cid}`, { status, at: Date.now(), from: 'reading-marks' });
-        }
-      } catch (_) {}
 
       saveLocal();
       render();

@@ -1,13 +1,16 @@
-# Design: RBAC, SSO/SCIM and session revocation
+# Design: the identity subsystem
 
-Three related prompts that all come from your resume. Shorter than the auth
-service chapter because they share its foundations — read that one first.
+One system, three prompts that come up together in identity loops: the
+permission model, the enterprise-integration surface in front of it, and
+session revocation behind it. Shorter than the
+[auth service design](05-design-auth-service.md) because all three share its
+foundations — read that one first.
 
 ---
 
 ## In brief
 
-- **Prompt A's whole point is the binding step**: a role binding belongs to
+- **Case A's whole point is the binding step**: a role binding belongs to
   a (user, org) pair, never to a user alone — "the user is an editor" is
   never true on its own, only "an editor *in Acme*." Permissions are the
   atoms code checks against, never role names, which is what makes
@@ -18,7 +21,7 @@ service chapter because they share its foundations — read that one first.
   depth; materializing effective permissions on write is a flat, fast
   read, but a missed invalidation on write becomes a security bug. Start
   with compute-plus-cache.
-- **Prompt B: SSO and SCIM are two separate systems that answer different
+- **Case B: SSO and SCIM are two separate systems that answer different
   questions** — SSO is "can this person log in right now?" (synchronous,
   one user); SCIM is "who exists and what are they entitled to?"
   (continuous, all users). SSO alone means a terminated employee can't log
@@ -29,7 +32,7 @@ service chapter because they share its foundations — read that one first.
   expiry with weeks of lead time, overlapping two valid certs during
   rotation, and giving every tenant a break-glass local admin exempt from
   SSO.
-- **Prompt C: stateless tokens are fast but can't be un-issued; server-side
+- **Case C: stateless tokens are fast but can't be un-issued; server-side
   sessions revoke instantly but need a lookup on every request.** The
   resolution is short-lived access tokens plus a per-user version counter
   — bumping it on termination invalidates every existing token immediately,
@@ -46,7 +49,7 @@ service chapter because they share its foundations — read that one first.
 
 ---
 
-## Prompt A — Multi-tenant RBAC with policy evaluation
+## Case A: Multi-tenant RBAC with policy evaluation
 
 > Design role-based access control for a platform where users belong to
 > multiple organisations, customers can define their own roles, and permission
@@ -106,7 +109,7 @@ dimensions into attributes.
 
 ---
 
-## Prompt B — SSO and SCIM provisioning
+## Case B: SSO and SCIM provisioning
 
 > Design enterprise SSO and automated user provisioning across many customers,
 > each bringing their own identity provider.
@@ -154,7 +157,7 @@ tokens at the same time**, or the person is still logged in.
 
 ---
 
-## Prompt C — Session management with instant revocation
+## Case C: Session management with instant revocation
 
 > Design session handling that lets an admin terminate a session immediately,
 > with configurable idle and absolute timeouts.
@@ -207,10 +210,10 @@ much as a technical one. Either the wording changes or you pay for the lookup.
 
 ## The Zanzibar model
 
-Prompt A above is the RBAC design from your own work. Google's published
-answer to the same problem is *Zanzibar: Google's Consistent, Global
-Authorization System* (Pang et al., USENIX ATC 2019), and an interviewer on
-a security team may expect you to be able to compare the two.
+Case A is the role-and-binding answer to authorization. The best known
+published answer to the same problem is *Zanzibar: Google's Consistent, Global
+Authorization System* (Pang et al., USENIX ATC 2019), and an interviewer on a
+security team may expect you to compare the two.
 
 ```mermaid
 flowchart TD
@@ -230,13 +233,13 @@ flowchart TD
 object's userset (`group:eng#member`). Group nesting, folder inheritance and
 "editors are also viewers" are not special cases — they are **userset
 rewrite** rules in the namespace config that say how one relation is computed
-from others. Your RBAC role table is the same idea flattened: a role is a
+from others. A role table is the same idea flattened: a role is a
 relation, a role assignment is a tuple, and role hierarchy is a rewrite.
 
 **The API.** `check(object, relation, user)` answers yes/no; `read` returns
 tuples; `write` adds or removes them; `expand` returns the full userset tree
-for auditing ("who can see this and why"). The `expand` call is the one your
-design most likely lacks and the one a security reviewer most wants.
+for auditing ("who can see this and why"). The `expand` call is the one a
+role-based design most often lacks and the one a security reviewer most wants.
 
 **The new-enemy problem.** Alice removes Bob from a document, then adds a
 sensitive paragraph. If the permission check is served from a replica that
@@ -247,20 +250,70 @@ every later check passes it in, and Zanzibar evaluates the check at a
 snapshot **at least as fresh as the zookie**. Reads can still be served from
 cache and replicas — the zookie only forces freshness when the caller has
 proven it matters. That is the same trade as
-[23](23-consistency-cap-pacelc.md): consistency where causality demands it,
+[23](../02-interview-core/23-consistency-cap-pacelc.md): consistency where causality demands it,
 staleness everywhere else, and a mechanism that lets the caller choose.
 
-**Mapping to Prompt A.** Your design caches policy decisions in Redis with
-a TTL. Zanzibar's equivalent is a cache keyed by (object, relation, user,
+**Mapping to Case A.** The design in Case A caches policy decisions in
+Redis with a TTL. Zanzibar's equivalent is a cache keyed by (object, relation, user,
 snapshot), safe to serve because the snapshot is part of the key. If an
 interviewer asks "how would you make your RBAC design safe against
 revocation races", the answer is: return a version from every permission
 write, store it with the protected resource, and require checks to be at
 least that fresh — which is a zookie by another name.
 
-> **FILL IN:** whether your RBAC design had any versioning on policy writes,
-> and if not, what a revocation race would have looked like in it. The
-> honest gap is a better answer than a retrofitted claim.
+> **Your turn:** if you have built an authorization model, did it version
+> policy writes? If not, what would a revocation race have looked like in it?
+> The honest gap is a better answer than a retrofitted claim.
+
+---
+
+## Alternatives and why not
+
+**Case A — the permission model**
+
+| Alternative | When it is the right choice | Why it loses here |
+| --- | --- | --- |
+| Fixed roles in an enum | A single-tenant product with a stable, small set of roles | Customers cannot define their own roles, which is the entire requirement |
+| ReBAC / Zanzibar-style tuples | Access flows through containment and sharing (folders, documents) | Heavier to run and reason about than roles-plus-bindings when the hierarchy is shallow |
+| Permissions attached directly to users | Tiny installs, or an admin override path | Permission sprawl: no way to answer "what can an editor do" without scanning every user |
+
+**Case B — the enterprise surface**
+
+| Alternative | When it is the right choice | Why it loses here |
+| --- | --- | --- |
+| SSO only, no SCIM | Small customers who manage accounts by hand | Leavers keep accounts; deprovisioning is the control auditors actually ask about |
+| SCIM only, no SSO | Back-office provisioning with no interactive login | Users still need a password per product, which is what enterprises are buying their way out of |
+| Just-in-time provisioning on first login | A fast path to "it works" for a pilot | Never learns about deletions, and group changes only land when the user next logs in |
+
+**Case C — session revocation**
+
+| Alternative | When it is the right choice | Why it loses here |
+| --- | --- | --- |
+| Server-side sessions only | Low request volume, one data centre | Every request pays a lookup; the read path is the thing this system cannot make slow |
+| Long-lived stateless tokens, no version check | Public read-only APIs | A revoked user keeps access until the token expires, which is a security bug, not a staleness bug |
+| Token blocklist of revoked ids | A handful of revocations, short TTLs | Grows without bound and must be consulted on every request; a per-user version is one small value instead |
+
+---
+
+## How to drive the conversation
+
+1. **Say which of the three you are being asked about**, and name the other two
+   as adjacent. Interviewers often start at the model and walk forward into SSO
+   or backward into revocation, and showing you know the map buys credit.
+2. **Draw the binding first** for Case A — user, org, binding, role,
+   permission, resource. Every cross-tenant bug in this space is a missing org
+   on one of those arrows.
+3. **Separate the write path from the read path** out loud. Role changes are
+   rare and must be correct; permission checks are constant and must be fast.
+   That sentence is what makes the caching discussion coherent rather than
+   defensive.
+4. **Volunteer the staleness window.** Say how long a revoked permission can
+   still work and what bounds it. Waiting to be asked reads as not having
+   thought about it.
+5. **Finish on operations** — certificate rotation for Case B, the break-glass
+   admin, and what the on-call does when the policy store is unreachable.
+
+---
 
 ---
 
@@ -426,7 +479,7 @@ wording or in the design.
 - [ ] Losing the SCIM provisioning connection
 **Why:** Without an SSO-independent fallback, any SSO misconfiguration becomes a total lockout for that customer — mentioning this unprompted signals real operational experience.
 
-### MCQ: Why does the design in Prompt C use a per-user version counter instead of just relying on short-lived tokens alone?
+### MCQ: Why does the design in Case C use a per-user version counter instead of just relying on short-lived tokens alone?
 - [ ] Version counters are required by the JWT specification
 - [x] Short-lived tokens alone still leave a revoked session valid for up to the token's remaining lifetime; a version counter bumped on termination invalidates every existing token immediately via a small, cacheable check
 - [ ] Version counters eliminate the need for token expiration entirely
@@ -453,3 +506,15 @@ wording or in the design.
 - [ ] Zookies are used only for authentication, never authorization
 - [ ] Versioned cache keys are strictly less powerful than zookies
 **Why:** The chapter explicitly frames "return a version from every permission write, store it with the protected resource, and require checks to be at least that fresh" as a zookie by another name — the same mechanism solving the same revocation-race problem.
+
+---
+## Glossary
+
+- **Role binding** — the record that links a user to a role *within one org*; the load-bearing row in a multi-tenant permission model.
+- **Permission** — an action on a resource type (`entry:publish`), bundled into roles rather than granted directly.
+- **IdP / SP** — identity provider (holds the users) and service provider (your product); SAML names the two ends this way.
+- **SCIM** — the standard CRUD API an IdP calls to create, update and deactivate accounts in your system.
+- **Just-in-time provisioning** — creating the account on first SSO login instead of ahead of time; no deprovisioning story.
+- **Idle vs absolute timeout** — expiry measured from last activity, versus from issue; both are needed for different threats.
+- **Token version** — a per-user counter included in tokens and bumped on revocation, so a stolen or stale token fails the next check.
+- **Zookie** — Zanzibar's consistency token: a version returned by a write and required by later reads, so checks are at least as fresh as the change that mattered.

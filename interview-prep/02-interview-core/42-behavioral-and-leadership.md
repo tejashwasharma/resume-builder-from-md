@@ -6,12 +6,10 @@ reads first when deciding level. This round is a person asking for evidence,
 and pushing on it.
 
 This chapter has three parts: what the round is grading, the answer shape
-that gets credit, and a question bank for senior roles. **Every
-model answer is a skeleton**, pointing at your real stories in
-[Contentstack](../00-experience/contentstack.md) and
-[BestPeers](../00-experience/bestpeers.md), with `FILL IN` where only you
-know the detail. Nothing here should be said in an interview until the
-blanks are filled with something true.
+that gets credit, and a question bank for senior roles. **Every model answer is
+a skeleton** — the shape of a strong answer, with `Your turn` where only your
+own experience can supply the detail. Nothing here should be said in an
+interview until those blanks hold something true about you.
 
 ---
 
@@ -24,9 +22,9 @@ blanks are filled with something true.
 - Senior roles commonly probe Navigating Ambiguity, Cross-functional work, and
   Mentoring specifically — have a concrete story for each, not just the
   headline leadership story.
-- Every model answer here is a skeleton pointing at your real Contentstack
-  and BestPeers stories — nothing should be said in the room until the
-  `FILL IN` blanks are true, specific, and rehearsed.
+- Every model answer here is a skeleton for one of your own stories — nothing
+  should be said in the room until the `Your turn` blanks are true, specific,
+  and rehearsed.
 - Vague answers to the dig read as inflation even when the story is true;
   precision about your actual surface is what separates mid-level from senior here.
 
@@ -47,9 +45,9 @@ The senior signals below are what third-party accounts consistently describe.
 The interviewer will ask for one story, then dig: *what did you personally
 do; who else was involved; what would you do differently; what happened
 after.* The dig is where the level is decided, and vague answers to the dig
-read as inflation even when the story is true — the point
-[WEAK-SPOTS](../WEAK-SPOTS.md#4-led-rbac-design-and-implementation-0-to-1--attribution)
-makes about attribution.
+read as inflation even when the story is true. Attribution is the usual
+casualty: a claim that a whole system was yours collapses the moment the
+interviewer asks who else was on it.
 
 ---
 
@@ -81,17 +79,22 @@ dig. Have six stories that cover the attributes between them, and know
 which story answers which question, because you'll be asked to tell the
 same one from different angles.
 
-**Your six.** These exist in the experience chapters; the blanks are what
-make them yours.
+**Your six.** Six slots, not six anecdotes you happen to remember. Write one
+story of your own into each before the round; between them they answer almost
+every question in the bank. A story can fill two slots, but if a slot is empty
+the matching question will find it.
 
-| Story | Best for | Where |
+| Slot | Best for | Your story |
 | --- | --- | --- |
-| RBAC from 0 to 1 | Ambiguity, ownership, 0→1, a wrong first design | [Story 1](../00-experience/contentstack.md#story-1--rbac-from-0-to-1-flagship) |
-| Auth as a platform, 9 teams | Influence without authority, adoption, cross-team | [Story 4](../00-experience/contentstack.md#story-4--auth-as-a-platform-the-grpc-npm-package) |
-| Audit remediation 150 → 10 | Prioritisation, working with security engineers, delivery | [Story 3](../00-experience/contentstack.md#story-3--security-audit-remediation-150--10) |
-| 13s → 200ms | Diagnosis, a refactor justified and shipped safely | [Story 5](../00-experience/contentstack.md#story-5--policy-evaluation-and-caching-13s--under-200ms) |
-| Owning auth incidents | Pressure, communication, RCA, what changed after | [Story 7](../00-experience/contentstack.md#story-7--owning-auth-incidents) |
-| Leading without the title | Emergent leadership, mentoring, disagreement | [BestPeers Story 1](../00-experience/bestpeers.md#story-1--technical-leadership-without-the-title) |
+| **Built it from nothing** | Ambiguity, ownership, 0→1, a wrong first design | |
+| **Influence without authority** | Getting other teams to adopt something, cross-team work | |
+| **Prioritised under pressure** | Conflicting stakeholders, a backlog you ranked and defended | |
+| **Diagnosed and fixed something expensive** | Debugging, a refactor justified with data and shipped safely | |
+| **An incident you owned** | Pressure, communication, RCA, what changed after | |
+| **Led without the title** | Emergent leadership, mentoring, disagreement | |
+
+Fill the third column in writing. A slot you cannot fill is the one to go
+looking for in your own history now, not in the room.
 
 ---
 
@@ -107,11 +110,12 @@ answer sounds like.
 
 <details><summary>Model answer</summary>
 
-**Story:** [RBAC from 0 to 1](../00-experience/contentstack.md#story-1--rbac-from-0-to-1-flagship).
+**Pick a story:** the "built it from nothing" slot — a surface with no model
+and no spec, and users asking for something it could not do.
 
-**Skeleton.** Situation: the product had two fixed roles and enterprise
-customers asking for custom permissions; no model, no spec. Task: I owned
-designing and shipping the permission model. Action: how I *found* the
+**Skeleton.** Situation: the state of the thing before, and the demand that
+made it urgent; no model, no spec. Task: what you owned — the design, the
+delivery, or both. Action: how I *found* the
 requirements — which customers I talked to, which internal teams, what the
 first design was and why it didn't survive. Result: the model shipped,
 existing customers migrated without breakage, and the numbers that
@@ -122,16 +126,16 @@ hardest one."
 The interviewer is listening for the *blank page* part — how you reduced
 ambiguity — more than the result.
 
-> **FILL IN:** the first design that didn't survive contact with reality,
+> **Your turn:** the first design that didn't survive contact with reality,
 > and what killed it. That single detail is what proves you were there.
 
-> **FILL IN:** who you talked to in the first two weeks, and what you
+> **Your turn:** who you talked to in the first two weeks, and what you
 > learned that changed the design.
 
 **The dig:** "Who else was on it?" "What did you personally build versus
 review?" "How did you know you were done?" Boundary answers, ready.
 
-**Weak version:** "I designed the RBAC system end to end." No blank page,
+**Weak version:** "I designed the whole system end to end." No blank page,
 no wrong turn, no boundary. Reads as inflation.
 
 </details>
@@ -145,7 +149,7 @@ no wrong turn, no boundary. Reads as inflation.
    a role that should have been an attribute; under-estimating migration;
    not instrumenting adoption from day one.
 
-   > **FILL IN:** the actual answer. "Nothing" is a no-hire signal.
+   > **Your turn:** the actual answer. "Nothing" is a no-hire signal.
 
    </details>
 
@@ -154,21 +158,23 @@ no wrong turn, no boundary. Reads as inflation.
 
 <details><summary>Model answer</summary>
 
-**Story:** [Auth as a platform, the gRPC npm package](../00-experience/contentstack.md#story-4--auth-as-a-platform-the-grpc-npm-package).
+**Pick a story:** the "influence without authority" slot — a shared library,
+service or practice that other teams took on because it was better, not because
+someone made them.
 
-**Skeleton.** Situation: nine teams each handling auth their own way; I had
-no authority over any of them. Task: make one implementation the standard.
+**Skeleton.** Situation: several teams each solving the same problem their own
+way; no authority over any of them. Task: make one implementation the standard.
 Action: the *mechanics* of influence — what made adoption easier than
 not adopting, who the first adopter was and why, what objection the
 hardest team had and what changed their mind, what I gave up to get
-agreement. Result: nine teams on one library. Reflection and rule: "I don't
+agreement. Result: the teams converged on one implementation. Reflection and rule: "I don't
 win adoption with a mandate; I win it by making the right thing the path
 of least resistance and getting one credible team on first."
 
 **The dig:** "Which team resisted, and why?" "What did you change in
 response to their pushback?" "Did anyone not adopt?"
 
-> **FILL IN:** the hardest team, their specific objection, and what
+> **Your turn:** the hardest team, their specific objection, and what
 > changed. Without it this is a slogan.
 
 **Weak version:** "I built a package and everyone used it." Adoption
@@ -194,9 +200,9 @@ without friction isn't leadership; it's luck, and the interviewer knows it.
 
 <details><summary>Model answer</summary>
 
-**Story:** [Session governance and 2FA](../00-experience/contentstack.md#story-6--session-governance-and-2fa-hardening)
-or the [audit remediation](../00-experience/contentstack.md#story-3--security-audit-remediation-150--10)
-— whichever contains a real disagreement.
+**Pick a story:** whichever of your stories contains a real disagreement about
+a control — a timeout customers disliked, a finding someone wanted to defer, a
+dependency someone wanted to ship anyway.
 
 **Skeleton.** Situation: a product or deadline pressure that conflicted with
 a control — a session timeout customers found annoying, a finding
@@ -211,7 +217,7 @@ Senior roles expect you to partner with product and security
 engineers; the interviewer wants to see you hold a position *and* stay
 collaborative.
 
-> **FILL IN:** the actual disagreement — who wanted what, what you
+> **Your turn:** the actual disagreement — who wanted what, what you
 > proposed instead, and the outcome. If the honest answer is that you
 > lost the argument, that's a fine story too, told with what you learned.
 
@@ -238,8 +244,8 @@ collaboration, and interviewers don't want that.
 
 <details><summary>Model answer</summary>
 
-**Story:** [Leading without the title](../00-experience/bestpeers.md#story-1--technical-leadership-without-the-title),
-or the mentoring that happened during the platform rollout.
+**Pick a story:** the "led without the title" slot, or any mentoring that
+happened alongside a rollout you owned.
 
 **Skeleton.** A named (or role-described) person, where they started, what
 you did — not "I answered questions" but a mechanism: pairing on design,
@@ -249,7 +255,7 @@ Reflection: something you got wrong as a mentor. Rule: "I give people
 something that's theirs, early, and review the thinking, not the code."
 
 
-> **FILL IN:** the person, the starting point, the mechanism, and the
+> **Your turn:** the person, the starting point, the mechanism, and the
 > observable change. This question is unanswerable without a real example.
 
 **Weak version:** "I mentored the junior developers on the team." Plural,
@@ -265,7 +271,7 @@ no mechanism, no outcome.
    Common honest answers: doing it for them when under deadline;
    feedback too soft too long; assuming they'd ask. Pick the true one.
 
-   > **FILL IN:** yours.
+   > **Your turn:** yours.
 
    </details>
 
@@ -274,8 +280,8 @@ no mechanism, no outcome.
 
 <details><summary>Model answer</summary>
 
-**Story:** an incident from [owning auth incidents](../00-experience/contentstack.md#story-7--owning-auth-incidents),
-or the first RBAC design that didn't survive.
+**Pick a story:** an incident you owned, or the first design of something that
+didn't survive contact with reality.
 
 **Skeleton.** A real failure with your name on it — not a team failure, not
 a "failure" that's secretly a success. What happened, what you did in the
@@ -287,8 +293,8 @@ and I build the control."
 Collaboration and values are largely this question. The interviewer is checking for
 ownership without defensiveness.
 
-> **FILL IN:** the failure. [Hard questions](../00-experience/hard-questions.md#tell-me-about-a-time-you-failed)
-> has the framing; this needs the fact.
+> **Your turn:** the failure itself. The shape above is the framing; this needs
+> the fact, including the part that was yours.
 
 **Weak version:** "I worked too hard once." Or a failure that belonged to
 someone else.
@@ -301,9 +307,8 @@ someone else.
    <details><summary>Answer</summary>
 
    Early, to the people affected, with what I knew and didn't yet know,
-   and a time for the next update. The incident-communication shape from
-   Story 7. The dig here is whether I told people before I was sure — the
-   right answer is yes.
+   and a time for the next update. The dig here is whether I told people
+   before I was sure — the right answer is yes.
 
    </details>
 
@@ -312,8 +317,8 @@ someone else.
 
 <details><summary>Model answer</summary>
 
-**Story:** the monolith split at [BestPeers](../00-experience/bestpeers.md#story-2--splitting-the-monolith-into-3-services)
-or a decision during the platform work.
+**Pick a story:** an architectural decision you argued for or against — a
+split, a rewrite, a technology choice — where the other side had a real case.
 
 **Skeleton.** The disagreement stated fairly — their position had merit,
 say what it was. How you made your case: data, a prototype, a written
@@ -322,7 +327,7 @@ you did after losing, if you lost — committed fully, which is the collaboratio
 signal. Rule: "disagree in writing with evidence, decide together, then
 commit without relitigating."
 
-> **FILL IN:** a real one. Interviewers can tell a constructed disagreement
+> **Your turn:** a real one. Interviewers can tell a constructed disagreement
 > from a lived one by the dig: "what exactly did they say?"
 
 **Weak version:** a disagreement where you were obviously right and they
@@ -338,7 +343,7 @@ were obviously wrong. Real ones aren't like that.
    Yes, and the story where I was is the stronger one to tell. Say what
    convinced me, and that I said so.
 
-   > **FILL IN:** the time you were wrong.
+   > **Your turn:** the time you were wrong.
 
    </details>
 
@@ -347,8 +352,7 @@ were obviously wrong. Real ones aren't like that.
 
 <details><summary>Model answer</summary>
 
-**Story:** [owning auth incidents](../00-experience/contentstack.md#story-7--owning-auth-incidents),
-the worst one.
+**Pick a story:** the worst incident you personally handled.
 
 **Skeleton.** The timeline: detection (how did you find out — alert or
 customer?), triage (what you looked at first and why), mitigation (what
@@ -358,7 +362,7 @@ control that came out of it. The interviewer is listening for calm
 sequencing and for the *after*. Rule: "mitigate before diagnose; communicate
 before certain; every incident leaves a control behind."
 
-> **FILL IN:** the incident's actual timeline and the control it produced.
+> **Your turn:** the incident's actual timeline and the control it produced.
 > The chapter has the shape; this needs the times and the numbers.
 
 **Weak version:** the story ends when the incident ends. No RCA, no change.
@@ -371,7 +375,7 @@ before certain; every incident leaves a control behind."
    <details><summary>Answer</summary>
 
    Automated detection before customers noticed; a rollback that's a
-   button, not a procedure; a decision cache so the auth path degrades
+   button, not a procedure; a cache or fallback so the critical path degrades
    rather than fails; and an incident channel with a single commander.
    That's the [observability and operations](30-observability-slos-and-operations.md)
    chapter, said out loud.
@@ -383,18 +387,18 @@ before certain; every incident leaves a control behind."
 
 <details><summary>Model answer</summary>
 
-**Story:** [audit remediation 150 → 10](../00-experience/contentstack.md#story-3--security-audit-remediation-150--10)
-— the prioritisation of findings against product deadlines.
+**Pick a story:** the "prioritised under pressure" slot — a backlog you ranked
+against a deadline, with people who each wanted a different part of it first.
 
-**Skeleton.** Who wanted what (security wanted everything fixed; product
-wanted the roadmap; customers wanted specific findings closed). The
+**Skeleton.** Who wanted what (one group wants everything fixed; another wants
+the roadmap; customers want their specific item closed). The
 framework you used to rank — risk × exposure × effort, or whatever it
 actually was — and how you made it *visible* so the ranking wasn't your
 opinion. What you deferred and how you made that a recorded decision.
 Result. Rule: "I make the prioritisation legible so the disagreement is
 about the criteria, not about me."
 
-> **FILL IN:** the actual ranking criteria and one finding you deliberately
+> **Your turn:** the actual ranking criteria and one item you deliberately
 > deferred — and whether that ever bit you.
 
 **Weak version:** "I did the most important ones first." Important by
@@ -428,7 +432,7 @@ private, early, and paired with help."
 For a senior role where you'll help set the review culture, this
 one matters more than it looks.
 
-> **FILL IN:** a real instance. If none comes to mind, that itself is
+> **Your turn:** a real instance. If none comes to mind, that itself is
 > worth reflecting on before the round.
 
 **Weak version:** feedback that was really praise, or feedback delivered
@@ -454,10 +458,9 @@ in a review comment with no conversation.
 
 <details><summary>Model answer</summary>
 
-**Story:** SAML for the enterprise SSO work
-([Story 2](../00-experience/contentstack.md#story-2--unifying-oauth-sso-and-scim)),
-or OPA/Rego for policy evaluation ([Story 5](../00-experience/contentstack.md#story-5--policy-evaluation-and-caching-13s--under-200ms)),
-or the AI-tooling work ([Story 8](../00-experience/contentstack.md#story-8--ai-adoption-and-tooling)).
+**Pick a story:** a protocol, language or tool you had to learn because a
+commitment depended on it — a spec you read cold, an engine whose evaluation
+model you had to understand before you could make it fast.
 
 **Skeleton.** What you didn't know, why it was suddenly needed, *how* you
 learned it — the spec, a reference implementation, a person — and how you
@@ -468,7 +471,7 @@ immediately to find out what I misunderstood."
 This is General Cognitive Ability wearing a behavioral costume; the
 interviewer is listening for the method.
 
-> **FILL IN:** which one, and the concrete first thing you built with it.
+> **Your turn:** which one, and the concrete first thing you built with it.
 
 </details>
 
@@ -481,7 +484,7 @@ interviewer is listening for the method.
    skew, signature scope, or IdP-initiated flows; for Rego, the evaluation
    model. Say yours.
 
-   > **FILL IN:** the misunderstanding.
+   > **Your turn:** the misunderstanding.
 
    </details>
 
@@ -497,7 +500,7 @@ than the brand.
 Keep it under a minute. Name one specific thing about the team's public
 work. Then stop.
 
-> **FILL IN:** the specific thing.
+> **Your turn:** the specific thing.
 
 </details>
 
@@ -525,10 +528,10 @@ and ask them what "done" looks like. Ship the smallest thing that tests the
 interpretation. And be explicit about what I decided on my own so people
 can object.
 
-Then one example — a week in the platform rollout or the audit where the
-requirement was a sentence and the work was a month.
+Then one example — a week where the requirement was a sentence and the work
+turned out to be a month.
 
-> **FILL IN:** the example.
+> **Your turn:** the example.
 
 **Weak version:** "I'm comfortable with ambiguity." That's a claim; the
 question wants a method.
@@ -551,13 +554,14 @@ question wants a method.
 
 ## Before the round
 
-- Fill every `FILL IN` above. Then run `/mock-interview leadership` — it
-  will dig where the blanks were.
+- Fill every `Your turn` above, and the third column of the six-slot table.
+  Then run `/mock-interview leadership` — it will dig where the blanks were.
 - Practise the six stories out loud, timed, until each is under two minutes
   with the boundary, trade-off, reflection and rule intact.
-- Re-read [hard questions](../00-experience/hard-questions.md) for the
-  "why did you leave" and "tell me about yourself" openers — the G&L round
-  usually starts with one.
+- Rehearse the two openers this round usually starts with — "tell me about
+  yourself" (a 60–90 second walk from role to role that ends at *why this job*)
+  and "why did you leave" (two or three sentences, no criticism, forward-facing,
+  then stop).
 - Prepare two questions for the interviewer.
 
 ---

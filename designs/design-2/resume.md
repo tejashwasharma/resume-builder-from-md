@@ -17,7 +17,6 @@ Senior Software Engineer · Backend & Platform
 ## Core Skills
 
 - **Primary Stack (MERN):** MongoDB, Express.js, React.js, Node.js, JavaScript, TypeScript
-- **Secondary Languages:** Golang, Python, Java, SQL
 - **Backend & APIs:** NestJS, Express.js, Fastify, REST APIs, GraphQL, gRPC, Protobuf, Socket.io, Microservices, Kafka, RabbitMQ, RBAC, OAuth 2.0, SAML 2.0, SSO, SCIM, JWT, MFA/TOTP, Zero Trust Architecture, PassportJS, OPA, Rego, Okta, Microsoft Entra ID, Ping Identity
 - **Frontend Engineering:** React.js, TypeScript, JavaScript, Redux, Redux Thunk/Saga, AngularJS, SCSS, Styled Components, Micro-Frontends
 - **Databases & Caching:** MongoDB, PostgreSQL, SQL, Redis, ioredis, Mongoose, Sequelize, Firebase (Auth, Firestore, Storage, Hosting)

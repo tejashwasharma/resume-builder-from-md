@@ -1,4 +1,4 @@
-# 2-D arrays and matrices — grids, traversals and flood fill
+# Matrices and grids
 
 A matrix is an array of arrays, so nothing here is conceptually new. What makes
 it its own chapter is that the *bookkeeping* is where people lose the round:

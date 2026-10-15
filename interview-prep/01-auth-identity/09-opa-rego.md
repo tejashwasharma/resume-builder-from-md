@@ -1,7 +1,7 @@
 # OPA and Rego
 
-Policy as code, evaluated at request time. This is the engine behind your
-13s→200ms story, so expect performance questions as much as language ones.
+Policy as code, evaluated at request time. It sits on the hot path of every
+authorization check, so expect performance questions as much as language ones.
 
 Docs: [Open Policy Agent](https://www.openpolicyagent.org/docs/latest/)
 
@@ -140,10 +140,9 @@ a revoked permission is a security bug, not a stale read.** Versioned cache
 keys — a counter per user or tenant, bumped on any role change — invalidate
 everything derived at once without enumerating keys.
 
-> **In your own work.** You redesigned Rego policy evaluation *and* the Redis
-> caching model together, taking the tail from ~13s to under 200ms. Both halves
-> get asked about, and so does invalidation on role change. See
-> [contentstack](../00-experience/contentstack.md) §5.
+> **Bring your own experience.** Policy evaluation and the cache in front of it
+> are usually redesigned together. If you have done that work, both halves get
+> asked about — and so does invalidation on a role change.
 
 
 ## Building it

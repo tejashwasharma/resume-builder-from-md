@@ -1,7 +1,8 @@
-# Testing, TDD and defending "85%+ coverage"
+# Testing and TDD
 
-Your resume cites 85%+ coverage twice and 80%+ once. Any number on a resume is
-fair game, and this one has a trap built into it.
+Coverage percentages are the most commonly quoted number on an engineering
+resume, and any number on a resume is fair game. This one has a trap built into
+it: coverage measures which lines ran, not whether anything was asserted.
 
 ---
 
