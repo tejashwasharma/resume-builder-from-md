@@ -249,10 +249,8 @@ process.on('SIGTERM', async () => {
 });
 ```
 
-The equivalent exists in each language track —
-[Go](../13-backend-golang/03-building-the-server.md) uses `srv.Shutdown(ctx)`,
-[Python](../12-backend-python/03-building-the-server.md) uses a lifespan
-handler — and the ordering is identical in all three.
+The equivalent exists in every runtime — Go uses `srv.Shutdown(ctx)`, Python a
+lifespan handler — and the ordering is identical in all of them.
 
 **The probe spec that goes with it**
 

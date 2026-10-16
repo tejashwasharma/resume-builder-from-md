@@ -8,6 +8,7 @@
       "blurb": "How a senior loop works, how to practise, and how to plan the weeks before it.",
       "chapters": [
         "02-interview-core/01-the-interview-process.md",
+        "02-interview-core/47-the-hybrid-round.md",
         "02-interview-core/19-the-drill-plan.md",
         "02-interview-core/43-the-schedule.md"
       ]
@@ -16,7 +17,7 @@
       "id": "coding-basics",
       "title": "Coding basics",
       "level": "basic",
-      "blurb": "How the coding round runs, and the structures every problem is built on. Starts in brief \u2014 most of the time goes into Code.",
+      "blurb": "How the coding round runs, and the structures every problem is built on. Starts in brief — most of the time goes into Code.",
       "chapters": [
         "02-interview-core/03-the-coding-round.md",
         "02-interview-core/04-patterns-and-complexity.md",
@@ -48,7 +49,7 @@
       "id": "distributed",
       "title": "Distributed systems",
       "level": "advanced",
-      "blurb": "From zero: the network underneath, how a single store actually works, then what breaks when one machine becomes many \u2014 and the tools that cope.",
+      "blurb": "From zero: the network underneath, how a single store actually works, then what breaks when one machine becomes many — and the tools that cope.",
       "chapters": [
         "02-interview-core/20-distributed-start-here.md",
         "02-interview-core/21-the-technology-landscape.md",
@@ -71,7 +72,7 @@
       "id": "design",
       "title": "System design",
       "level": "advanced",
-      "blurb": "The method, the numbers, and every building block \u2014 what each one is, and when and why to use it.",
+      "blurb": "The method, the numbers, and every building block — what each one is, and when and why to use it.",
       "chapters": [
         "02-interview-core/31-design-round-start-here.md",
         "02-interview-core/32-the-method.md",
@@ -100,7 +101,7 @@
       "id": "lld",
       "title": "Low-level design",
       "level": "reference",
-      "blurb": "Object modelling, SOLID and design patterns, and the classic LLD problem pool \u2014 for companies that run a dedicated round.",
+      "blurb": "Object modelling, SOLID and design patterns, and the classic LLD problem pool — for companies that run a dedicated round.",
       "chapters": [
         "09-lld/01-lld-start-here.md",
         "09-lld/02-oop-solid-and-patterns.md",
@@ -132,6 +133,7 @@
       "blurb": "The security knowledge round, and the design prompts a security team asks.",
       "chapters": [
         "02-interview-core/41-security-domain-knowledge.md",
+        "02-interview-core/48-third-party-platform-security.md",
         "02-interview-core/40-design-security-systems.md"
       ]
     },
@@ -145,30 +147,6 @@
         "11-backend-nodejs/02-runtime-and-event-loop.md",
         "11-backend-nodejs/03-building-the-server.md",
         "11-backend-nodejs/04-testing-structure-production.md"
-      ]
-    },
-    {
-      "id": "backend-python",
-      "title": "Backend: Python",
-      "level": "language track",
-      "blurb": "Python from zero, the GIL and asyncio, and the same server built with FastAPI \u2014 dependencies, Pydantic and the blocking-call trap.",
-      "chapters": [
-        "12-backend-python/01-python-from-zero.md",
-        "12-backend-python/02-the-python-runtime.md",
-        "12-backend-python/03-building-the-server.md",
-        "12-backend-python/04-testing-structure-production.md"
-      ]
-    },
-    {
-      "id": "backend-golang",
-      "title": "Backend: Go",
-      "level": "language track",
-      "blurb": "Go from zero, goroutines and the scheduler, and the same server on net/http \u2014 middleware as one type, context, and a 15MB image.",
-      "chapters": [
-        "13-backend-golang/01-go-from-zero.md",
-        "13-backend-golang/02-the-go-runtime.md",
-        "13-backend-golang/03-building-the-server.md",
-        "13-backend-golang/04-testing-structure-production.md"
       ]
     },
     {
@@ -223,7 +201,7 @@
       "id": "ai",
       "title": "AI engineering",
       "level": "reference",
-      "blurb": "Agent enablement, AI across the SDLC, and RAG \u2014 with the boundaries that make the claims credible.",
+      "blurb": "Agent enablement, AI across the SDLC, and RAG — with the boundaries that make the claims credible.",
       "chapters": [
         "07-ai-tooling/01-ai-engineering.md",
         "07-ai-tooling/02-ai-across-the-sdlc.md",

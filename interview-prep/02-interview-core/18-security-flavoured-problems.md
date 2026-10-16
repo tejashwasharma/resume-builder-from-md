@@ -145,6 +145,10 @@ it came from.
 | Path segments | `Array` as a stack | `..` pops; `.` and empty are skipped |
 | Top-k | `MinHeap` of size k from [heaps](11-heaps-and-top-k.md) | |
 | Streaming frequencies | Count-Min sketch: `d` rows × `w` counters | Say the error bound if asked |
+| Scope / role graph | Adjacency `Map<string, string[]>` + a `seen` `Set` | Grants and assume-role edges both cycle; BFS without `seen` hangs |
+| Domain allowlist | Trie over **reversed** labels | Suffix matching becomes prefix matching |
+| Certificate chain | `Map<subject, cert>`, then walk `issuer` | Index once; the walk is O(depth) and needs a loop guard |
+| Per-client quota | `Map<client, { tokens, last }>`, refilled lazily | No timer: compute refill from elapsed time on access |
 
 **Pseudocode — canonicalise, then hash, the step under problems 5 and 6**
 
@@ -1615,6 +1619,254 @@ function findSecrets(lines: string[]): number[] {
   const out: number[] = [];
   lines.forEach((l, i) => { if (aws.test(l) || gh.test(l)) out.push(i); });
   return out;
+}
+```
+</details>
+
+### Exercise: Apps that can reach a data class
+**Level:** intermediate · **Topic:** BFS over a scope-implication graph · **Hint:** Expand each app's granted scopes transitively through `implies`, checking data classes as you go — and guard against cycles.
+**Function:** `appsReaching(grants: { app: string; scopes: string[] }[], implies: Record<string, string[]>, dataOf: Record<string, string[]>, target: string): string[]`
+**Core:** true
+
+Each grant gives an app a set of scopes. A scope may *imply* other scopes
+(`admin.all` implies `mail.read`), transitively and possibly cyclically. A
+scope may map to data classes in `dataOf`. Return the sorted, de-duplicated
+names of apps that can reach `target`.
+With `implies = {"admin.all": ["mail.read"]}` and `dataOf = {"mail.read": ["mail"]}`,
+an app granted `admin.all` reaches `"mail"`.
+
+```tests
+[{"args": [[{"app": "backup", "scopes": ["admin.all"]}, {"app": "cal", "scopes": ["calendar.read"]}], {"admin.all": ["mail.read", "files.read"], "files.read": ["files.meta"], "mail.read": []}, {"mail.read": ["mail"], "files.read": ["files"], "files.meta": ["metadata"]}, "mail"], "expected": ["backup"]},
+ {"args": [[{"app": "a", "scopes": ["files.read"]}], {"admin.all": ["mail.read", "files.read"], "files.read": ["files.meta"], "mail.read": []}, {"mail.read": ["mail"], "files.read": ["files"], "files.meta": ["metadata"]}, "metadata"], "expected": ["a"]},
+ {"args": [[{"app": "a", "scopes": ["x"]}], {"x": ["y"], "y": ["x"]}, {}, "mail"], "expected": []},
+ {"args": [[], {}, {}, "mail"], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function appsReaching(grants: { app: string; scopes: string[] }[], implies: Record<string, string[]>, dataOf: Record<string, string[]>, target: string): string[] {
+  const out: string[] = [];
+  for (const g of grants) {
+    // BFS from the granted scopes; `seen` makes the implication cycle safe.
+    const seen = new Set<string>(g.scopes);
+    const queue = [...g.scopes];
+    let head = 0, hit = false;
+    while (head < queue.length && !hit) {
+      const s = queue[head++];
+      if ((dataOf[s] ?? []).includes(target)) { hit = true; break; }
+      for (const next of implies[s] ?? []) if (!seen.has(next)) { seen.add(next); queue.push(next); }
+    }
+    if (hit) out.push(g.app);
+  }
+  return [...new Set(out)].sort();
+}
+```
+</details>
+
+### Exercise: Shortest privilege-escalation path
+**Level:** senior · **Topic:** BFS shortest path on a directed graph · **Hint:** Level-by-level BFS from the principal; check membership of the target set as you enqueue, not when you dequeue.
+**Function:** `minHops(edges: [string, string][], start: string, targets: string[]): number`
+**Core:** true
+
+`edges` are directed `[from, to]` pairs meaning "`from` can assume `to`".
+Return the fewest hops from `start` to *any* member of `targets`, `0` if
+`start` is itself a target, and `-1` if none is reachable. Roles may assume
+each other, so cycles occur.
+`[["u","r1"],["r1","admin"]]` from `"u"` to `["admin"]` is `2`.
+
+```tests
+[{"args": [[["u", "r1"], ["r1", "r2"], ["r2", "admin"]], "u", ["admin"]], "expected": 3},
+ {"args": [[["u", "r1"], ["r1", "u"]], "u", ["admin"]], "expected": -1},
+ {"args": [[], "admin", ["admin"]], "expected": 0},
+ {"args": [[["u", "a"], ["u", "b"], ["b", "admin"], ["a", "admin"]], "u", ["admin"]], "expected": 2},
+ {"args": [[["u", "a"]], "u", ["a", "b"]], "expected": 1}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function minHops(edges: [string, string][], start: string, targets: string[]): number {
+  const adj = new Map<string, string[]>();
+  for (const [from, to] of edges) { if (!adj.has(from)) adj.set(from, []); adj.get(from)!.push(to); }
+  const goal = new Set(targets);
+  if (goal.has(start)) return 0;
+  const seen = new Set([start]);
+  let frontier = [start], hops = 0;
+  while (frontier.length) {
+    hops++;
+    const next: string[] = [];
+    for (const node of frontier) for (const n of adj.get(node) ?? []) {
+      if (seen.has(n)) continue;
+      if (goal.has(n)) return hops;      // checked on enqueue — first touch is shortest
+      seen.add(n); next.push(n);
+    }
+    frontier = next;
+  }
+  return -1;
+}
+```
+</details>
+
+### Exercise: Host allowlist with wildcards
+**Level:** intermediate · **Topic:** trie over reversed domain labels · **Hint:** Index rules back-to-front — `com`, then `example` — so matching walks the host the same way.
+**Function:** `matchHosts(rules: string[], hosts: string[]): boolean[]`
+
+A rule is either an exact host (`corp.net`) or a wildcard (`*.example.com`),
+where `*` matches **one or more** leading labels. Return, for each host in
+order, whether any rule matches it. Note that `*.example.com` does **not**
+match the bare `example.com`.
+`["*.example.com"]` against `["a.example.com", "example.com"]` → `[true, false]`.
+
+```tests
+[{"args": [["*.example.com", "corp.net"], ["a.example.com", "a.b.example.com", "example.com", "corp.net", "x.corp.net"]], "expected": [true, true, false, true, false]},
+ {"args": [[], ["a.com"]], "expected": [false]},
+ {"args": [["*.a.com"], ["b.a.com", "a.com", "c.b.a.com"]], "expected": [true, false, true]}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function matchHosts(rules: string[], hosts: string[]): boolean[] {
+  type Node = { children: Map<string, Node>; exact: boolean; wild: boolean };
+  const mk = (): Node => ({ children: new Map(), exact: false, wild: false });
+  const root = mk();
+  for (const rule of rules) {
+    // Reversed: the TLD is the first level, so suffix matching becomes prefix matching.
+    let node = root, wildcard = false;
+    for (const label of rule.split('.').reverse()) {
+      if (label === '*') { wildcard = true; break; }
+      if (!node.children.has(label)) node.children.set(label, mk());
+      node = node.children.get(label)!;
+    }
+    if (wildcard) node.wild = true; else node.exact = true;
+  }
+  return hosts.map((host) => {
+    const labels = host.split('.').reverse();
+    let node = root;
+    for (let i = 0; i < labels.length; i++) {
+      const child = node.children.get(labels[i]);
+      if (!child) return false;
+      node = child;
+      if (node.wild && i < labels.length - 1) return true;   // at least one label left over
+    }
+    return node.exact;
+  });
+}
+```
+</details>
+
+### Exercise: Validate a certificate chain
+**Level:** intermediate · **Topic:** index by subject, then walk issuer links · **Hint:** Build a map from subject to cert, follow `issuer` upward, and track what you've visited — a chain can loop.
+**Function:** `validateChain(certs: { subject: string; issuer: string; notBefore: number; notAfter: number }[], leaf: string, trustedRoot: string, at: number): boolean`
+
+Starting from `leaf`, follow each cert's `issuer` to its parent. The chain is
+valid only if every cert on it is within its validity window at time `at`
+(inclusive) and the walk terminates at `trustedRoot`, which must be
+self-signed (`subject === issuer`). A missing issuer, an expired cert, a
+self-signed cert that isn't the trusted root, or a cycle all make it invalid.
+`notBefore`/`notAfter`/`at` are plain numbers.
+
+```tests
+[{"args": [[{"subject": "leaf", "issuer": "inter", "notBefore": 0, "notAfter": 100}, {"subject": "inter", "issuer": "root", "notBefore": 0, "notAfter": 200}, {"subject": "root", "issuer": "root", "notBefore": 0, "notAfter": 300}], "leaf", "root", 50], "expected": true},
+ {"args": [[{"subject": "leaf", "issuer": "inter", "notBefore": 0, "notAfter": 100}, {"subject": "inter", "issuer": "root", "notBefore": 0, "notAfter": 200}, {"subject": "root", "issuer": "root", "notBefore": 0, "notAfter": 300}], "leaf", "root", 150], "expected": false},
+ {"args": [[{"subject": "leaf", "issuer": "gone", "notBefore": 0, "notAfter": 100}], "leaf", "root", 50], "expected": false},
+ {"args": [[{"subject": "a", "issuer": "b", "notBefore": 0, "notAfter": 9}, {"subject": "b", "issuer": "a", "notBefore": 0, "notAfter": 9}], "a", "root", 5], "expected": false},
+ {"args": [[{"subject": "root", "issuer": "root", "notBefore": 0, "notAfter": 300}], "root", "root", 10], "expected": true}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function validateChain(certs: { subject: string; issuer: string; notBefore: number; notAfter: number }[], leaf: string, trustedRoot: string, at: number): boolean {
+  const bySubject = new Map(certs.map((c) => [c.subject, c]));
+  const seen = new Set<string>();
+  let cur = bySubject.get(leaf);
+  while (cur) {
+    if (seen.has(cur.subject)) return false;          // loop
+    seen.add(cur.subject);
+    if (at < cur.notBefore || at > cur.notAfter) return false;
+    if (cur.subject === trustedRoot) return cur.issuer === cur.subject;
+    if (cur.issuer === cur.subject) return false;      // self-signed, but not the trusted root
+    cur = bySubject.get(cur.issuer);
+  }
+  return false;                                        // issuer not present
+}
+```
+</details>
+
+### Exercise: Token-bucket rate limiter
+**Level:** intermediate · **Topic:** per-key bucket with lazy refill · **Hint:** Don't tick on a timer — compute the refill from the elapsed time since that client's last request, capped at capacity.
+**Function:** `rateLimit(requests: [string, number][], capacity: number, refillPerSec: number): boolean[]`
+**Core:** true
+
+`requests` are `[clientId, timestampMs]` in non-decreasing time order. Each
+client has its own bucket that starts full at `capacity` and refills at
+`refillPerSec` tokens per second, never exceeding `capacity`. A request is
+allowed if the bucket holds at least one token, which it then consumes.
+Return the decision per request, in order.
+With `capacity = 2`, three instant requests from one client → `[true, true, false]`.
+
+```tests
+[{"args": [[["u", 0], ["u", 0], ["u", 0]], 2, 1], "expected": [true, true, false]},
+ {"args": [[["u", 0], ["u", 0], ["u", 1000]], 2, 1], "expected": [true, true, true]},
+ {"args": [[["a", 0], ["b", 0]], 1, 1], "expected": [true, true]},
+ {"args": [[["u", 0], ["u", 0], ["u", 10000]], 2, 1], "expected": [true, true, true]},
+ {"args": [[], 5, 1], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function rateLimit(requests: [string, number][], capacity: number, refillPerSec: number): boolean[] {
+  const state = new Map<string, { tokens: number; last: number }>();
+  return requests.map(([client, ts]) => {
+    let s = state.get(client);
+    if (!s) { s = { tokens: capacity, last: ts }; state.set(client, s); }
+    // Lazy refill: no background timer, just elapsed time since this client was last seen.
+    s.tokens = Math.min(capacity, s.tokens + ((ts - s.last) / 1000) * refillPerSec);
+    s.last = ts;
+    if (s.tokens >= 1) { s.tokens -= 1; return true; }
+    return false;
+  });
+}
+```
+</details>
+
+### Exercise: Dependency confusion detector
+**Level:** foundation · **Topic:** hash join on package name + version compare · **Hint:** Index the public registry by name, then check each internal package — the risk is a *higher* public version shadowing yours.
+**Function:** `findConfusable(internal: { name: string; version: string }[], publicReg: { name: string; version: string }[]): string[]`
+
+An internal package name that also exists publicly can be shadowed when a
+resolver prefers the highest version across registries. Return the sorted
+names of internal packages whose public counterpart has a **strictly greater**
+version. Versions are `major.minor.patch` with numeric parts, compared
+component-wise.
+Internal `ui@1.2.3` with public `ui@9.0.0` → `["ui"]`.
+
+```tests
+[{"args": [[{"name": "ui", "version": "1.2.3"}, {"name": "core", "version": "2.0.0"}], [{"name": "ui", "version": "9.0.0"}, {"name": "core", "version": "1.0.0"}]], "expected": ["ui"]},
+ {"args": [[{"name": "a", "version": "1.0.0"}], []], "expected": []},
+ {"args": [[{"name": "a", "version": "1.0.0"}, {"name": "b", "version": "0.1.0"}], [{"name": "a", "version": "1.0.1"}, {"name": "b", "version": "0.2.0"}]], "expected": ["a", "b"]},
+ {"args": [[{"name": "a", "version": "1.0.0"}], [{"name": "a", "version": "1.0.0"}]], "expected": []}]
+```
+
+<details><summary>Solution</summary>
+
+```ts
+function findConfusable(internal: { name: string; version: string }[], publicReg: { name: string; version: string }[]): string[] {
+  const cmp = (a: string, b: string) => {
+    const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) { const d = (pa[i] ?? 0) - (pb[i] ?? 0); if (d !== 0) return d; }
+    return 0;
+  };
+  const pub = new Map(publicReg.map((p) => [p.name, p.version]));
+  const out: string[] = [];
+  for (const pkg of internal) {
+    const v = pub.get(pkg.name);
+    if (v !== undefined && cmp(v, pkg.version) > 0) out.push(pkg.name);
+  }
+  return out.sort();
 }
 ```
 </details>

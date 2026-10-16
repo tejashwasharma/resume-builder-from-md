@@ -225,10 +225,10 @@ problems are solved and the best quiz score. No per-section ticks.
 
 `## Exercises` blocks are executed — in a Web Worker on the page, and under
 node at build time via `site/runner.js`. **Only TypeScript/JavaScript can run
-there.** The Python and Go chapters therefore carry their code in `## Building
-it` and `## Workshop:` sections, which render as prose, and must not define
-`## Exercises`; adding one would hand Go source to the TypeScript runner and
-fail the build.
+there.** A chapter about any other language must therefore carry its code in
+`## Building it` and `## Workshop:` sections, which render as prose, and must
+not define `## Exercises`; adding one would hand non-TypeScript source to the
+TypeScript runner and fail the build.
 
 ### The Exercise contract (Code stage)
 

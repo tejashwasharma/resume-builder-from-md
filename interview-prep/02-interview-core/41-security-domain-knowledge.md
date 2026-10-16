@@ -259,7 +259,8 @@ cloud breach is on the customer side of that line, and almost every one is a
 - **Workload identity instead of keys** — a workload proves who it is via
   the platform (metadata server, OIDC federation) and gets short-lived
   tokens; there is no key file to leak. Same idea as Sigstore's keyless
-  signing and as your short-lived-token session design.
+  signing, and the same idea as issuing short-lived session tokens instead of
+  storing a long-lived secret.
 - **Organisation policy / guardrails** — constraints applied at the org
   level that make the dangerous configuration impossible rather than
   detected ("no public buckets", "no service-account key creation").
@@ -275,6 +276,57 @@ cloud breach is on the customer side of that line, and almost every one is a
 - **Detection** — audit logs to a SIEM, anomaly rules ("new key created and
   used from a new country within an hour").
 
+**Cross-tenant isolation and the confused deputy.** The subtler class, and
+the one that survives a clean posture scan. A managed service, or a vendor's
+service account, is allowed to act on your resources on your behalf; an
+attacker who can influence *what* it is asked to do borrows its privileges
+without ever holding a credential. The classic shape is a vendor role that
+any of that vendor's customers can ask the vendor to assume — so the control
+is a shared secret only you and the vendor know, bound into the trust policy
+(an external ID, a condition on the caller's account or project) so that
+"this vendor" is not the same principal as "this vendor acting for me".
+Generalised: **a trust policy that names a party but not a context is
+incomplete.** The same bug appears in CI federation when the condition is
+"any job in this organisation" rather than "this repository, this branch".
+
+**Organisation policy and inheritance.** Guardrails are set high in the
+resource hierarchy and inherited downward, which is what makes them scale —
+one constraint at the org node covers every project created afterwards. Three
+things an interviewer will check you know:
+
+- A constraint **prevents new violating configuration; it does not remediate
+  existing violations.** Turning on "no public buckets" does not close the
+  bucket that is already public — you still need a sweep. Candidates
+  routinely claim the opposite.
+- **Inheritance has exceptions**, and the exception mechanism is the risk: a
+  project-level override that disables the org constraint is a legitimate
+  feature and an excellent backdoor. Overrides need an owner, a reason and an
+  expiry, and the list of them is itself a finding to review.
+- **Ordering matters at rollout.** Applying a constraint before the existing
+  estate complies breaks deployments; the sequence is detect, fix, then
+  enforce — not enforce and discover.
+
+**CSPM at scale — the parts that aren't detection.** Finding misconfiguration
+is a solved, commoditised problem; the programme lives or dies on everything
+after the finding:
+
+| Need | Why it's the hard part |
+| --- | --- |
+| **Ownership attribution** | A finding without an owner cannot be fixed. Derived from resource labels, project metadata and the deploying pipeline — and the gaps in that mapping are the first thing to fix, before any scanning |
+| **Risk scoring** | Ten thousand findings is the same as none. Score on exposure (reachable from the internet?), data sensitivity, and privilege reachable — not on the scanner's own severity label |
+| **Auto-remediation where safe** | Closing a public bucket is reversible and nearly always right. Shrinking a service account some pipeline depends on is not — that is a ticket with an SLA |
+| **Exceptions with expiry** | Every real estate has legitimate violations. An exception with an owner and a date is governance; a permanent suppression is a lie in the dashboard |
+| **Drift and recurrence** | The same finding reappearing is a *pipeline* problem, not a resource problem. Recurrence rate is the metric that tells you whether you are fixing causes or instances |
+
+**Detection rules worth naming.** Posture is the static half; these are the
+dynamic half, read off audit logs: a service-account key created and used
+from a new region within an hour; a role binding granting a primitive role at
+project level; an IAM policy change by a principal that has never made one;
+audit logging being disabled on any resource; a storage bucket's ACL opening
+to `allUsers`; a vendor principal accessing a resource type it has never
+touched. Each is cheap, and each maps directly to a row in the
+misconfiguration table above.
+
 **Remediation is the hard part.** Finding is cheap; fixing at scale needs
 an owner for every resource, a risk score to prioritise, auto-remediation
 where safe (close the public bucket) and a ticket with an SLA where not
@@ -286,34 +338,32 @@ is half done.
 
 ## Third-party risk
 
-The other half of cloud security: third-party vendor usage.
+The other half of the job, and big enough to have its own chapter:
+[third-party platform security](48-third-party-platform-security.md) covers
+the surface, the grant mechanism, the attack paths and the governance
+controls in full. The compressed version, for when this comes up inside a
+broader security conversation:
 
-**The surface.** SaaS vendors that hold your data; OAuth apps that users
-have granted access to corporate data (a calendar tool with read access to
-all mail); SaaS-to-SaaS integrations (vendor A has a token for vendor B);
-vendor service accounts inside your cloud; browser extensions; contractors.
+- **The surface** is wider than "vendors": OAuth apps users have consented
+  to, SaaS-to-SaaS integrations, vendor service accounts inside your cloud,
+  marketplace add-ons, browser extensions, CI integrations, contractors.
+- **A delegated grant is a standing credential, not a session.** The refresh
+  token renews access indefinitely with no user present, so it is outside
+  your MFA policy and usually outside your leaver process.
+- **Inventory is the foundational control** — a join across the identity
+  provider, every SaaS admin API, cloud IAM and device management. You cannot
+  govern what you cannot list, and the 2am question ("vendor X was breached,
+  what could they reach?") is answerable only from work done beforehand.
+- **Scope is the blast radius**, and the delegated-versus-application
+  distinction is where the real danger lives: an application permission acts
+  tenant-wide with no user context.
+- **Prevention beats detection** here too — restricting consent to verified
+  publishers and low-risk scopes makes consent phishing impossible rather
+  than merely alertable.
 
-**The controls:**
-- **Inventory** — you cannot govern what you can't list. OAuth grant
-  inventory across the identity provider and every SaaS admin API; a
-  vendor register with data classification.
-- **Scope minimisation** — an app that needs one calendar shouldn't have
-  `mail.readonly`. Review high-risk scopes; block unverified apps from
-  sensitive scopes by policy.
-- **Access reviews and expiry** — grants and vendor accounts that aren't
-  used are revoked; the SCIM lifecycle idea applied outward.
-- **Token hygiene** — short-lived tokens, refresh-token rotation, revocation
-  that actually works ([oauth2](../01-auth-identity/02-oauth2.md)); vendor
-  keys in a manager, not in configuration files.
-- **Vendor assessment** — questionnaires and attestations (SOC 2, ISO 27001)
-  are a floor, not evidence; technical controls above are what you can
-  verify.
-- **Incident readiness** — when a vendor is breached (which is when this
-  team's phone rings), can you list what they had access to in an hour?
-  That is the inventory again.
-
-Your protocol depth is the asset here: you have implemented the OAuth
-grants and the SCIM deprovisioning that this team audits from the outside.
+This is the [SCIM](../01-auth-identity/05-scim.md) lifecycle problem and the
+[OAuth](../01-auth-identity/02-oauth2.md) grant model pointed outward, which
+is why protocol depth transfers directly into this area.
 
 ---
 
@@ -510,8 +560,13 @@ source — that's the source track and code review.
    identity — a CI job, a person — so the "key" is who you are; Rekor is a
    transparency log every signature is recorded in. SLSA provenance is an
    in-toto attestation that's typically signed and logged with Sigstore.
-   The OIDC part is the bit I'd emphasise, because it's the same identity
-   plumbing I've built on the application side.
+   The OIDC part is the bit to emphasise: it's the same identity plumbing as
+   application-side federated login, applied to build artefacts instead of
+   users.
+
+   > **Your turn:** if you have implemented OIDC or token issuance yourself,
+   > say so here — the transfer from application identity to build identity is
+   > the credible version of this answer.
 
    </details>
 
@@ -703,42 +758,159 @@ long-lived secrets anywhere" becomes the design rule.
 
    </details>
 
-### Q: How would you find out what third-party apps have access to your organisation's data?
-**Level:** intermediate · **Tags:** security, third-party, oauth
+### Q: What is the confused-deputy problem in a cloud estate, and how do you prevent it?
+**Level:** senior · **Tags:** security, cloud, iam, cross-tenant
 
 <details><summary>Model answer</summary>
 
-Inventory the grants from every place they can be made, then normalise.
+A deputy is a service that is allowed to act on your resources on your behalf
+— a managed service, or a vendor's integration that assumes a role in your
+account. It becomes confused when an attacker can influence *what* it is asked
+to do, and it then uses its own legitimate privileges to do it. No credential
+is stolen; the privilege is borrowed.
 
-OAuth grants live in the identity provider's admin API — every app a user
-consented to, with its scopes and last use. But SaaS-to-SaaS integrations
-live in each SaaS tool's own admin API, vendor service accounts live in the
-cloud IAM, and some access is a shared credential nobody recorded. So the
-system pulls from all of those on a schedule into one model: principal,
-what it can access, granted by whom, when, last used.
+The classic shape is a vendor role. The vendor needs to assume a role in every
+customer's account, so the trust policy names the vendor's principal. But
+that same principal serves every other customer too — so if the vendor's API
+lets an attacker specify which account to act on, the attacker reaches my
+resources through the vendor's legitimate access.
 
-Then the questions get easy: apps with high-risk scopes that aren't on the
-approved list; grants unused for 90 days; a vendor who was breached
-yesterday — what did they have. And the controls follow: block unverified
-apps from sensitive scopes by policy, expire unused grants, and put the
-review in front of the person who granted it.
+The fix is to bind a context into the trust policy, not just an identity: a
+shared value only the vendor and I know (an external ID), or a condition on
+the calling account or project. That makes "this vendor" and "this vendor
+acting for me" different principals.
 
-I've built the other side of this — the OAuth grants and SCIM lifecycle
-inside a product — so I know exactly where the data is and where it isn't.
+The generalisation is the part worth stating: **a trust policy that names a
+party but not a context is incomplete.** The same bug shows up in CI
+federation when the condition is "any job in this organisation" rather than
+"this repository, on this branch" — anyone who can open a pull request in any
+repo inherits the deployment role. Least privilege moved up a level when
+keys went away; it didn't stop applying.
 
 </details>
 
 **Follow-ups:**
-
-1. Q: A vendor was breached. What's the first question?
+1. Q: How would you audit for this across an estate?
    <details><summary>Answer</summary>
 
-   What could they reach — every token, account and integration they held,
-   from the inventory. Then revoke and rotate those first, and only then
-   investigate whether they were used. If the inventory can't answer it in
-   an hour, that's the gap to fix after.
-
+   Enumerate every trust policy — role trust relationships, workload-identity
+   pool bindings, service-account impersonation grants — and classify by
+   whether the principal is external and whether a context condition is
+   present. External principal with no condition is the finding. It's a
+   static analysis over IAM configuration, so it belongs in the posture
+   tooling rather than in detection, and it's one of the higher-signal checks
+   because the false-positive rate is near zero.
    </details>
+
+### Q: You enable an organisation policy forbidding public buckets. What happens to the buckets that are already public?
+**Level:** senior · **Tags:** security, cloud, guardrails, remediation
+
+<details><summary>Model answer</summary>
+
+Nothing. This is the misconception worth being precise about: an organisation
+policy constraint is admission control over *new or changed* configuration. It
+prevents the violating state from being created going forward; it does not
+reach back and remediate what already exists. The bucket that was public
+yesterday is public today, and it will stay public until something sweeps for
+it.
+
+So the control is half of a pair. The constraint caps the inflow, and a sweep
+plus remediation handles the existing estate — and the ordering matters:
+detect, fix, then enforce. Enforcing first is how you discover your estate's
+non-compliance as a wave of broken deployments, which costs you the mandate to
+enforce anything else.
+
+Two related things I'd check. **Exceptions**: a project-level override that
+disables the org constraint is a supported feature and an excellent backdoor,
+so overrides need an owner, a reason and an expiry, and the list of them is
+itself a standing review item. And **recurrence**: if the same violation
+reappears after remediation, the resource was never the problem — the pipeline
+that creates it is, and the fix belongs in the module or template rather than
+in the console.
+
+</details>
+
+### Q: Your posture tool reports ten thousand findings. What do you do?
+**Level:** senior · **Tags:** security, cloud, cspm, prioritisation
+
+<details><summary>Model answer</summary>
+
+Ten thousand findings is operationally the same as zero, so the work isn't
+detection — it's everything after it.
+
+First, ownership. A finding without an owner cannot be fixed, so before any
+triage I'd want the mapping from resource to owning team, derived from labels,
+project metadata and the deploying pipeline. The gaps in that mapping are the
+first thing to fix, because they bound everything else.
+
+Second, scoring that reflects reality rather than the scanner's severity
+label. The factors that actually matter: is it reachable from the internet,
+how sensitive is the data behind it, and what privilege does it expose. A
+"high" severity finding on an isolated sandbox project outranks nothing; a
+"medium" on an internet-facing resource holding customer data outranks most
+of the list.
+
+Third, split by remediation safety. Closing a public bucket is reversible and
+nearly always correct, so automate it. Shrinking a service account some
+pipeline depends on can take production down, so that's a ticket with an SLA
+to the owner. Getting that split wrong in either direction is costly —
+automating the dangerous ones breaks things, ticketing the safe ones means
+nothing ever gets fixed.
+
+Fourth, exceptions with expiry, because every real estate has legitimate
+violations and a permanent suppression is just a lie in the dashboard.
+
+The metric I'd actually report is recurrence rate, not finding count.
+Recurrence tells you whether you're fixing causes or instances; count mostly
+tells you how much cloud you bought.
+
+</details>
+
+**Follow-ups:**
+1. Q: What would you measure to know the programme is working?
+   <details><summary>Answer</summary>
+
+   Time-to-remediate by severity band, recurrence rate, and coverage —
+   what fraction of the estate is scanned and what fraction of findings have
+   an owner. Deliberately *not* the raw finding count, which goes up when the
+   organisation grows and down when the scanner breaks, so it moves for
+   reasons unrelated to security. I'd also watch exception age: a growing
+   population of expired-but-still-open exceptions is the earliest sign the
+   programme has become decorative.
+   </details>
+
+### Q: What detection rules would you write on cloud audit logs?
+**Level:** intermediate · **Tags:** security, cloud, detection, logging
+
+<details><summary>Model answer</summary>
+
+I'd derive them from the misconfiguration classes rather than invent them, so
+each rule maps to a known failure:
+
+- A service-account key created, then used from a new region within the hour —
+  the key-exfiltration shape.
+- A primitive or wildcard role granted at project or org level, which is
+  almost never deliberate at that scope.
+- An IAM policy change by a principal that has never made one before — a
+  per-principal baseline, not a global threshold.
+- Audit logging disabled on any resource. Rare, never benign, and the
+  precondition for everything else being invisible.
+- A bucket or object ACL opening to all users.
+- A vendor or external principal accessing a resource type it has never
+  touched before.
+
+The common design point: most of these are *per-principal baselines* rather
+than fixed thresholds, because a backup service account legitimately reads
+everything and a deploy account legitimately changes IAM. A global rule either
+drowns you or misses the interesting case.
+
+And I'd pair every rule with the preventive control it backs up, because the
+rule is the backstop for what policy allowed through. If I'm alerting on
+primitive roles being granted, the real question is why the org constraint
+permits it — detection is what you run where prevention isn't possible yet,
+not instead of it.
+
+</details>
 
 ### Q: What new security problems do AI coding agents introduce?
 **Level:** senior · **Tags:** security, ai, agents, prompt-injection
@@ -1029,6 +1201,41 @@ alternative.
 - [ ] Always fail open to preserve availability
 - [ ] Whichever is easier to implement in the current codebase
 **Why:** Authorization for a destructive action should fail closed; a fraud score on a read path might reasonably fail open with degraded mode and loud alerting — there's no universal answer, only a per-control cost comparison.
+
+### MCQ: You enable an org policy constraint forbidding public buckets. Existing public buckets are…
+- [ ] Automatically made private
+- [x] Still public — a constraint gates new or changed configuration, it does not remediate existing state
+- [ ] Deleted after a grace period
+- [ ] Made private only if they have an owner label
+**Why:** Guardrails cap the inflow of violations; the existing estate needs a separate sweep, and the correct rollout order is detect, fix, then enforce.
+
+### MCQ: A vendor's role in your account is trusted by the vendor's principal with no further condition. What's the risk?
+- [ ] The vendor can rotate your keys
+- [x] Confused deputy — the same principal serves every customer, so an attacker may get the vendor to act on your resources
+- [ ] The role will be assumed without logging
+- [ ] The trust policy will expire silently
+**Why:** Naming a party without a context makes "this vendor" and "this vendor acting for me" the same principal; an external ID or an account condition separates them.
+
+### MCQ: In CI-to-cloud federation, which trust condition is sufficiently scoped?
+- [ ] Any job in this CI provider
+- [ ] Any job in this organisation
+- [x] This repository, on this branch
+- [ ] Any job presenting a valid OIDC token
+**Why:** Over-broad federation is the replacement misconfiguration for leaked keys — anyone able to run a job in the trusted scope inherits the role, so the condition must name the repository and ref.
+
+### MCQ: Your posture tool reports 10,000 findings. What is the first thing to fix?
+- [ ] The scanner's severity thresholds
+- [x] The resource-to-owner mapping, since a finding without an owner cannot be remediated
+- [ ] The auto-remediation rules
+- [ ] The dashboard's grouping
+**Why:** Ownership attribution bounds everything downstream; scoring and remediation workflow are useless while nobody can be assigned the work.
+
+### MCQ: Which metric best indicates whether a posture programme fixes causes rather than instances?
+- [ ] Total open findings
+- [ ] Number of resources scanned
+- [x] Recurrence rate of the same finding after remediation
+- [ ] Mean severity of open findings
+**Why:** A finding that returns means the pipeline or template that creates it was never changed; raw counts move with how much infrastructure was bought, not with security.
 
 ---
 

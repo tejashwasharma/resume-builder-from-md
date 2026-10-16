@@ -84,8 +84,6 @@ python3 check_coverage.py  # question blocks, diagram captions and links
 | **Auth & identity** | OAuth 2.0, OIDC, SAML, SCIM, JWT, MFA/TOTP, RBAC/ABAC/ReBAC, OPA, Zero Trust and the IdPs |
 | **Security engineering** | The security knowledge round, and the design prompts a security team asks |
 | **Backend: Node.js** | TypeScript for services, the event loop, and building the server — routing, middleware, validation, errors, auth, config, pooling, graceful shutdown, tests, packaging |
-| **Backend: Python** | Python from zero, the GIL and asyncio, the same server in FastAPI, pytest and production |
-| **Backend: Go** | Go from zero, goroutines and the scheduler, the same server on `net/http`, table-driven tests and a static binary |
 | **Backend: cross-cutting** | REST/GraphQL/gRPC/WebSockets, and service boundaries |
 | **Data & caching** | MongoDB, PostgreSQL, Redis, ODMs, Elasticsearch |
 | **DevOps & SRE** | Zero to one for the operations round: the Linux box under the container (processes, memory, descriptors, signals, the debugging toolkit), containers at the kernel level, Kubernetes' object model and how to operate it, Terraform and state, pipelines and GitOps, Prometheus and PromQL, incident command and DR — plus the AWS ecosystem and the AWS observability services |
@@ -106,10 +104,9 @@ order. Start there rather than at the method:
 - [The technology toolbox](02-interview-core/34-the-technology-toolbox.md) — Postgres vs Mongo, Kafka vs SQS, and how to defend a choice
 - [Building blocks](02-interview-core/35-building-blocks.md) — every block, with when *not* to add it
 
-The three language tracks build **the same service** — `POST /links`,
-`GET /links/:id`, `GET /healthz` — in Node, Python and Go, covering the same
-twelve steps in the same order, so you can read any two side by side and see
-what is a language fact and what is universal.
+The Node.js track builds a complete service — `POST /links`, `GET /links/:id`,
+`GET /healthz` — in twelve steps, from routing and validation through auth,
+pooling and graceful shutdown.
 
 ## How the pieces fit
 

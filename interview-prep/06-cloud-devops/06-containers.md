@@ -97,7 +97,7 @@ Anything that sizes itself from "number of CPUs" therefore gets it wrong:
 
 - **Go** sets `GOMAXPROCS` from the host count, creating 64 OS threads that
   fight over one CPU's worth of quota. Set it from the limit, or use
-  `automaxprocs`. See [the Go runtime](../13-backend-golang/02-the-go-runtime.md).
+  `automaxprocs`.
 - **Node** sizes its libuv thread pool and any `os.cpus()`-based cluster count
   the same way; `os.cpus().length` workers inside a 1-CPU container is a
   self-inflicted outage. See

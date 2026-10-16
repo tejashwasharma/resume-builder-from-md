@@ -57,7 +57,7 @@ MODULE_DIRS = [
     "01-auth-identity", "02-interview-core", "03-backend",
     "04-data-cache", "05-testing", "06-cloud-devops", "07-ai-tooling", "08-frontend",
     "09-lld", "10-design-cases",
-    "11-backend-nodejs", "12-backend-python", "13-backend-golang",
+    "11-backend-nodejs",
 ]
 
 

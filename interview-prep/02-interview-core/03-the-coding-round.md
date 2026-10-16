@@ -13,6 +13,26 @@ entirely what you did *unprompted*.
 
 ---
 
+## In brief
+
+- Forty-five minutes, one engineer, one problem and its follow-ups, written in
+  a shared doc with no IDE, no autocomplete and no runtime.
+- **The code is about a third of the round.** Restating, gathering
+  constraints, stating complexity and testing are the rest, and each is its own
+  line in the write-up.
+- Everything the interviewer records comes from what you said out loud. Silence
+  produces an empty feedback form, however good the final function is.
+- Say complexity and trace a test case *unprompted*. At senior level that habit
+  is most of the distance between "hire" and "strong hire".
+- A brute force is stated for its complexity and then left behind. One that
+  never improves reads as a fail.
+- A follow-up is not a sign you were wrong — it is where the level is decided.
+- Some loops fold this round together with domain questions in the same
+  forty-five minutes. The pacing changes a lot; see
+  [the hybrid round](47-the-hybrid-round.md).
+
+---
+
 ## The 45 minutes
 
 ```mermaid
@@ -41,6 +61,15 @@ flowchart TD
 Two things to notice. **The code is only a third of the round.** And the
 steps are cumulative: the constraints you gathered at minute 4 are the edge
 cases you test at minute 32.
+
+**When the round is shared.** Not every loop gives coding its own slot. Where
+the same forty-five minutes also has to cover domain questions — common on
+security, infrastructure and platform teams — the table above compresses to
+roughly twenty-five minutes of problem time, and it is the *approach* phase
+that gives way: one sentence of brute force instead of a worked comparison,
+typing by minute nineteen. Everything after the code is unchanged, because
+testing and complexity are too cheap to trade. The split, and what to drop, is
+[the hybrid round](47-the-hybrid-round.md).
 
 ---
 
@@ -260,6 +289,37 @@ stated three times without being asked.
 
 ---
 
+## Data structures
+
+There is no standard library to fall back on in a plain document, and being
+unable to write the structure the problem needs is a mark against on its own.
+Everything in this book's problems reduces to this list.
+
+| Need | Use | Note |
+| --- | --- | --- |
+| Lookup / membership | `Map`, `Set` | Never a plain object as a map, never `includes()` for membership |
+| Queue (BFS) | `Array` + head index | `shift()` is O(*n*) and turns a BFS quadratic |
+| Stack | `Array` with `push`/`pop` | Already O(1) at the end |
+| Priority queue / top-k | Hand-rolled `MinHeap`, ~25 lines | No built-in exists; the implementation is in [the drill plan](19-the-drill-plan.md#data-structures) |
+| Connectivity, grouping | Union-Find, ~15 lines | Path compression plus union by size; see [graphs](12-graphs.md) |
+| Prefix / string dispatch | Trie as nested `Map`s, ~20 lines | See [tries and intervals](17-tries-intervals-and-design-structures.md) |
+| Sliding window extremes | Monotonic deque as `Array` + two indices | See [stacks and queues](09-stacks-queues-monotonic.md) |
+| Counting | `Map<key, number>` with `(m.get(k) ?? 0) + 1` | `??` not `||` — zero is a legitimate count |
+| Fixed-size grid | `Array.from({ length: n }, () => new Array(m).fill(0))` | Never `new Array(n).fill([])`; it shares one row |
+
+Implement the heap, Union-Find and trie from scratch once each before the
+round — an evening in total. They are the four that cannot be improvised under
+time pressure, and the per-pattern tables in
+[patterns and complexity](04-patterns-and-complexity.md#data-structures-not-libraries)
+and [choosing the approach](05-choosing-the-approach.md#data-structures) assume
+you have them.
+
+The TypeScript-specific traps — integer midpoints, string building, sentinels
+— are in [JavaScript in a plain document](#javascript-in-a-plain-document)
+above; re-read that table the morning of the round rather than this one.
+
+---
+
 ## Interview Q&A
 
 ### Q: How do you structure a 45-minute coding interview so the interviewer can grade it well?
@@ -426,6 +486,66 @@ sentence is the senior signal.
   write for the fifteen minutes in between.
 - **Arguing with a follow-up.** "But my solution already handles that" —
   when it doesn't.
+
+---
+
+## Quiz
+
+### MCQ: Roughly how much of a 45-minute coding round is spent writing code?
+- [ ] Nearly all of it; the rest is introductions
+- [x] About a third — the rest is restating, constraints, complexity and testing
+- [ ] About two thirds
+- [ ] It depends entirely on the problem
+**Why:** Each of the non-coding steps is its own line in the interviewer's write-up, which is why skipping one doesn't save time — it removes a scored item.
+
+### MCQ: You see the optimal approach immediately. What should you still do with the brute force?
+- [x] State it in a sentence with its complexity, then move on
+- [ ] Skip it entirely to save time
+- [ ] Code it first, then optimise
+- [ ] Mention it only if the interviewer asks
+**Why:** Characterising the naive solution is a rubric line and costs one sentence; coding it wastes the time that sentence was meant to buy.
+
+### MCQ: In a shared document with no runtime, which is the costly mistake?
+- [ ] Using `Map` instead of a plain object
+- [x] Using `array.shift()` as a queue in a BFS
+- [ ] Building strings with `join('')`
+- [ ] Using `Math.floor` for a midpoint
+**Why:** `shift()` is O(*n*), so a BFS built on it is O(*n*²) — the other three options are the correct choice in each case.
+
+### MCQ: When should you state time and space complexity?
+- [ ] Only when asked, to avoid stating it wrongly
+- [x] Unprompted, right after the code works
+- [ ] At the very start, before writing anything
+- [ ] Only if the solution is better than brute force
+**Why:** Volunteering it is explicitly what separates a "hire" from a "strong hire" write-up at senior level; waiting to be asked converts a free line into a prompted one.
+
+### MCQ: The interviewer adds a follow-up after your solution works. What does that usually mean?
+- [ ] Your solution is wrong and they're steering you
+- [x] They want to probe the solution and see you adapt it
+- [ ] Time is short and they're changing the problem
+- [ ] You answered too quickly
+**Why:** Follow-ups are where the level is decided; treating one as an accusation and defending the original answer is the actual error.
+
+### MCQ: `new Array(n).fill([])` for a grid of rows is wrong because…
+- [ ] `fill` is O(*n*²)
+- [x] Every slot references the same array, so writing to one row writes to all
+- [ ] It leaves the array sparse and holey
+- [ ] It fails for *n* = 0
+**Why:** `fill` copies the reference, not the value; `Array.from({ length: n }, () => [])` builds a fresh array per slot.
+
+### MCQ: You are stuck mid-implementation on one edge case at minute 25. Best move?
+- [ ] Stop and rethink the whole approach in silence
+- [x] Leave a `// TODO` for it, finish the main path, and come back
+- [ ] Ask the interviewer to solve that part
+- [ ] Switch to the brute force
+**Why:** Visible progress keeps the interviewer writing, and the main path usually clarifies the edge case; stalling produces nothing to record.
+
+### MCQ: Counting occurrences into a `Map`, why `(m.get(k) ?? 0) + 1` rather than `(m.get(k) || 0) + 1`?
+- [ ] `??` is faster
+- [ ] `||` throws on a missing key
+- [x] Both work for counting, but `||` also replaces a legitimate stored `0`, which breaks the moment the map holds zeros
+- [ ] `??` handles `NaN` and `||` doesn't
+**Why:** `||` treats every falsy value as absent; the habit matters as soon as the stored value can legitimately be `0` or `''`, so use `??` by default.
 
 ---
 

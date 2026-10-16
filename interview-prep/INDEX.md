@@ -24,9 +24,10 @@ Sections mirror the topics in `curriculum.json`, which is the study order.
 
 ## Interview core — the loop, coding, distributed systems, design
 
-`02-interview-core/` is numbered `01`–`43` in reading order: `01` the process,
-`03`–`19` coding, `20`–`30` distributed-systems foundations, `31`–`39` system
-design, `40`–`41` security, `42` behavioural, `43` the schedule. The sidebar
+`02-interview-core/` is numbered `01`–`48` in reading order: `01` the process,
+`03`–`19` coding, `20`–`30` and `44`–`46` distributed-systems foundations, `31`–`39`
+system design, `40`–`41` and `48` security, `42` behavioural, `43` the schedule,
+`47` the hybrid round. The sidebar
 groups them into topics; the numbers are the reading order within a topic.
 
 ### A. The process
@@ -34,12 +35,13 @@ groups them into topics; the numbers are the reading order within a topic.
 | Topic / keyword | File |
 | --- | --- |
 | stages, phone screen, onsite, hiring committee, team match, the four attributes (problem solving, role knowledge, leadership, collaboration), mid-level vs senior, what to ask the recruiter | ✅ [the interview process](02-interview-core/01-the-interview-process.md) |
+| hybrid round, domain knowledge plus coding in one slot, 45-minute split, compressed coding half, domain question ladder, one-sentence brute force, answering in 90 seconds, not knowing an answer, domain-flavoured problems, RRK and GCA in one write-up | ✅ [the hybrid round](02-interview-core/47-the-hybrid-round.md) |
 
 ### B. Coding — Big-O to 60+ solved problems
 
 | Topic / keyword | File |
 | --- | --- |
-| the 45-minute shape, speaking script, what gets written down, senior-level downgrades, JS in a plain doc, mock transcript | ✅ [the coding round](02-interview-core/03-the-coding-round.md) |
+| the 45-minute shape, speaking script, what gets written down, senior-level downgrades, JS in a plain doc, mock transcript, data structures without a library, heap/union-find/trie from scratch, compressed round | ✅ [the coding round](02-interview-core/03-the-coding-round.md) |
 | patterns, complexity, auth-flavoured problems, counting loop iterations, Big-O rules, TLE from constraints, space complexity, overflow, count factors, prime check, sieve, integer sqrt, AP/GP sums, modular arithmetic, N! mod p, number mod p, divisibility rules | ✅ [patterns and complexity](02-interview-core/04-patterns-and-complexity.md) |
 | how to pick a technique, prefix sum, forward/backward passes, monotonic stack, cyclic sort, binary search on answer, union-find, greedy vs DP, signal→pattern table | ✅ [choosing the approach](02-interview-core/05-choosing-the-approach.md) |
 | arrays, two pointers, sliding window, prefix sums, Kadane's, subarray sum k, trapping rain water, first missing positive, merge intervals, reverse/rotate array, range-sum queries, equilibrium index, special index, leaders, carry forward, contribution technique, sum of all subarray sums, min swaps, frequency queries, distinct in window, zero-sum subarray, equal 0s and 1s, noble integers, elements removal, comparator sort, majority element (Boyer–Moore), max consecutive ones, increasing triplets | ✅ [arrays and two pointers](02-interview-core/06-arrays-and-two-pointers.md) |
@@ -54,7 +56,7 @@ groups them into topics; the numbers are the reading order within a topic.
 | dynamic programming, memoisation vs tabulation, house robber, coin change, LIS, LCS, edit distance, knapsack, word break | ✅ [dynamic programming](02-interview-core/15-dynamic-programming.md) |
 | binary search, rotated array, first/last position, binary search on the answer, koko, median of two sorted arrays, bit tricks, XOR, decimal↔binary, add binary, bitwise operators, check/set/unset/toggle i-th bit, count set bits, two's complement | ✅ [binary search and bits](02-interview-core/16-binary-search-and-bits.md) |
 | trie, autocomplete, intervals, insert interval, LRU cache, LFU cache, rate limiter, consistent hashing, iterators | ✅ [tries, intervals, design structures](02-interview-core/17-tries-intervals-and-design-structures.md) |
-| IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders | ✅ [security-flavoured problems](02-interview-core/18-security-flavoured-problems.md) |
+| IAM policy evaluation, permission inheritance, secret scanning, dependency resolution, SBOM diff, audit-log dedup, path traversal, CIDR match, top-k offenders, OAuth scope reachability, privilege escalation path, host allowlist wildcards, certificate chain validation, token-bucket rate limiter, dependency confusion | ✅ [security-flavoured problems](02-interview-core/18-security-flavoured-problems.md) |
 | drill, the pattern problem banks: every standard problem type, with algorithm + TypeScript | ✅ `## Problem bank` sections in [04](02-interview-core/04-patterns-and-complexity.md), [06](02-interview-core/06-arrays-and-two-pointers.md), [07](02-interview-core/07-strings-and-hashing.md), [08](02-interview-core/08-linked-lists.md), [13](02-interview-core/13-matrices-and-grids.md), [14](02-interview-core/14-recursion-and-backtracking.md), [16](02-interview-core/16-binary-search-and-bits.md) |
 | what to practise, the ladder, time-boxing, mistake log, exit tests, the 30-problem mock pool | ✅ [the drill plan](02-interview-core/19-the-drill-plan.md) |
 
@@ -101,6 +103,7 @@ groups them into topics; the numbers are the reading order within a topic.
 | Topic / keyword | File |
 | --- | --- |
 | threat modelling, STRIDE, CWE classes, secure by design, safe coding, memory safety, SLSA, Sigstore, SBOM, xz, cloud IAM misconfig, CSPM, third-party risk, prompt injection, OWASP LLM Top 10 | ✅ [security domain knowledge](02-interview-core/41-security-domain-knowledge.md) |
+| third-party platform security, OAuth app governance, grant inventory, consent phishing, illicit consent grant, delegated vs application permissions, offline_access, refresh token as standing credential, publisher verification, SaaS-to-SaaS, sub-processors, browser extensions, vendor service accounts, access reviews with expiry, notify-then-revoke, vendor breach first hour, blast radius ranking | ✅ [third-party platform security](02-interview-core/48-third-party-platform-security.md) |
 | emergent leadership, ambiguity, 0→1, mentoring, pushed back, failure, conflict, why this company | ✅ [behavioural and leadership](02-interview-core/42-behavioral-and-leadership.md) |
 | week-by-week schedule, mock pool, day-before checklist, hiring committee wait, team match, offer basics | ✅ [the schedule](02-interview-core/43-the-schedule.md) |
 
@@ -112,24 +115,6 @@ groups them into topics; the numbers are the reading order within a topic.
 | Node.js, event loop, phases, microtasks, thread pool, blocking the loop, clustering, memory and leaks | ✅ [the runtime and the event loop](11-backend-nodejs/02-runtime-and-event-loop.md) |
 | building a server, node:http, routing, middleware chain and ordering, body limits, validation, error mapper, JWT auth middleware, config at startup, connection pool, graceful shutdown, project layout, Express, Fastify, NestJS, PassportJS, Express 4 async trap | ✅ [building the server](11-backend-nodejs/03-building-the-server.md) |
 | testing handlers, fakes vs mocks, injected clock, multi-stage Dockerfile, exec-form CMD, one process per container, event-loop lag, production checklist | ✅ [testing, structure and production](11-backend-nodejs/04-testing-structure-production.md) |
-
-## Backend: Python
-
-| Topic / keyword | File |
-| --- | --- |
-| Python syntax, venv, pyproject, mutable default argument, comprehensions, dataclasses, Protocol, type hints, exceptions, raise from, context managers | ✅ [python from zero](12-backend-python/01-python-from-zero.md) |
-| GIL, threads vs processes vs asyncio, event loop, blocking calls, asyncio.to_thread, TaskGroup, multiprocessing, Gunicorn/Uvicorn workers, free-threaded build, `__slots__` | ✅ [the python runtime](12-backend-python/02-the-python-runtime.md) |
-| building a server, WSGI vs ASGI, FastAPI, routing, middleware vs dependencies, Depends, Pydantic validation, response_model, exception handlers, JWT, Settings, SQLAlchemy async pool, lifespan, graceful shutdown | ✅ [building the server](12-backend-python/03-building-the-server.md) |
-| pytest, fixtures, ASGITransport, dependency_overrides, parametrize, Alembic migrations, PYTHONUNBUFFERED, one worker per container, py-spy, event-loop lag | ✅ [testing, structure and production](12-backend-python/04-testing-structure-production.md) |
-
-## Backend: Go
-
-| Topic / keyword | File |
-| --- | --- |
-| Go syntax, zero values, nil map vs nil slice, slices as views, structs, methods, implicit interfaces, embedding, errors as values, sentinel errors, %w wrapping, errors.Is/As, defer, generics, go mod, internal/ | ✅ [go from zero](13-backend-golang/01-go-from-zero.md) |
-| goroutines, M:N scheduler, G-M-P, work stealing, GOMAXPROCS in containers, channels, select, context, goroutine leaks, data races, sync.Mutex/RWMutex/Once, errgroup, garbage collector, GOGC, GOMEMLIMIT, escape analysis | ✅ [the go runtime](13-backend-golang/02-the-go-runtime.md) |
-| building a server, net/http, ServeMux patterns, chi, middleware as func(http.Handler) http.Handler, server timeouts, MaxBytesReader, recovery middleware, validation, apiFunc error adapter, JWT, pgx pool, slog, srv.Shutdown | ✅ [building the server](13-backend-golang/03-building-the-server.md) |
-| table-driven tests, httptest, fakes without mocks, -race, benchmarks and allocs/op, static binary, distroless, pprof, goroutine profile, GOMAXPROCS and GOMEMLIMIT in containers | ✅ [testing, structure and production](13-backend-golang/04-testing-structure-production.md) |
 
 ## Backend: cross-cutting
 
