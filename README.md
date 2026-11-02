@@ -6,28 +6,23 @@ tracking system and how the writing measures against what online resume
 graders check.
 
 ```bash
-python3 build.py          # design 1 (default) -> output/design-1/tejashwasharma_resume.pdf
-python3 build.py 2        # design 2
-python3 build.py all      # both
+python3 build.py                    # auth/platform resume -> output/tejashwasharma_resume.pdf
+python3 build.py --variant backend  # Node/backend resume   -> output/tejashwasharma_resume_backend.pdf
 ```
 
-The Markdown files are the single source of truth. The PDFs in `output/` are
+`resume.md` is the single source of truth. The PDF in `output/` is
 build output and are never edited by hand.
 
 ## Project structure
 
 ```text
 .
-├── build.py                    Build, validate, and report (design-aware)
-├── designs/
-│   ├── design-1/resume.md      Content — the primary design
-│   ├── design-1/resume.css     Appearance — design 1 (single-column)
-│   ├── design-2/resume.md      Content — the alternate variant
-│   └── design-2/resume.css     Appearance — design 2
-├── output/
-│   ├── design-1/tejashwasharma_resume.pdf   Generated — never hand-edit
-│   └── design-2/tejashwasharma_resume.pdf   Generated — never hand-edit
-├── tailor/tailor_cv.py         Per-application variants of design 1 (output in tailor/output/, gitignored)
+├── build.py                    Build, validate, and report
+├── resume.md                   Content — auth/platform-security resume (source of truth)
+├── resume-backend.md           Content — Node/backend, language-agnostic resume
+├── resume.css                  Appearance, shared by both (single-column)
+├── output/*.pdf                Generated — never hand-edit
+├── tailor/tailor_cv.py         Per-application variants of the resume (output in tailor/output/, gitignored)
 ├── interview-prep/             Standalone, shareable interview study book
 ├── AGENT.md                    Instructions for AI agents working in this repo
 ├── .claude/skills/             resume-build / resume-tailor / job-search skills
@@ -59,10 +54,9 @@ on every OS.
 ## Usage
 
 ```bash
-# Build a design and print both reports (the everyday command)
-python3 build.py            # design 1 (default)
-python3 build.py 2          # design 2
-python3 build.py all        # both
+# Build the PDF and print both reports (the everyday command)
+python3 build.py                    # auth/platform resume
+python3 build.py --variant backend  # backend resume (resume-backend.md)
 
 # Build, then print the extracted text per page for manual review
 python3 build.py --check

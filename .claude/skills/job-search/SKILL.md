@@ -1,13 +1,13 @@
 ---
 name: job-search
-description: Searches LinkedIn and Naukri (both logged in) plus a registry-driven company career-page watchlist for product-company India roles matching the resume in designs/design-2 - Senior/Staff/Principal backend & platform engineer (Node.js/TypeScript) and applied-AI roles, IAM titles excluded. Scores each role on Fit %, Shortlist % and Career-path alignment, prints a ranked table in chat and inserts new rows (newest on top) into the India tab of the tracking Google Sheet via Composio. Report only - never applies. Use when the user asks to find matching jobs, run the job search, search LinkedIn/Naukri, or asks what's new today.
+description: Searches LinkedIn and Naukri (both logged in) plus a registry-driven company career-page watchlist for product-company India roles matching the resume in resume-backend.md - Senior/Staff/Principal backend & platform engineer (Node.js/TypeScript) and applied-AI roles, IAM titles excluded. Scores each role on Fit %, Shortlist % and Career-path alignment, prints a ranked table in chat and inserts new rows (newest on top) into the India tab of the tracking Google Sheet via Composio. Report only - never applies. Use when the user asks to find matching jobs, run the job search, search LinkedIn/Naukri, or asks what's new today.
 ---
 
 # Job search
 
 Process finalised with the user on 2026-10-08. **All rules live in
 `config.local.json` (this directory) - read it fresh every run, never from
-memory. Read `../../designs/design-2/resume.md` fresh too.** Do not assume
+memory. Read `../../resume-backend.md` fresh too.** Do not assume
 anything the config or the user hasn't stated; if something is unclear, ask.
 
 Local files (all gitignored - this repo is public, never commit them or put

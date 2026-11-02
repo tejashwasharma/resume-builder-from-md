@@ -1,6 +1,6 @@
 ---
 name: resume-tailor
-description: From a pasted LinkedIn job or search-results link, screen every posting against the master CV, then create and build a tailored resume folder under tailor/output/ for each strong match. Use when the user pastes a LinkedIn jobs link and asks to match their CV / tailor / prep applications, or invokes this skill after pasting one. The master designs/design-1/resume.md is never edited.
+description: From a pasted LinkedIn job or search-results link, screen every posting against the master CV, then create and build a tailored resume folder under tailor/output/ for each strong match. Use when the user pastes a LinkedIn jobs link and asks to match their CV / tailor / prep applications, or invokes this skill after pasting one. The master resume.md is never edited.
 ---
 
 # Resume tailor
@@ -13,7 +13,7 @@ chat, and a built tailored-resume folder under `tailor/output/` for each posting
 that is a **strong** match — each holding a tailored CV, its PDF, and a cover
 letter written for that posting.
 
-The master `designs/design-1/resume.md` is the source of truth and is **never
+The master `resume-backend.md` is the source of truth and is **never
 edited for an application**. `tailor_cv.py` drives everything and reuses
 `build.py` unchanged, so ATS and content scoring match the master
 build exactly.
@@ -40,7 +40,7 @@ required vs preferred skills, years of experience.
 
 ### 3. Screen against the master
 
-Read `designs/design-1/resume.md` and `interview-prep/WEAK-SPOTS.md` first.
+Read `resume-backend.md` and `interview-prep/WEAK-SPOTS.md` first.
 Score each posting on five axes, then rank:
 
 | Axis | Strong | Weak |
@@ -157,7 +157,7 @@ in one sentence that reads as confidence, not apology. Silence is worse: they
 find the seam in the interview either way.
 
 **Same honesty constraint as the CV.** Every claim traces to
-`designs/design-1/resume.md`. No new tools, metrics, team sizes or projects, and
+`resume-backend.md`. No new tools, metrics, team sizes or projects, and
 no enthusiasm that implies experience he doesn't have.
 
 **Banned:** "passionate", "dynamic", "fast-paced", "wear many hats",
@@ -204,6 +204,6 @@ if it's easier.
 
 ## Boundaries
 
-- Never edit `designs/design-1/resume.{md,css}` from this skill. A change to
+- Never edit `resume-backend.md` from this skill. A change to
   the master itself is the `resume-build` skill.
 - Never `git add -f` anything under `tailor/output/` — private, per-job.

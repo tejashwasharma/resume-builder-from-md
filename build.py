@@ -53,7 +53,6 @@ import tempfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DESIGNS_DIR = SCRIPT_DIR / "designs"
 OUTPUT_DIR = SCRIPT_DIR / "output"
 PDF_NAME = "tejashwasharma_resume.pdf"
 RESUME_TITLE = "Tejashwa Sharma - Resume"
@@ -105,19 +104,17 @@ def _check_chromium_installed() -> None:
 # File discovery
 # --------------------------------------------------------------------------
 
-DESIGN_CHOICES = ("1", "2")
-
-
 def resolve_sources(
-    design: str,
     md_override: "str | None" = None,
     css_override: "str | None" = None,
+    variant: "str | None" = None,
 ) -> tuple[Path, Path, Path]:
     """Return (markdown, stylesheet, default_output_pdf).
 
-    Normal use: a design number picks designs/design-<n>/resume.{md,css} and
-    the PDF lands in output/design-<n>/. An explicit --md/--css pair (used by
-    the tailoring tool) overrides both and writes the PDF next to the markdown.
+    Normal use: resume.{md,css} at the repo root, PDF in output/. A variant
+    NAME picks resume-NAME.md (same stylesheet) -> output/*_NAME.pdf. An explicit
+    --md/--css pair (used by the tailoring tool) overrides both and writes the
+    PDF next to the markdown.
     """
     if md_override or css_override:
         if not (md_override and css_override):
@@ -127,10 +124,10 @@ def resolve_sources(
         css_path = Path(css_override).resolve()
         default_pdf = md_path.with_name(PDF_NAME)
     else:
-        design_dir = DESIGNS_DIR / f"design-{design}"
-        md_path = design_dir / "resume.md"
-        css_path = design_dir / "resume.css"
-        default_pdf = OUTPUT_DIR / f"design-{design}" / PDF_NAME
+        suffix = f"-{variant}" if variant else ""
+        md_path = SCRIPT_DIR / f"resume{suffix}.md"
+        css_path = SCRIPT_DIR / "resume.css"
+        default_pdf = OUTPUT_DIR / PDF_NAME.replace(".pdf", f"{suffix.replace('-', '_')}.pdf")
 
     if not md_path.exists():
         print(f"ERROR: resume markdown not found: {md_path}", file=sys.stderr)
@@ -870,31 +867,21 @@ def print_text_preview(doc: "fitz.Document", max_chars: int = 2000) -> None:
 # --------------------------------------------------------------------------
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build a resume design from Markdown + CSS and score it for ATS readability.")
-    parser.add_argument("design", nargs="?", default="1", choices=("1", "2", "all"),
-                        help="which design under designs/ to build (default: 1; 'all' builds both).")
-    parser.add_argument("--md", type=str, default=None, help="Explicit Markdown source (with --css); bypasses the design lookup.")
+    parser = argparse.ArgumentParser(description="Build the resume from Markdown + CSS and score it for ATS readability.")
+    parser.add_argument("--md", type=str, default=None, help="Explicit Markdown source (with --css); bypasses the default resume.md/resume.css.")
+    parser.add_argument("--variant", type=str, default=None, help="Build resume-NAME.md with the shared resume.css (e.g. backend) -> output/tejashwasharma_resume_NAME.pdf.")
     parser.add_argument("--css", type=str, default=None, help="Explicit stylesheet (with --md).")
-    parser.add_argument("--output", type=str, default=None, help="Custom output PDF path (default: output/design-<n>/tejashwasharma_resume.pdf).")
+    parser.add_argument("--output", type=str, default=None, help="Custom output PDF path (default: output/tejashwasharma_resume.pdf).")
     parser.add_argument("--check", action="store_true", help="After generating, print an extracted-text preview for manual validation.")
     parser.add_argument("--ats", action="store_true", help="Run ATS analysis only, against the existing PDF (skips rebuilding).")
     parser.add_argument("--verbose", action="store_true", help="Print step-by-step pipeline progress.")
     args = parser.parse_args()
 
-    designs = ("1", "2") if args.design == "all" else (args.design,)
-    if len(designs) > 1 and (args.md or args.css):
-        print("ERROR: --md/--css cannot be combined with 'all'", file=sys.stderr)
-        return 1
-    rc = 0
-    for design in designs:
-        if len(designs) > 1:
-            print(f"\n{'=' * 44}\n  design-{design}\n{'=' * 44}")
-        rc |= _run(design, args)
-    return rc
+    return _run(args)
 
 
-def _run(design: str, args) -> int:
-    md_path, css_path, default_pdf_path = resolve_sources(design, args.md, args.css)
+def _run(args) -> int:
+    md_path, css_path, default_pdf_path = resolve_sources(args.md, args.css, args.variant)
     out_pdf = Path(args.output).resolve() if args.output else default_pdf_path
 
     if args.verbose:

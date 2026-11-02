@@ -2,14 +2,14 @@
 """
 tailor_cv.py — per-application resume variants, without touching the master.
 
-The master (`designs/design-1/resume.md`) is the source of truth and is never
+The master (`resume-backend.md`) is the source of truth and is never
 edited for a single job. Each application gets its own folder under
 `tailor/output/` (gitignored) holding a copy of the Markdown to tailor, the job
 description it is aimed at, a cover letter drafted from both, and its own
 built PDF.
 
 Rendering and scoring are NOT reimplemented here — this script copies the
-variant Markdown and the design-1 CSS through `build.py` with an explicit
+variant Markdown and the master CSS through `build.py` with an explicit
 `--md/--css/--output`, so the real pipeline runs unchanged and ATS/content
 scoring matches the master build exactly.
 
@@ -39,8 +39,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
-MASTER_MD = REPO / "designs" / "design-1" / "resume.md"
-MASTER_CSS = REPO / "designs" / "design-1" / "resume.css"
+MASTER_MD = REPO / "resume-backend.md"
+MASTER_CSS = REPO / "resume.css"
 BUILDER = REPO / "build.py"
 TAILORED = ROOT / "output"
 
@@ -91,7 +91,7 @@ COVER_TEMPLATE = """\
      naming before they find it. Short.
 
   Rules:
-  - Every claim traces to designs/design-1/resume.md. No new tools, metrics,
+  - Every claim traces to resume-backend.md. No new tools, metrics,
     team sizes or projects.
   - Address a real gap directly if the JD hard-requires something thin (see
     interview-prep/WEAK-SPOTS.md). Scoped honestly, that reads as confidence.
@@ -178,13 +178,13 @@ def cmd_build(slug: str) -> int:
         print(f"ERROR: no variant at {md}. Run:  python3 tailor_cv.py new {slug}", file=sys.stderr)
         return 1
     if not MASTER_CSS.exists() or not BUILDER.exists():
-        print("ERROR: design-1 CSS or build.py missing", file=sys.stderr)
+        print("ERROR: resume.css or build.py missing", file=sys.stderr)
         return 1
 
     out_pdf = _variant_dir(slug) / "tejashwasharma_resume.pdf"
 
     # Reuse the real pipeline unchanged: build.py renders this variant's
-    # Markdown against the design-1 stylesheet, redirecting only the output PDF.
+    # Markdown against the master stylesheet, redirecting only the output PDF.
     proc = subprocess.run(
         [
             sys.executable, str(BUILDER),
